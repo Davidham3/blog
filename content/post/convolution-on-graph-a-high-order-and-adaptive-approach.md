@@ -2,6 +2,8 @@
 categories:
 - 论文阅读笔记
 date: 2018-07-16 11:01:00+0000
+description: '重新定义了卷积的定义，利用$k$阶邻接矩阵，定义考虑$k$阶邻居的卷积，利用邻接矩阵和特征矩阵构建能同时考虑顶点特征和图结构信息的卷积核。在预测顶点、预测图、生成图三个任务上验证了模型的效果。原文链接：[Graph
+  Convolution: A High-Order and Adaptive Approach](https://arxiv.org/abs/1706.09916)'
 draft: false
 math: true
 tags:

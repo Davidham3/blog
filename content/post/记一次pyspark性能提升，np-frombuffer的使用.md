@@ -2,6 +2,8 @@
 categories:
 - 分布式平台
 date: 2020-02-13 00:12:07+0000
+description: 之前项目中有个任务是读取一堆二进制文件，对二进制文件进行解析，然后存到HBase。由于有 .mat 文件，整个 spark 都用 pyspark
+  写来着，也没用 scala。最近天天都在写文档啥的，还得写毕业论文，觉得太没劲了就研究了一下优化的问题，顺便更新下博客，好久没更新了。
 draft: false
 math: true
 tags:

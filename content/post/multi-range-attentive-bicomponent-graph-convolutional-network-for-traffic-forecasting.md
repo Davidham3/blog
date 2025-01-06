@@ -2,6 +2,7 @@
 categories:
 - 论文阅读笔记
 date: 2020-01-03 20:18:29+0000
+description: AAAI 2020，原文链接：[https://arxiv.org/abs/1911.12093](https://arxiv.org/abs/1911.12093)。
 draft: false
 math: true
 tags:

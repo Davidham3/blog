@@ -2,6 +2,8 @@
 categories:
 - 论文阅读笔记
 date: 2018-09-17 15:22:43+0000
+description: KDD 2018.将图结构数据变换到网格状数据中，使用传统的一维卷积进行卷积。变换的方式是：针对每个特征的大小，对邻居结点进行排序，取这个特征前k大的数作为它邻居这列特征的k个值。如果邻居不够，那就用0来补。这样就能得到该顶点的邻居信息，组成一个矩阵，然后使用一维卷积。但是作者没说为什么非要取最大的k个数。原文链接：[Large-Scale
+  Learnable Graph Convolutional Networks](https://arxiv.org/abs/1808.03965?context=stat.ML)
 draft: false
 math: true
 tags:

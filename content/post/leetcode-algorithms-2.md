@@ -2,6 +2,7 @@
 categories:
 - algorithms
 date: 2018-02-24 13:29:05+0000
+description: 'leetcode algorithms #2. Title: Add Two Numbers'
 draft: false
 math: true
 tags:

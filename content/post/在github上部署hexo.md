@@ -1,6 +1,7 @@
 ---
 categories: 随笔
 date: 2018-02-20 16:53:50+0000
+description: 在GitHub Pages部署hexo博客
 draft: false
 math: null
 tags:

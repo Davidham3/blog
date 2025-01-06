@@ -2,6 +2,9 @@
 categories:
 - 论文阅读笔记
 date: 2019-04-19 16:40:41+0000
+description: TKDE 2019，网格流量预测，用一个模型同时预测每个网格的流入/流出流量和网格之间的转移流量，分别称为顶点流量和边流量，同时预测这两类流量是本文所解决的多任务预测问题。本文提出的是个框架，所以里面用什么组件应该都是可以的，文章中使用了
+  FCN。使用两个子模型分别处理顶点流量和边流量预测问题，使用两个子模型的输出作为隐藏状态表示，通过拼接或加和的方式融合，融合后的新表示再分别输出顶点流量和边流量。这篇文章和之前郑宇的文章一样，考虑了三种时序性质、融合了外部因素。损失函数从顶点流量预测值和真值之间的差、边流量预测值和真值之间的差、顶点流量预测值之和与边流量的预测值之差三个方面考虑。数据集是北京和纽约的出租车数据集。
+  [Flow Prediction in Spatio-Temporal Networks Based on Multitask Deep Learning](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8606218)
 draft: false
 math: true
 tags:

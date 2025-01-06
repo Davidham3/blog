@@ -1,5 +1,6 @@
 ---
 date: 2024-12-24 06:00:29+0000
+description: 本文讲一下如何快速启动一个Hugo博客。我之前的博客是部署在hexo上的，而且已经很久用写过了，现在要重启，由于hexo的环境部署依赖node，想换一套更好用的系统，Claude推荐我使用Hugo。
 draft: false
 math: null
 tags:

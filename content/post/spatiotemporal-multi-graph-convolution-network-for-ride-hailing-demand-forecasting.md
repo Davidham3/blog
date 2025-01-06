@@ -2,6 +2,11 @@
 categories:
 - 论文阅读笔记
 date: 2019-02-28 21:12:58+0000
+description: AAAI 2019，滴滴的网约车需求预测，5个点预测1个点。空间依赖建模上：以图的形式表示数据，从空间地理关系、区域功能相似度、区域交通连通性三个角度构造了三个不同的图，提出了多图卷积，分别用
+  k 阶 ChebNet 对每个图做图卷积，然后将多个图的卷积结果进行聚合(sum, average 等)成一个图；时间依赖建模上：提出了融合背景信息的 Contextual
+  Gated RNN (CGRNN)，用 ChebNet 对每个结点卷积后，得到他们的邻居表示，即每个结点的背景信息表示，与原结点特征拼接，用一个两层全连接神经网络计算出
+  T 个权重，将权重乘到历史 T 个时刻的图上，对历史值进行缩放，然后用一个共享的 RNN，针对每个结点形成的长度为 T 的时间序列建模，得到每个结点新的时间表示。最后预测每个点的网约车需求。原文地址：[Spatiotemporal
+  Multi-Graph Convolution Network for Ride-hailing Demand Forecasting](http://www-scf.usc.edu/~yaguang/papers/aaai19_multi_graph_convolution.pdf)
 draft: false
 math: true
 tags:

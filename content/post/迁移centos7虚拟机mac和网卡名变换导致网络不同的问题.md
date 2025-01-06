@@ -2,6 +2,7 @@
 categories:
 - 分布式平台
 date: 2018-06-12 11:15:17+0000
+description: vcenter迁移虚拟机的时候，迁移之后虚拟机网络不通。
 draft: false
 math: null
 tags:

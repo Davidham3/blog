@@ -1,5 +1,7 @@
 ---
 date: 2022-05-01 09:18:43+0000
+description: 'KDD 2016: RMTPP [Recurrent Marked Temporal Point Processes: Embedding
+  Event History to Vector](https://www.kdd.org/kdd2016/papers/files/rpp1081-duA.pdf)。经典论文，利用RNN近似条件强度函数，将传统点过程带入到神经点过程。'
 draft: false
 math: true
 tags:

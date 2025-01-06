@@ -2,6 +2,9 @@
 categories:
 - 论文阅读笔记
 date: 2018-12-05 15:56:49+0000
+description: '关于谱聚类的文章，主要包含了谱聚类和拉普拉斯矩阵的内容。最近研究 GCN 的原理的时候发现了这篇论文。Von Luxburg U. A
+  tutorial on spectral clustering[J]. Statistics and Computing, 2007, 17(4): 395-416.原文链接：[A
+  Tutorial on Spectral Clustering](https://arxiv.org/abs/0711.0189)'
 draft: false
 math: true
 tags:

@@ -2,6 +2,7 @@
 categories:
 - 论文阅读笔记
 date: 2018-03-04 18:59:20+0000
+description: CVPR 2015，ResNet，原文链接：[Deep Residual Learning for Image Recognition](https://arxiv.org/abs/1512.03385)
 draft: false
 math: true
 tags:

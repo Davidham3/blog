@@ -2,6 +2,7 @@
 categories:
 - 机器学习
 date: 2018-09-11 14:12:30+0000
+description: 最近给本科生当机器学习课程的助教，给他们出的作业题需要看这些图，懒得放本地了，直接放博客里。发现jupyter导出markdown好方便，放到博客里面正好，改都不用改。
 draft: false
 math: true
 tags:

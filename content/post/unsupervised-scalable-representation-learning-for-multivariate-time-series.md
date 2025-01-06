@@ -1,5 +1,7 @@
 ---
 date: 2022-05-19 14:54:43+0000
+description: NIPS 2019, [Unsupervised Scalable Representation Learning for Multivariate
+  Time Series](https://arxiv.org/abs/1901.10738)。T-loss。无监督多元时间序列表示模型。利用word2vec的负样本采样的思想学习时间序列的嵌入表示。代码：[UnsupervisedScalableRepresentationLearningTimeSeries](https://github.com/White-Link/UnsupervisedScalableRepresentationLearningTimeSeries)
 draft: false
 math: true
 tags:

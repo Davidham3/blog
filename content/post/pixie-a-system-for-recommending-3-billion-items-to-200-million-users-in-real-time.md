@@ -2,6 +2,8 @@
 categories:
 - 论文阅读笔记
 date: 2018-09-21 10:46:01+0000
+description: 'WWW 2018. 对随机游走进行了改进，提出了Pixie随机游走，实际上就是一个有偏的随机游走，根据相似度进行偏离，从而实现个性化推荐，而且使用了早停策略。原文链接：[Pixie:
+  A System for Recommending 3+ Billion Items to 200+ Million Users in Real-Time](https://arxiv.org/abs/1711.07601)'
 draft: false
 math: true
 tags:

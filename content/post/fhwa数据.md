@@ -2,6 +2,7 @@
 categories:
 - dataset
 date: 2018-07-12 14:05:06+0000
+description: FHWA数据数据地址：[https://www.fhwa.dot.gov/policyinformation/tables/tmasdata/](https://www.fhwa.dot.gov/policyinformation/tables/tmasdata/)数据包含了2011到2016年的全年数据。数据说明：[https://www.fhwa.dot.gov/policyinformation/tmguide/](https://www.fhwa.dot.gov/policyinformation/tmguide/)说明共有三版，但是数据对应的其实是最老的一个版本，2001年修订的那个文档。
 draft: false
 math: true
 tags:

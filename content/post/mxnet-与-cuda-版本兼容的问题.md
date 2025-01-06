@@ -2,6 +2,8 @@
 categories:
 - software
 date: 2019-08-02 20:22:10+0000
+description: 最近在做实验的时候发现了一个非常神奇的问题，搞得我一度很郁闷。我在 kaggle 上面写了个 mxnet symbolic 的程序，在测试集上效果不错，论文都写完了，结果拿回实验室的
+  GPU 上一跑，发现结果复现不了了，差了两个点。但我所有的实验都做了 10 次，如果说 1 次实验效果好还可以说是巧合，但这是 10 次实验啊。
 draft: false
 math: null
 tags:

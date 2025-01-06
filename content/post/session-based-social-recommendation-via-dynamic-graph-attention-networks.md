@@ -2,6 +2,8 @@
 categories:
 - 论文阅读笔记
 date: 2019-05-29 13:37:55+0000
+description: WSDM 2019，原文链接：[Session-based Social Recommendation via Dynamic Graph
+  Attention Networks](https://arxiv.org/abs/1902.09362)
 draft: false
 math: true
 tags:

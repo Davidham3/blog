@@ -1,5 +1,6 @@
 ---
 date: 2022-05-23 15:27:10+0000
+description: '[Semi-supervised Learning for Marked Temporal Point Processes](https://arxiv.org/pdf/2107.07729.pdf)。MTPP的半监督学习，模型称为SSL-MTPP。有标签的地方就用RMTPP，没有标签的地方用RMTPP的编码器和解码器来重构。两边的损失加在一起优化网络。'
 draft: false
 math: true
 tags:

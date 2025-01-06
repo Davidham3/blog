@@ -2,6 +2,8 @@
 categories:
 - 分布式平台
 date: 2018-07-05 20:54:26+0000
+description: Kafka是一个分布式、流式消息平台，是一套发布订阅系统，通俗来说就是Kafka producer发布数据至Kafka brokers，然后由Kafka
+  consumer从brokers拉取数据，进行消费。
 draft: false
 math: null
 tags:

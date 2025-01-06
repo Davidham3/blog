@@ -2,6 +2,8 @@
 categories:
 - 论文阅读笔记
 date: 2018-05-23 16:54:12+0000
+description: ACL 2018，基于LSTM+CRF，用word2vec对字符进行表示，然后用大规模自动分词的预料，将词进行表示，扔进LSTM获得细胞状态，与基于字符的LSTM的细胞状态相结合，得到序列的隐藏状态，然后套一个CRF。原文链接：[Chinese
+  NER Using Lattice LSTM](https://arxiv.org/abs/1805.02023)
 draft: false
 math: true
 tags:

@@ -1,5 +1,7 @@
 ---
 date: 2024-12-24 07:17:09+0000
+description: '[ICDE 2019：Computing Trajectory Similarity in Linear Time: A Generic
+  Seed-Guided Neural Metric Learning Approach](https://ieeexplore.ieee.org/abstract/document/8731427).提出的方法叫NEUTRAJ，主要解决轨迹相似度计算时的性能问题，在线性时间内计算完毕。这个方法是要用户提前选择一种非学习的度量方式，然后这个框架可以去拟合这个度量方式的值，因此这个框架可以支持很多度量方式，比如DTW，Frechet等。模型层面有两个创新，在RNN上增加了带有记忆模块的attention机制；另外是在损失的时候增加了排序信息。'
 draft: false
 math: true
 tags:

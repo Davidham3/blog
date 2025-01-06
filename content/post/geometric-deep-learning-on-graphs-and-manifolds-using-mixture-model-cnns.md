@@ -2,6 +2,8 @@
 categories:
 - 论文阅读笔记
 date: 2018-12-18 20:49:15+0000
+description: CVPR 2017. 这篇论文有点难，没看下去。。。原文链接：[Geometric deep learning on graphs and
+  manifolds using mixture model CNNs](https://arxiv.org/abs/1611.08402.pdf)
 draft: false
 math: true
 tags:

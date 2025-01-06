@@ -2,6 +2,7 @@
 categories:
 - dataset
 date: 2018-07-11 15:54:11+0000
+description: MnDOT的全称是Minnesota Department of Transportation。RTMC traffic data是其的一个子集。美国明尼苏达州双子城交通管理中心的交通数据。地址：[http://www.d.umn.edu/~tkwon/TMCdata/TMCarchive.html](http://www.d.umn.edu/~tkwon/TMCdata/TMCarchive.html)
 draft: false
 math: true
 tags:

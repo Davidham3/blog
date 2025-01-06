@@ -2,6 +2,8 @@
 categories:
 - 论文阅读笔记
 date: 2019-03-21 10:43:34+0000
+description: 'AAAI 2019。网格流量预测，两个问题：空间依赖动态性，另一个是周期平移。原文链接：[Revisiting Spatial-Temporal
+  Similarity: A Deep Learning Framework for Traffic Prediction](http://export.arxiv.org/abs/1803.01254)'
 draft: false
 math: true
 tags:

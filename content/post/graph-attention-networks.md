@@ -2,6 +2,9 @@
 categories:
 - 论文阅读笔记
 date: 2018-07-13 16:54:31+0000
+description: ICLR 2018。图注意力网络，使用 self-attention 来构建 graph attentional layer，attention
+  会考虑当前顶点所有的邻居对它的重要性，基于谱图理论的模型不能应用到其他不同结构的图上，而这个基于attention的方法能有效的解决这个问题。原文链接：[Graph
+  Attention Networks](https://arxiv.org/abs/1710.10903)
 draft: false
 math: true
 tags:

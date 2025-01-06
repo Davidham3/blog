@@ -2,6 +2,7 @@
 categories:
 - 机器学习
 date: 2018-06-14 19:33:30+0000
+description: 假设连续型随机变量服从高斯分布的朴素贝叶斯。发现自己实现的版本比sklearn的精度低了20%左右……研究了一下差在了哪里。
 draft: false
 math: true
 tags:

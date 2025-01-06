@@ -2,6 +2,7 @@
 categories:
 - 随笔
 date: 2018-07-13 23:01:12+0000
+description: 发现了一个特别好看的主题，yilia，但是已经不维护了，坑还挺多的，记录一下。
 draft: false
 math: null
 tags:

@@ -2,6 +2,7 @@
 categories:
 - 论文阅读笔记
 date: 2018-12-03 15:17:12+0000
+description: Layer Normalization，之前看到一篇论文用了这个LN层，看一下这个怎么实现。原文链接：[Layer Normalization](https://arxiv.org/abs/1607.06450.pdf)
 draft: false
 math: true
 tags:

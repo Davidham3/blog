@@ -2,6 +2,7 @@
 categories:
 - software
 date: 2018-07-14 20:35:43+0000
+description: 写完公式渲染不出来，比如\vec{i}_j就会出错
 draft: false
 math: null
 tags:

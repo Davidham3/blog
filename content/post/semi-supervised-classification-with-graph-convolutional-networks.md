@@ -2,6 +2,8 @@
 categories:
 - 论文阅读笔记
 date: 2018-07-02 20:04:20+0000
+description: ICLR 2017。图卷积中谱图领域理论上很重要的一篇论文，提升了图卷积的性能，使用切比雪夫多项式的1阶近似完成了高效的图卷积架构。原文链接：[Semi-Supervised
+  Classification with Graph Convolutional Networks. Kipf & Welling 2017](https://arxiv.org/abs/1609.02907v4)
 draft: false
 math: true
 tags:

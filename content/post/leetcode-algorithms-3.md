@@ -2,6 +2,7 @@
 categories:
 - algorithms
 date: 2018-02-24 16:13:34+0000
+description: 'leetcode algorithms #3. Title: Longest Substring Without Repeating Characters'
 draft: false
 math: true
 tags:

@@ -1,5 +1,7 @@
 ---
 date: 2022-04-26 14:38:05+0000
+description: 这是一篇讲事件序列度量学习的文章，提出的模型叫MeLES，Metric Learning for Event Sequences。[Event
+  sequence metric learning](https://arxiv.org/abs/2002.08232)
 draft: false
 math: true
 tags:

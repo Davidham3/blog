@@ -2,6 +2,7 @@
 categories:
 - 论文阅读笔记
 date: 2018-03-08 18:45:45+0000
+description: ECCV 2016, ResNet v2, 原文链接：[Identity Mappings in Deep Residual Networks](https://arxiv.org/abs/1603.05027)
 draft: false
 math: true
 tags:

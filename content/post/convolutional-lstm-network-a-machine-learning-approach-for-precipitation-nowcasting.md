@@ -2,6 +2,9 @@
 categories:
 - 论文阅读笔记
 date: 2018-09-27 15:11:55+0000
+description: 'NIPS 2015. 将 FC-LSTM 中的全连接换成了卷积，也就是将普通的权重与矩阵相乘，换成了卷积核对输入和隐藏状态的卷积，为了能捕获空间信息，将输入变成了4维的矩阵，后两维表示空间信息。两个数据集：Moving-MNIST
+  和 雷达云图数据集。原文链接：[Convolutional LSTM Network: A Machine Learning Approach for Precipitation
+  Nowcasting](https://arxiv.org/abs/1506.04214)'
 draft: false
 math: true
 tags:

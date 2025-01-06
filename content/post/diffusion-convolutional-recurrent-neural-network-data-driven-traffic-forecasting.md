@@ -2,6 +2,12 @@
 categories:
 - 论文阅读笔记
 date: 2018-07-31 14:37:10+0000
+description: 'ICLR 2018，DCRNN，模型借鉴了[Structured Sequence Modeling With Graph Convolutional
+  Recurrent Networks (ICLR 2017 reject)](https://davidham3.github.io/blog/2018/07/23/structured-sequence-modeling-with-graph-convolutional-recurrent-networks/)里面的DCRNN，将该模型应用于了交通预测上。而且后者的论文使用的卷积是Defferrard提出的图卷积，这篇论文中使用的是扩散卷积，这种扩散卷积使用的是随机游走，与[Diffusion-Convolutional
+  Neural Networks (NIPS 2016)](https://davidham3.github.io/blog/2018/07/19/diffusion-convolutional-neural-networks/
+  )的扩散卷积还不一样。构造出来的DCRNN使用了[Structured Sequence Modeling With Graph Convolutional Recurrent
+  Networks (ICLR 2017 reject)](https://davidham3.github.io/blog/2018/07/23/structured-sequence-modeling-with-graph-convolutional-recurrent-networks/)两种形式中的模型2，即使用扩散卷积学习出空间表示后，放入GRU中进行时间上的建模。原文链接：[Diffusion
+  Convolutional Recurrent Neural Network: Data-Driven Traffic Forecasting](http://arxiv.org/abs/1707.01926)'
 draft: false
 math: true
 tags:

@@ -2,6 +2,7 @@
 categories:
 - 论文阅读笔记
 date: 2018-07-23 09:29:28+0000
+description: 对看过的图神经网络做个总结，目前主要是GCN。
 draft: false
 math: null
 tags:

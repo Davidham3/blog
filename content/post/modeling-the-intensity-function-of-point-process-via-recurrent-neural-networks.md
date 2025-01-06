@@ -1,5 +1,7 @@
 ---
 date: 2022-05-25 15:01:51+0000
+description: 'AAAI 2017, Intensity RNN: [Modeling The Intensity Function Of Point
+  Process Via Recurrent Neural Networks](https://arxiv.org/pdf/1705.08982.pdf)。相比RMTPP，用LSTM。然后模型加了一个时间序列模块，主要是为了支持有时间序列信息的数据集。然后计算事件发生时间的损失时，用了一个高斯核函数。本质上还是MSE，没啥区别。'
 draft: false
 math: true
 tags:

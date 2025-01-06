@@ -2,6 +2,8 @@
 categories:
 - 论文阅读笔记
 date: 2020-05-13 17:07:14+0000
+description: 《Neural Collaborative Filtering》WWW 2017。这篇论文使用全连接神经网络实现了一个矩阵分解的推荐系统。给定一个user的特征表示，给定一个item的特征表示，通过神经网络输出用户对这个item感兴趣的分数。原文链接：[Neural
+  Collaborative Filtering](https://arxiv.org/abs/1708.05031)。
 draft: false
 math: true
 tags:

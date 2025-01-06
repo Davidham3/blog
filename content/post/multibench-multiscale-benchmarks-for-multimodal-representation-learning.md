@@ -1,5 +1,7 @@
 ---
 date: 2022-05-24 15:10:01+0000
+description: 'NIPS 2021, datasets and benchmarks track, [MULTIBENCH: Multiscale Benchmarks
+  for Multimodal Representation Learning](https://openreview.net/pdf?id=izzQAL8BciY)。代码：[MultiBench](https://github.com/pliang279/MultiBench)。这是个benchmark，涵盖15个数据集，10个模态，20个预测任务，6个研究领域。'
 draft: false
 math: true
 tags:

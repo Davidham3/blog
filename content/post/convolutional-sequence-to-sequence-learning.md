@@ -2,6 +2,8 @@
 categories:
 - 论文阅读笔记
 date: 2018-05-22 11:30:51+0000
+description: ICML 2017. Facebook 2017年的卷积版seq2seq。卷积加注意力机制，外加GLU，训练速度很快，因为RNN训练时依靠上一个元素的隐藏状态，CNN可以并行训练。原文链接：[Convolutional
+  Sequence to Sequence Learning](https://arxiv.org/abs/1705.03122)
 draft: false
 math: true
 tags:

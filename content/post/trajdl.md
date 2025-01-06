@@ -1,5 +1,6 @@
 ---
 date: 2025-01-06 12:41:49+0000
+description: 记录一下关于TrajDL的信息。TrajDL是我编写的第一个体系完整的python工具包，面向轨迹深度学习，目的是支持很多轨迹深度学习算法，包括轨迹表示学习、轨迹分类、下一位置预测等方法。目前已经在GitHub上开源，项目主页是：[https://github.com/Spatial-Temporal-Data-Mining/TrajDL](https://github.com/Spatial-Temporal-Data-Mining/TrajDL)，已经发布了0.1.0版本，可以在pypi上下载，官方文档是：[https://trajdl.readthedocs.io/en/latest/](https://trajdl.readthedocs.io/en/latest/)，可以通过这个文档查阅它的使用方法。
 draft: false
 math: null
 tags:

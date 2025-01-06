@@ -2,6 +2,7 @@
 categories:
 - 分布式平台
 date: 2017-08-21 16:13:25+0000
+description: Hadoop HA安装一：安装和配置ntp，ssh和jdk
 draft: false
 math: null
 tags:

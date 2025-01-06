@@ -2,6 +2,8 @@
 categories:
 - 论文阅读笔记
 date: 2019-03-07 09:03:16+0000
+description: 'T-GCN，arxiv上面的一篇文章，用 GCN 对空间建模，GRU 对时间建模，很简单的模型。没有对比近几年的图卷积在时空数据挖掘中的模型。原文地址：[T-GCN:
+  A Temporal Graph ConvolutionalNetwork for Traffic Prediction](https://arxiv.org/abs/1811.05320)'
 draft: false
 math: true
 tags:

@@ -2,6 +2,8 @@
 categories:
 - 论文阅读笔记
 date: 2018-05-10 15:35:47+0000
+description: 'IJCAI 2018，大体思路：使用Kipf & Welling 2017的近似谱图卷积得到的图卷积作为空间上的卷积操作，时间上使用一维卷积对所有顶点进行卷积，两者交替进行，组成了时空卷积块，在加州PeMS和北京市的两个数据集上做了验证。但是图的构建方法并不是基于实际路网，而是通过数学方法构建了一个基于距离关系的网络。原文链接：[Spatio-Temporal
+  Graph Convolutional Networks: A Deep Learning Framework for Traffic Forecasting](https://arxiv.org/abs/1709.04875v4)'
 draft: false
 math: true
 tags:

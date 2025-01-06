@@ -1,5 +1,7 @@
 ---
 date: 2022-05-17 13:11:14+0000
+description: 'NIPS 2019: [Fully Neural Network based Model for General Temporal Point
+  Processes](https://arxiv.org/abs/1905.09690v3)。创新点是之前的条件强度函数有一个积分项，这个积分项不是很好求，本文提出用一个FNN计算累积强度函数，这样条件强度函数的计算只需要计算累积强度函数对事件时间间隔的偏导数就可以得到了。代码：[https://github.com/omitakahiro/NeuralNetworkPointProcess](https://github.com/omitakahiro/NeuralNetworkPointProcess)'
 draft: false
 math: true
 tags:

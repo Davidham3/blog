@@ -2,6 +2,7 @@
 categories:
 - 分布式平台
 date: 2017-08-21 16:13:59+0000
+description: zookeeper通常以“复制模式”运行于一个计算机集群上，这个计算机集群被称为一个“集合体”。zookeeper通过复制来实现高可用性，只要集合体中半数以上的机器处于可用状态，它就可以提供服务。出于这个原因，一个集合体通常包含奇数台机器。
 draft: false
 math: null
 tags:

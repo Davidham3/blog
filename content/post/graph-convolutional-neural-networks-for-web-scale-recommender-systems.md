@@ -2,6 +2,8 @@
 categories:
 - 论文阅读笔记
 date: 2018-06-17 21:24:48+0000
+description: KDD 2018。使用图卷积对顶点进行表示，学习顶点的 embedding ，通过卷积将该顶点的邻居信息融入到向量中。原文链接：[Graph
+  Convolutional Neural Networks for Web-Scale Recommender Systems](https://arxiv.org/abs/1806.01973v1)。
 draft: false
 math: true
 tags:

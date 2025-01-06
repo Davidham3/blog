@@ -1,5 +1,7 @@
 ---
 date: 2022-04-27 15:37:58+0000
+description: ICLR 2018 workshop, [Time-dependent representation for neural event sequence
+  prediction](https://arxiv.org/abs/1708.00065)。事件序列的表示学习模型。主要是对事件的嵌入表示有了一些创新，加入了对事件duration的考虑。模型整体还是RNN架构。
 draft: false
 math: true
 tags:

@@ -2,6 +2,7 @@
 categories:
 - 论文阅读笔记
 date: 2019-06-25 16:34:02+0000
+description: ICML 2019，原文地址：[Self-Attention Graph Pooling](https://arxiv.org/abs/1904.08082)
 draft: false
 math: true
 tags:

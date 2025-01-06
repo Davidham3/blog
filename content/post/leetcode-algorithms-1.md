@@ -2,6 +2,7 @@
 categories:
 - algorithms
 date: 2018-02-24 00:20:18+0000
+description: 'leetcode algorithms #1. Title: Two sum'
 draft: false
 math: true
 tags:

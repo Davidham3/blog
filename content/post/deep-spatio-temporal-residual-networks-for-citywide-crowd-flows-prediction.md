@@ -2,6 +2,9 @@
 categories:
 - 论文阅读笔记
 date: 2019-03-08 10:26:16+0000
+description: AAAI 2017, ST-ResNet，网格流量预测，用三个相同结构的残差卷积神经网络对近邻时间、周期、趋势（远期）分别建模。与 RNN
+  相比，RNN 无法处理序列长度过大的序列。三组件的输出结果进行集成，然后和外部因素集成，得到预测结果。原文地址：[Deep Spatio-Temporal Residual
+  Networks for Citywide Crowd Flows Prediction](https://arxiv.org/abs/1610.00081)
 draft: false
 math: true
 tags:

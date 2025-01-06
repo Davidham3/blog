@@ -2,6 +2,8 @@
 categories:
 - 论文阅读笔记
 date: 2019-07-12 19:57:39+0000
+description: 'IJCAI 2019. 原文链接：[STG2Seq: Spatial-temporal Graph to Sequence Model
+  for Multi-step Passenger  Demand Forecasting](https://arxiv.org/abs/1905.10069.pdf)'
 draft: false
 math: true
 tags:

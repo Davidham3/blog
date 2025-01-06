@@ -2,6 +2,9 @@
 categories:
 - 论文阅读笔记
 date: 2018-04-18 10:43:36+0000
+description: AAAI 2018，以人体关节为图的顶点，构建空间上的图，然后通过时间上的关系，连接连续帧上相同的关节，构成一个三维的时空图。针对每个顶点，对其邻居进行子集划分，每个子集乘以对应的权重向量，得到时空图上的卷积定义。实现时使用Kipf
+  & Welling 2017的方法实现。原文链接：[Spatial Temporal Graph Convolutional Networks for Skeleton-Based
+  Action Recognition](https://arxiv.org/abs/1801.07455)
 draft: false
 math: true
 tags:

@@ -2,6 +2,8 @@
 categories:
 - 论文阅读笔记
 date: 2018-03-02 11:19:50+0000
+description: PAMI 2016，大体思路：把训练集中的所有样本模糊化，扔到三层的卷积神经网络中，把输出和原始图片做一个loss，训练模型即可。原文链接：[Image
+  Super-Resolution Using Deep Convolutional Networks](https://arxiv.org/abs/1501.00092)
 draft: false
 math: true
 tags:

@@ -2,6 +2,7 @@
 categories:
 - software
 date: 2019-04-07 12:18:41+0000
+description: '[MXNet: Dependency Engine for Deep Learning](https://mxnet.incubator.apache.org/versions/master/architecture/note_engine.html)'
 draft: false
 math: null
 tags:

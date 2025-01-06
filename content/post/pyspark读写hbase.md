@@ -2,6 +2,7 @@
 categories:
 - 分布式平台
 date: 2019-04-10 17:26:30+0000
+description: 应甲方需求，写一个 pyspark 读写 HBase 的教程。主要包含了基本读写方法和自定义 Converter 的方法。
 draft: false
 math: null
 tags:

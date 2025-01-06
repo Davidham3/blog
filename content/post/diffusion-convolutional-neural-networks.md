@@ -2,6 +2,9 @@
 categories:
 - 论文阅读笔记
 date: 2018-07-19 11:17:40+0000
+description: NIPS 2016。DCNNs，写的云里雾里的，不是很懂在干什么。。。就知道是融入了转移概率矩阵，和顶点的特征矩阵相乘，算出每个顶点到其他所有顶点的
+  $j$ 步转移的特征与转移概率的乘积，成为新的顶点表示，称为diffusion-convolutional representation，然后乘以一个卷积核，套一个激活，卷积就定义好了。应用还是在顶点分类与图分类上。原文链接：[Diffusion-Convolutional
+  Neural Networks](https://arxiv.org/abs/1511.02136)。
 draft: false
 math: true
 tags:

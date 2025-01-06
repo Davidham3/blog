@@ -2,6 +2,7 @@
 categories:
 - software
 date: 2019-04-19 15:02:46+0000
+description: ubuntu /boot 满了怎么办，[解决方案](https://askubuntu.com/questions/171209/my-boot-partition-hit-100-and-now-i-cant-upgrade-cant-remove-old-kernels-to)
 draft: false
 math: null
 tags:

@@ -2,6 +2,9 @@
 categories:
 - 论文阅读笔记
 date: 2018-08-11 10:14:13+0000
+description: NIPS 2015. 在训练seq2seq的时候，比如像机器翻译，训练的时候，每个输出y，它所依据的前一个词，都是正确的。但是在预测的时候，输出的这个词依照的上一个词，是模型输出的词，无法保证是正确的，这就会造成模型的输入和预测的分布不一致，可能会造成错误的累积。本文提出了scheduled
+  sampling来处理这个问题。原文链接：[Scheduled Sampling for Sequence Prediction with Recurrent
+  Neural Networks](https://arxiv.org/abs/1506.03099)
 draft: false
 math: true
 tags:

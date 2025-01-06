@@ -1,5 +1,7 @@
 ---
 date: 2022-09-09 14:24:04+0000
+description: 'PVLDB 2022. [DeepTEA: Effective and Efficient Online Time-dependent
+  Trajectory Outlier  Detection](https://www.vldb.org/pvldb/vol15/p1493-han.pdf)'
 draft: false
 math: true
 tags:

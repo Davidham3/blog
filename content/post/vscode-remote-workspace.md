@@ -2,6 +2,7 @@
 categories:
 - software
 date: 2018-06-15 09:46:40+0000
+description: 使用vscode管理远程服务器上的文件与项目。
 draft: false
 math: null
 tags:

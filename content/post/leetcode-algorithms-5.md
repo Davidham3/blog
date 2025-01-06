@@ -2,6 +2,7 @@
 categories:
 - algorithms
 date: 2018-07-18 21:31:18+0000
+description: 'leetcode algorithms #5. Title: Longest Palindromic Substring'
 draft: false
 math: true
 tags:

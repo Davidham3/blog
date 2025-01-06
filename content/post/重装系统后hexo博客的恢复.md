@@ -2,6 +2,7 @@
 categories:
 - 随笔
 date: 2019-11-09 00:21:08+0000
+description: 先重装一下node.js，然后把GitHub上面的密钥换一下好像就OK了。。。
 draft: false
 math: null
 tags:

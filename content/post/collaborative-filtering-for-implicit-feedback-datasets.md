@@ -2,6 +2,8 @@
 categories:
 - 论文阅读笔记
 date: 2018-01-18 18:58:25+0000
+description: ICDM 2008. 推荐系统：协同过滤在隐反馈数据上的应用，这个算法在GitHub上有人实现了，性能很强。这是我的阅读笔记，把论文当中的主要部分抽出来了。原文链接：[Collaborative
+  Filtering for Implicit Feedback Datasets](https://ieeexplore.ieee.org/abstract/document/4781121/)
 draft: false
 math: true
 tags:

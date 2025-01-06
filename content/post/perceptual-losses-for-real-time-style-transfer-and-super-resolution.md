@@ -2,6 +2,9 @@
 categories:
 - 论文阅读笔记
 date: 2018-03-01 19:01:46+0000
+description: ECCV 2016，实时风格迁移与超分辨率化的感知损失，这篇论文是在cs231n里面看到的，正好最近在研究风格迁移。一作是Justin Johnson，2017春的cs231n的主讲之一。这篇论文的主要内容是对Gatys等人的风格迁移在优化过程中进行了优化，大幅提升了性能。主要原理就是，之前Gatys等人的论文是利用已经训练好的VGG19，求loss并利用VGG的结构反向求导更新图片。由于VGG结构复杂，这样反向更新速度很慢，改进方法是再另外设计一个神经网络，将内容图片作为输入，输出扔到VGG中做两个loss，然后反向传播更新当前这个神经网络的参数，这样训练出来的神经网络就可能将任意的内容图片扔进去，输出为风格迁移后的图片，这也就解决了速度的问题。这也就是将Feed-forward
+  image transformation与style transfer结合在一起。原文链接：[Perceptual Losses for Real-Time Style
+  Transfer and Super-Resolution](https://arxiv.org/abs/1603.08155)
 draft: false
 math: true
 tags:

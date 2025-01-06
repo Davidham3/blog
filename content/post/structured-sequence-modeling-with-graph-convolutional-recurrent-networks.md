@@ -2,6 +2,8 @@
 categories:
 - 论文阅读笔记
 date: 2018-07-23 10:59:15+0000
+description: ICLR 2017(reject)，两个模型，第一个是将数据扔到Defferrard的图卷积里面，然后将输出扔到LSTM里面。第二个模型是将RNN中的矩阵乘法换成了图卷积操作，最后对动态的mnist进行了识别。原文链接：[Structured
+  Sequence Modeling With Graph Convolutional Recurrent Networks](https://arxiv.org/abs/1612.07659v1)
 draft: false
 math: null
 tags:

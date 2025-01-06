@@ -2,6 +2,7 @@
 categories:
 - software
 date: 2019-12-20 11:18:36+0000
+description: 刚才开源了我们组在AAAI 2020上一篇论文的代码和数据，上传数据的时候超了GitHub的100M大小限制，GitHub说让我用lfs解决，研究了一下怎么传，记录一下，以后说不定还会用到。
 draft: false
 math: null
 tags:

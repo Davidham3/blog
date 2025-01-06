@@ -2,6 +2,9 @@
 categories:
 - 论文阅读笔记
 date: 2018-07-19 18:53:17+0000
+description: NIPS 2017。提出的方法叫 GraphSAGE，针对的问题是之前的 NRL 是 transductive，不能泛化到新结点上，而作者提出的
+  GraphSAGE 是 inductive。主要考虑了如何聚合顶点的邻居信息，对顶点或图进行分类。原文链接：[Inductive Representation
+  Learning on Large Graphs](https://arxiv.org/abs/1706.02216)
 draft: false
 math: true
 tags:

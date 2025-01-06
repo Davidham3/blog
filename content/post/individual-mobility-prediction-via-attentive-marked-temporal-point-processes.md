@@ -1,5 +1,7 @@
 ---
 date: 2022-05-20 15:35:04+0000
+description: '[Individual Mobility Prediction via Attentive Marked Temporal Point
+  Processes](https://arxiv.org/pdf/2109.02715.pdf)。代码：[https://github.com/Kaimaoge/AMTPP\_for\_Mobility](https://github.com/Kaimaoge/AMTPP_for_Mobility)。结合深度学习的TPP，用注意力机制增强对事件的表示，使用混合ALL分布对事件间的时间间隔建模，通过学习OD转移概率矩阵给定O预测D。'
 draft: false
 math: true
 tags:

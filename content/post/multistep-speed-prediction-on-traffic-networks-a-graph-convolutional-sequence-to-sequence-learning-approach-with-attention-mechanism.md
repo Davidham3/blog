@@ -2,6 +2,9 @@
 categories:
 - 论文阅读笔记
 date: 2019-01-21 15:17:52+0000
+description: AGC-Seq2Seq，投的是TRC。清华大学和高德地图合作的一项研究。作者采用了 GCN + Seq2Seq + Attention 的混合模型，将路网中的边构建成图中的结点，在
+  GCN 上做了改进，将邻接矩阵扩展到 k 阶并与一个权重矩阵相乘，类似 HA-GCN(2016)，实现了邻居信息聚合时权重的自由调整，可以处理有向图。时间关系上使用
+  Seq2Seq + Attention 建模，完成了北京市二环线的多步的车速预测，对比的方法中没有近几年出现的时空预测模型。
 draft: false
 math: true
 tags:

@@ -2,6 +2,7 @@
 categories:
 - 分布式平台
 date: 2017-08-21 16:13:31+0000
+description: Hadoop HA安装二：MySQL双机热备
 draft: false
 math: null
 tags:

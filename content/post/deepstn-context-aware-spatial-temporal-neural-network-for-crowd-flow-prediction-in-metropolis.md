@@ -2,6 +2,9 @@
 categories:
 - 论文阅读笔记
 date: 2019-05-08 16:40:48+0000
+description: 'AAAI 2019，网格流量预测，对比ST-ResNet，抛出三个问题，卷积捕获的空间范围小、人口流动和区域的功能相关、之前的融合机制不好。改了一下残差卷积，给
+  POI 信息增加了时间维度，多组件的信息提前融合，减少了参数，稳定模型训练。原文链接：[DeepSTN+: Context-aware Spatial-Temporal
+  Neural Network for Crowd Flow Prediction in Metropolis](https://github.com/FIBLAB/DeepSTN/blob/master/docs/5624_AAAI19_DeepSTN%2B_Camera_Ready.pdf)'
 draft: false
 math: true
 tags:

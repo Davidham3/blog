@@ -2,6 +2,8 @@
 categories:
 - 论文阅读笔记
 date: 2018-07-09 17:03:00+0000
+description: 'IJCAI 2018，看了一部分，还没看完。原文链接：[GeoMAN: Multi-level Attention Networks for
+  Geo-sensory Time Series Prediction](https://www.ijcai.org/proceedings/2018/476)'
 draft: false
 math: true
 tags:

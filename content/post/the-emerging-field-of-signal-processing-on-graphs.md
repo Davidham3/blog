@@ -2,6 +2,9 @@
 categories:
 - 论文阅读笔记
 date: 2018-08-03 11:06:12+0000
+description: 'IEEE Signal Processing Magazine 2013, 原文链接：[The Emerging Field of Signal
+  Processing on Graphs: Extending High-Dimensional Data Analysis to Networks and Other
+  Irregular Domains](https://arxiv.org/abs/1211.0053)'
 draft: false
 math: true
 tags:

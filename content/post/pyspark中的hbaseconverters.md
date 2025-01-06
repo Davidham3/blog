@@ -2,6 +2,7 @@
 categories:
 - 分布式平台
 date: 2019-04-06 16:43:29+0000
+description: 最近项目上有个需求，使用 pyspark 读取 HBase 中存储的 java.math.BigDecimal。
 draft: false
 math: null
 tags:

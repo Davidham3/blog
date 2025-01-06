@@ -2,6 +2,7 @@
 categories:
 - software
 date: 2019-04-07 13:02:17+0000
+description: '[MXNet: Optimizing Memory Consumption in Deep Learning](https://mxnet.incubator.apache.org/versions/master/architecture/note_memory.html)'
 draft: false
 math: null
 tags:

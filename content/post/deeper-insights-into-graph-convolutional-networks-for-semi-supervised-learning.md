@@ -2,6 +2,9 @@
 categories:
 - 论文阅读笔记
 date: 2018-10-31 21:58:41+0000
+description: AAAI 2018。这篇论文很有趣，讲的是 GCN 堆得过多了之后，效果会变差的问题。作者分析了一下为什么会变差，主要是因为 GCN 的本质实际上是对每个结点的邻居特征和自身特征做线性组合，权重和邻接矩阵相关，所以对于顶点分类问题来说，如果堆得层数多了，就会让一个结点的特征聚合越来越多邻居的特征，让大家都变得相似，从而使得类间的相似度增大，自然分类效果就差了。作者提出了两个方法解决这个问题，算训练上的
+  trick 吧。原文链接：[Deeper Insights into Graph Convolutional Networks for Semi-Supervised
+  Learning](https://arxiv.org/abs/1801.07606)
 draft: false
 math: true
 tags:
