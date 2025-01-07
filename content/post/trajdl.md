@@ -7,6 +7,7 @@ tags:
 - deep learning
 - trajectory
 title: TrajDL
+image: https://trajdl.readthedocs.io/en/latest/_static/wide-logo.svg
 ---
 
 记录一下关于TrajDL的信息。TrajDL是我编写的第一个体系完整的python工具包，面向轨迹深度学习，目的是支持很多轨迹深度学习算法，包括轨迹表示学习、轨迹分类、下一位置预测等方法。
