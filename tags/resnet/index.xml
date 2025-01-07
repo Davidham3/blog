@@ -1,0 +1,675 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>ResNet on Davidham的博客</title><link>https://davidham3.github.io/blog/tags/resnet/</link><description>Recent content in ResNet on Davidham的博客</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Fri, 19 Apr 2019 16:40:41 +0000</lastBuildDate><atom:link href="https://davidham3.github.io/blog/tags/resnet/index.xml" rel="self" type="application/rss+xml"/><item><title>Flow Prediction in Spatio-Temporal Networks Based on Multitask Deep Learning</title><link>https://davidham3.github.io/blog/p/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/</link><pubDate>Fri, 19 Apr 2019 16:40:41 +0000</pubDate><guid>https://davidham3.github.io/blog/p/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/</guid><description>&lt;p>TKDE 2019，网格流量预测，用一个模型同时预测每个网格的流入/流出流量和网格之间的转移流量，分别称为顶点流量和边流量，同时预测这两类流量是本文所解决的多任务预测问题。本文提出的是个框架，所以里面用什么组件应该都是可以的，文章中使用了 FCN。使用两个子模型分别处理顶点流量和边流量预测问题，使用两个子模型的输出作为隐藏状态表示，通过拼接或加和的方式融合，融合后的新表示再分别输出顶点流量和边流量。这篇文章和之前郑宇的文章一样，考虑了三种时序性质、融合了外部因素。损失函数从顶点流量预测值和真值之间的差、边流量预测值和真值之间的差、顶点流量预测值之和与边流量的预测值之差三个方面考虑。数据集是北京和纽约的出租车数据集。 &lt;a class="link" href="https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&amp;amp;arnumber=8606218" target="_blank" rel="noopener"
+>Flow Prediction in Spatio-Temporal Networks Based on Multitask Deep Learning&lt;/a>&lt;/p>
+&lt;p>&lt;strong>Abstract&lt;/strong>——预测流量（如车流、人流、自行车流）包括结点的流入、流出流量以及不同的结点间的转移，在交通运输系统中的时空网络里扮演着重要的角色。然而，这个问题受多方面复杂因素影响，比如不同地点的空间关系、不同时段的时间关系、还有像活动和天气这样的外部因素，所以这是个有挑战性的问题。此外，一个结点的流量（结点流量）和结点之间的转移（边流量）互相影响。为了解决这个问题，我们提出了一个多任务的深度学习框架可以同时预测一个时空网络上的结点流量和边流量。基于全卷积网络，我们的方法设计了两个复杂的模型分别处理结点流量预测和边流量预测。这两个模型通过组合中间层的隐藏表示连接，而且共同训练。外部因素通过一个门控融合机制引入模型。在边流量预测模型上，我们使用了一个嵌入组件来处理顶点间的系数转移问题。我们在北京和纽约的出租车数据集上做了实验。实验结果显示比11种方法都好。&lt;/p>
+&lt;h1 id="1-introduction">1 Introduction
+&lt;/h1>&lt;p>时空网络（ST-networks），如运输网络和传感器网络，在世界上到处都是，每个点有个空间坐标，每个边具有动态属性。时空网络中的流量有两种表示，如图 1，顶点流量（一个结点的流入和流出流量）和边流量（结点间的转移流量）。在运输系统中，这两类流量可通过4种方式测量，1. 近邻道路的车辆数，2. 公交车的旅客数，3. 行人数，4. 以上三点。图1b 是一个示意图。取顶点 $r_1$ 为例，我们可以根据手机信令和车辆 GPS 轨迹分别计算得到流入流量是 3，流出流量是 3。$r_3$ 到 $r_1$ 的转移是 3，$r_1$ 到 $r_2$ 和 $r_4$ 的转移是 2 和 1。因此，如图1c所示，我们能拿到两种类型的流量，四个结点的流入和流出分别是 $(3,3,0,5)$ 和 $(3,2,5,1)$。所有的边转移都看作是在有向图上发生的。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Fig1.JPG"
+loading="lazy"
+alt="Figure1"
+>&lt;/p>
+&lt;p>预测这类的流量对公共安全，交通管理，网络优化很重要。取人口流动做一个例子，2015 年跨年夜的上海，踩踏事故导致 36 人死亡。如果能预测每个区域之间的人流转移，这样的悲剧就可以通过应急预案避免或减轻。&lt;/p>
+&lt;p>然而，同时预测所有结点和边的转移是很难的：&lt;/p>
+&lt;ol>
+&lt;li>&lt;strong>Scale and complexity&lt;/strong>: 一个地方的流入和流出依赖于它的邻居，有近邻的也有遥远的，因为人们会在这些区域之间转移，尤其是有活动的时候。给定一个城市，有 $N$ 个地点，$N$ 很大，那么就有 $N^2$ 种转移方式，尽管这些转移可能不会同时发生。因此，预测地点的流量，要么是流入、流出或是转移流量，我们需要考虑地点之间的依赖关系。而且，预测也考虑过去时段的流量。此外，我们不能单独地预测每个地点的流量，因为城市内的地点间是相连的，相关的，互相影响的。复杂度和尺度都是传统机器学习模型，如概率图模型在解决这个问题时面临的巨大挑战。&lt;/li>
+&lt;li>&lt;strong>Model multiple correlations and external factors&lt;/strong>: 我们需要对三种关系建模来处理预测问题。第一个是不同地点流量的空间相关性，包含近邻和遥远的。第二个是一个地点不同时段的流量间的时间关系，包括时间近邻、周期和趋势性。第三，流入流出流量和转移流量高度相关，互相影响。一个区域的转入流量之和是这个区域的流入流量。精确地预测一个区域的流出流量可以让预测其他区域的转移流量更精确，反之亦然。此外，这些流量受外部因素影响，如活动、天气、事故等。如何整合这些信息还是个难题。&lt;/li>
+&lt;li>&lt;strong>Dynamics and sparsity&lt;/strong>: 由于 $N^2$ 种情况，区域间随时间改变的转移流量比流入流出流量要大得多。一个地点和其他地点间的转移会在接下来的时段发生，可能是 $N^2$ 中的很小一部分（稀疏）。预测这样的稀疏转移也是个难题。&lt;/li>
+&lt;/ol>
+&lt;p>为了解决上述挑战，我们提出了多任务深度学习框架MDL（图4）来同时预测顶点流量和边流量。我们的贡献有三点：&lt;/p>
+&lt;ul>
+&lt;li>MDL 设计了一个深度神经网络来预测顶点流量（命名为 NODENET），另一个深度神经网络预测边流量（命名为 EDGENET）。通过将他们的隐藏状态拼接来连接这两个深度神经网络，并一同训练。此外，这两类流量的相关性通过损失函数中的正则项来建模。基于深度学习的模型可以处理复杂性和尺度等问题，同时多任务框架增强了每类流量的预测性能。&lt;/li>
+&lt;li>NODENET 和 EDGENET 都是 three-stream 全卷积网络（3S-FCNs），closeness-stream, period-stream, trend-stream 捕获三种不同的时间相关性。每个 FCN 也同时捕获近邻和遥远的空间关系。一个门控组件用来融合时空相关性和外部因素。为了解决转移稀疏的问题，EDGENET 中我们设计了一个嵌入组件，用一个隐藏低维表示编码了稀疏高维的输入。&lt;/li>
+&lt;li>我们在北京和纽约的 taxicab data 上评估了方法。结果显示我们的 MDL 超越了其他 11 种方法。&lt;/li>
+&lt;/ul>
+&lt;p>表 1 列出了这篇文章中出现的数学符号。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Table1.JPG"
+loading="lazy"
+alt="Table1"
+>&lt;/p>
+&lt;h1 id="2-problem-formulation">2 Problem Formulation
+&lt;/h1>&lt;p>&lt;em>&lt;strong>Definition 1(Node).&lt;/strong>&lt;/em> 一个空间地图基于经纬度被分成 $I \times J$ 个网格，表示为 $V = \lbrace r_1, r_2, &amp;hellip;, r_{I\times J} \rbrace$，每个元素表示一个空间节点，如图2(a)。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Fig2.JPG"
+loading="lazy"
+alt="Figure2"
+>&lt;/p>
+&lt;p>令 $(\tau, x, y)$ 为时空坐标，$\tau$ 表示时间戳，$(x, y)$ 表示空间点。一个物体的移动可以记为一个按时间顺序的空间轨迹，起点和终点表示为 $s = (\tau_s, x_s, y_s)$ 和 $e = (\tau_e, x_e, y_e)$，表示出发地和目的地。$\mathbb{P}$ 表示所有的起止对。&lt;/p>
+&lt;p>&lt;em>&lt;strong>Definition 2(In/out flows).&lt;/strong>&lt;/em> 给定一组起止对 $\mathbb{P}$。$\mathcal{T} = \lbrace t_1, \dots t_T\rbrace$ 表示一个时段序列。对于地图上第 $i$ 行第 $j$ 列的顶点 $r_{ij}$，时段 $t$ 流出和流入的流量分别定义为：&lt;/p>
+$$\tag{1}
+\mathcal{X}\_t(0, i, j) = \vert \lbrace (s,e) \in \mathbb{P} : (x\_s, y\_s) \in r\_{ij} \wedge \tau\_s \in t \rbrace \vert
+$$$$\tag{2}
+\mathcal{X}\_t(1, i, j) = \vert \lbrace (s,e) \in \mathbb{P} : (x\_e, y\_e) \in r\_{ij} \wedge \tau\_e \in t \rbrace \vert
+$$&lt;p>其中 $\mathcal{X}_t(0, :, :)$ 和 $\mathcal{X}_t(1, :, :)$ 表示流出和流入矩阵。$(x, y) \in r_{ij}$ 表示点 $(x, y)$ 在顶点 $r_{ij}$ 上，$\tau_e \in t$ 表示时间戳 $\tau_e$ 在时段 $t$ 内。流入和流出矩阵在特定时间的矩阵如图2。&lt;/p>
+&lt;p>考虑两类流量（流入和流出），一个随时间变化的空间地图一般表示一个时间有序的张量序列，每个张量对应地图在特定时间的一个快照。详细来说，每个张量包含两个矩阵：流入矩阵和流出矩阵，如图 2 所示。&lt;/p>
+&lt;p>让 $V$ 表示时空网络中的顶点集，$N \triangleq \vert V \vert = I \times J$ 是顶点数。一个时间图包含 $T$ 个离散的不重叠的时段，表示为有向图 $G_{t_1}, \dots G_{t_T}$ 的时间有序序列。图 $G_t = (V, E_t)$ 捕获了时段 $t$ 时空系统上的拓扑状态。对于每个图 $G_t$ (其中 $t = t_1, \dots, t_T$) 存在一个对应的权重矩阵 $\mathbf{S}_t \in \mathbb{R}^{N \times N}$，表示时段 $t$ 的带权有向边。在我们的研究中，时段 $t$ 顶点 $r_s$ 到顶点 $r_e$ 的边的权重，是一个非负标量，表示 $r_s$ 到 $r_e$ 的 &lt;em>transition&lt;/em>，时段 $t$ 上两个顶点间没有连接的话，对应的元素在 $\mathbf{S}_t$ 中为 0。&lt;/p>
+&lt;p>&lt;em>&lt;strong>Definition 3 (Transition).&lt;/strong>&lt;/em> 给定一组起止点对 $\mathbb{P}$。$\mathcal{T} = \lbrace t_1, \dots, t_T \rbrace$ 是一组时段的序列。$\mathbf{S}_t$ 是时段 $t$ 的转移矩阵，$r_s$ 到 $r_e$ 之间的转移表示为 $\mathbf{S}_t(r_s, r_e)$，定义为：&lt;/p>
+$$\tag{3}
+\mathbf{S}\_t(r\_s, r\_e) = \vert \lbrace (s,e) \in \mathbb{P} : (x\_s, y\_s) \in r\_s \wedge (x\_e, y\_e) \in r\_e \wedge \tau\_s \in t \wedge \tau\_e \in t \rbrace \vert
+$$&lt;p>其中 $r_s, r_e \in V$ 是起始顶点和终止顶点。$(x, y) \in r$ 表示点 $(x, y)$ 在网格 $r$ 上。$\tau_s \in t$ 和 $\tau_e \in t$ 表示时间戳 $\tau_s$ 和 $\tau_e$ 都在时段 $t$ 内。我们考虑转移至发生在一个特定的时段内。因此，对于实际应用来说，我们可以预测起始和结束都发生在未来的转移。&lt;/p>
+&lt;h2 id="21-converting-time-varying-graphs-into-tensors">2.1 Converting time-varying graphs into tensors
+&lt;/h2>&lt;p>我们将每个时间上的图转为张量。给定时间 $t$ 有向图 $G_t = (V, E_t)$，我们先做展开，然后计算有向带权矩阵（转移矩阵 $\mathbf{S}_t$），最后给定一个张量 $\mathcal{M}_t \in \mathbf{R}^{2N \times I \times J}$。图 3 是示意图。(a)给定时间 $t$ 4 个顶点 6 条边的图。(b)首先展开成有向图。(c)对每个顶点，有一个流入的转移，还有个流出的转移，由一个向量表示（维度是8）。取 $r_1$ 为例，它的流出和流入转移向量分别为 $[0, 2, 0, 1]$ 和 $[0, 0, 3, 0]$，拼接后得到一个向量 $[0, 2, 0, 1, 0, 0, 3, 0]$，包含流出和流入的信息。(d)最后，我们将矩阵 reshape 成一个张量，每个顶点根据原来地图有一个固定的空间位置，保护了空间相关性。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Fig3.JPG"
+loading="lazy"
+alt="Figure3"
+>&lt;/p>
+&lt;h2 id="22-flow-prediction-problem">2.2 FLow Prediction Problem
+&lt;/h2>&lt;p>流量预测，简单来说，是时间序列问题，目标是给定历史 $T$ 个时段的观测值，预测 $T+1$ 时段每个区域的流量。但是我们的文章中流量有两个层次，流入和流出以及区域间的转移流量。我们的目标是同时预测这些流量。此外，我们还融入了外部因素如房价信息，天气状况，温度等等。这些外部因素可以收集并提供一些额外有用的信息。相关的符号在表 1 之中。&lt;/p>
+&lt;p>&lt;em>&lt;strong>Problem 1.&lt;/strong>&lt;/em> 给定历史观测值 $\lbrace \mathcal{X}_t, \mathcal{M}_t \mid t = t_1, \dots, t_T \rbrace$，外部特征 $\mathcal{E}_T$，我们提出一个模型共同预测 $\mathcal{X}_{t_{T+1}}$ 和 $\mathcal{M}_{t_{T+1}}$。&lt;/p>
+&lt;h1 id="3-multitask-deep-learning">3 Multitask Deep Learning
+&lt;/h1>&lt;p>图 4 展示了我们的 MDL 框架，包含 3 个组成部分，分别用于数据转换，顶点流量建模，边流量建模。我们首先将轨迹（或订单）数据转换成两类流量，i) 顶点流量表示成有时间顺序的张量序列 $\lbrace\mathcal{X}_t \mid t = t_1, \dots, t_T \rbrace$ (1a); ii) 边流量是一个有时间顺序的图序列（转移矩阵）$\lbrace\mathbf{S}_t \mid t = t_1, \dots, t_T \rbrace$ (2a)，之后再根据 2.1 节的方法转换为张量的序列 $\lbrace\mathcal{M}_t \mid t = t_1, \dots, t_T \rbrace$ (2b)。这两类像视频一样的数据之后放到 NODENET 和 EDGENET 中。以 NODENET 为例，它选了三个不同类型的片段，放入 3S-FCN 中，对时间相关性建模。在这个模型中，每部分的 FCN 可以通过多重卷积捕获空间相关性。NODENET 和 EDGENET 中间的隐藏表示通过一个 BRIDGE 组件连接，使两个模型可以共同训练。我们使用一个嵌入层来处理转移稀疏的问题。一个门控融合组件用来整合外部信息。顶点流量和边流量用一个正则化来建模。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Fig4.JPG"
+loading="lazy"
+alt="Figure4"
+>&lt;/p>
+&lt;h2 id="31-edgenet">3.1 EDGENET
+&lt;/h2>&lt;p>根据上述的转换方法，每个时段的转移图可以转换成一个张量 $\mathcal{M}_t \in \mathbb{R}^{2N \times I \times J}$。对于每个顶点 $r_{ij}$，它最多有 $2N$ 个转移概率，包含 $N$ 个流入和 $N$ 个流出。然而，对于一个确定的时段，顶点间的转移是稀疏的。受 NLP 的嵌入方法启发，我们提出了使用空间嵌入方法，解决这样的稀疏和高维问题。详细来说，空间嵌入倾向于学习一个将 $2N$ 维映射到 $k$ 维的函数：&lt;/p>
+$$\tag{4}
+\mathcal{Z}\_t(:, i, j) = \mathbf{W}\_m \mathcal{M}\_t (:, i, j) + \mathbf{b}\_m, 1 \leq i \leq I, 1 \leq j \leq J
+$$&lt;p>其中 $\mathbf{W}_m \in \mathbb{R}^{k \times 2N}$ 和 $\mathbf{b}_m \in \mathbb{R}^k$ 是参数。所有的结点共享参数。$\mathcal{M}_t(:, i, j) \in \mathbb{R}^{2N}$ 表示 $(i, j)$ 的向量。&lt;/p>
+&lt;p>流量，比如城市中的交通流，总是受时空依赖关系影响。为了捕获不同的时间依赖（近邻、周期、趋势），Zhang et al. 提出了深度时空残差网络，沿时间轴选择不同的关键帧。受这点的启发，我们选择近邻、较近、远期关键帧来预测时段 $t$，分别表示为 $M^{dep}_t = \lbrace M^{close}_t, M^{period}_t, M^{trend}_t \rbrace$，如下：&lt;/p>
+&lt;ul>
+&lt;li>&lt;strong>Closeness&lt;/strong> dependents:
+$$M^{close}\_t = \lbrace \mathcal{Z}\_{t-l\_c}, \dots, \mathcal{Z}\_{t-1} \rbrace$$&lt;/li>
+&lt;li>&lt;strong>Period&lt;/strong> dependents:
+$$M^{period}\_t = \lbrace \mathcal{Z}\_{t-l\_p}, \mathcal{Z}\_{t-(l\_p - 1) \cdot p}, \dots, \mathcal{Z}\_{t-p} \rbrace$$&lt;/li>
+&lt;li>&lt;strong>Trend&lt;/strong> dependents:
+$$M^{trend}\_t = \lbrace \mathcal{Z}\_{t-l\_q \cdot q}, \mathcal{Z}\_{t-(l\_q - 1)\cdot q}, \dots, \mathcal{Z}\_{t-q} \rbrace$$&lt;/li>
+&lt;/ul>
+&lt;p>其中 $p$ 和 $q$ 是周期和趋势范围。$l_c$, $l_p$ 和 $l_q$ 是三个序列的长度。&lt;/p>
+&lt;p>输出（即下个时段的预测）和输入有相同的分辨率。这样的人物和图像分割问题很像，可以通过全卷积网络 (FCN) [22] 处理。&lt;/p>
+&lt;p>受到这个启发，我们提出了三组件的 FCN，如图 4，来捕获时间近邻、周期和趋势依赖。每个组件都是个 FCN，包含了很多卷积（图 5）。根据卷积的性质，一个卷积层可以捕获空间近邻关系。随着卷积层数的增加，FCN 可以捕获更远的依赖，甚至是城市范围大小的空间依赖。然而，这样的深层卷积网络很难训练。因此我们使用残差连接来帮助训练。类似残差网络中的残差连接，我们使用一个包含 BN，ReLU，卷积的块。令三个近邻、周期、趋势三组件的输出分别为 $\mathcal{M}_c$, $\mathcal{M}_p$, $\mathcal{M}_q$。不同的顶点在近邻、周期、趋势上可能有不同的性质。为了解决这个问题，我们提出使用一个基于参数矩阵的融合方式（图 4 中的 PM 融合）：&lt;/p>
+$$\tag{5}
+\mathcal{M}\_{fcn} = \mathbf{W}\_c \odot \mathcal{M}\_c + \mathbf{W}\_p \odot \mathcal{M}\_p + \mathbf{W}\_q \odot \mathcal{M}\_q
+$$&lt;p>其中 $\odot$ 是哈达玛积，$\mathbf{W}$ 是参数，调整三种时间依赖关系的影响。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Fig5.JPG"
+loading="lazy"
+alt="Figure5"
+>&lt;/p>
+&lt;h2 id="32-nodenet-and-bridge">3.2 NODENET and BRIDGE
+&lt;/h2>&lt;p>类似 EDGENET，NODENET 也是一个 3S-GCN，我们选择近邻、较近、遥远的关键帧作为近邻、周期、趋势依赖。区别是 NODENET 没有嵌入层因为输入的通道数只有 2。这三种不同的依赖放入三个不同的 FCN 中，输出通过 PM 融合组件融合（图 4）。然后，得到 3S-FCN 的输出，表示为 $\mathcal{X}_{fcn} \in \mathbb{R}^{C_x \times I \times J}$。&lt;/p>
+&lt;p>考虑顶点流量与边流量的相关性，所以从 NODENET 和 EDGENET 学习到的表示应该被连起来。为了连接 NODENET 和 EDGENET，假设 NODENET 和 EDGENET 的隐藏表示分别为 $\mathcal{X}_{fcn}$ 和 $\mathcal{M}_{fcn}$。我们提出两种融合方法：&lt;/p>
+&lt;p>&lt;strong>SUM Fusion:&lt;/strong> 加和融合方法直接将两种表示相加：&lt;/p>
+$$\tag{6}
+\mathcal{H}(c, :, :) = \mathcal{X}\_{fcn}(c, :, :) + \mathcal{M}\_{fcn}(c, :, :), c = 0, \dots, C - 1
+$$&lt;p>其中 $C$ 是 $\mathcal{X}_{fcn}$ 和 $\mathcal{M}_{fcn}$ 的通道数，$\mathcal{H} \in \mathbb{R}^{C \times I \times J}$。显然这种融合方法受限于两种表示必须有相同的维度。&lt;/p>
+&lt;p>&lt;strong>CONCAT Fusion:&lt;/strong> 为了从上述的限制中解脱，我们提出了另一种融合方法。顺着通道拼接两个隐藏表示：&lt;/p>
+$$\tag{7}
+\mathcal{H}(c, :, :) = \mathcal{X}\_{fcn}(c, :, :), c=0, \dots, C\_x - 1
+$$$$\tag{8}
+\mathcal{H}(C\_x + c, :, :) = \mathcal{M}\_{fcn}(c, :, :), c=0, \dots, C\_m - 1
+$$&lt;p>$C_x$ 和 $C_m$ 分别是两个隐藏表示的通道数。$\mathcal{H} \in \mathbb{R}^{(C_x + C_m) \times I \times J}$。拼接融合实际上可以通过互相强化更好地融合顶点流量和边流量。像 BRIDGE 一样我们也讨论了其他的融合方式（4.3 节）。&lt;/p>
+&lt;p>在拼接融合中，我们在 NODENET 和 EDGENET 中分别加了一层卷积。卷积用来将合并的隐藏特征 $\mathcal{H}$ 映射到 不同通道大小的输出上，即 $\mathcal{X}_{res} \in \mathbb{R}^{2 \times I \times J}$ 和 $\mathcal{M}_{res} \in \mathbb{R}^{2N \times I \times J}$，如图 6。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Fig6.JPG"
+loading="lazy"
+alt="Figure6"
+>&lt;/p>
+&lt;h2 id="33-fusing-external-factors-using-a-gating-mechanism">3.3 Fusing External Factors Using a Gating Mechanism
+&lt;/h2>&lt;p>外部因素，活动、天气会影响时空网络不同区域的流量。举个例子，一起事故可能会阻塞一个局部区域的交通，一场暴风雨可能会减少整个城市的流量。这样的外部因素就像一个开关，如果它打开了那流量会产生巨大的变化。基于这个思路，我们开发了一种基于门控机制的融合，如图 6 所示。时间 $t$ 的外部因素表示为 $\mathcal{E}_t \in \mathbb{R}^{l_e \times I \times J}$，$\mathcal{E}_t(:, i, j) \in \mathbb{R}^{l_e}$ 表示一个特定顶点的外部信息。我们可以通过下式获得 EDGENET 的门控值：&lt;/p>
+$$\tag{9}
+\mathbf{F}\_m(i, j) = \sigma(\mathbf{W}\_e(:, i, j) \cdot \mathcal{E}\_t(:, i, j) + \mathbf{b}\_e(i, j)), 1 \leq i \leq I, 1 \leq j \leq J
+$$&lt;p>其中 $\mathbf{W}_e \in \mathbb{R}^{l_e \times I \times J}$ 和 $\mathbf{b}_e \in \mathbb{R}^{I \times J}$ 是参数。$\mathbf{F}_m \in \mathbb{R}^{I \times J}$ 是 GATING 的输出，$\mathbf{F}_m(i, j)$ 是对应时空网络中结点 $r_{ij}$ 的门控值。$\sigma(\cdot)$ 是 sigmoid 激活函数，$\cdot$ 是两向量的内积。&lt;/p>
+&lt;p>然后我们使用 PRODUCT 融合方式：&lt;/p>
+$$\tag{10}
+\hat{\mathcal{M}}\_t(c, :, :) = \text{tanh}(\mathbf{F}\_m \odot \mathcal{M}\_{Res}(c, :, :)), c = 0, \dots, 2N - 1
+$$&lt;p>类似的，NODENET 最后在时间 $t$ 的预测结果为：&lt;/p>
+$$\tag{11}
+\hat{\mathcal{X}}\_t(c, :, :) = \text{tanh} (\mathbf{F}\_x \odot \mathcal{X}\_{Res}(c, :, :)), c = 0, 1
+$$&lt;p>其中 $\mathbf{F}_x \in \mathbb{R}^{I \times J}$ 是 GATING 的另一个输出。对于顶点流量和边流量使用不同的门控值的一个原因是外部因素对流入/流出流量和不同地点之间的转移流量的影响是不一致的。&lt;/p>
+&lt;h2 id="34-losses">3.4 Losses
+&lt;/h2>&lt;p>令 $\phi$ 为 EDGENET 中所有的参数，我们的目标是通过最小化目标函数学习这些参数：&lt;/p>
+$$\tag{12}
+\mathop{\mathrm{argmin}}\limits\_{\phi} \mathcal{J}\_{edge} = \sum\_{t \in \mathcal{T}}\sum^{2N-1}\_{c=0} \Vert Q^c\_t \odot (\hat{\mathcal{M}}\_t(c, :, :) - \mathcal{M}\_t(c, :, :)) \Vert^2\_F
+$$&lt;p>其中 $Q^c_t$ 是指示矩阵，表示 $\mathcal{M}_t(c, :, :)$ 中所有非零元素。$\mathcal{T}$ 是可用的时段，$\Vert \cdot \Vert_F$ 是矩阵的 F 范数。&lt;/p>
+&lt;p>类似的，$\theta$ 是 NODENET 的参数，目标函数是：&lt;/p>
+$$\tag{13}
+\mathop{\mathrm{argmin}}\limits\_{\theta} \mathcal{J}\_{node} = \sum\_{t \in \mathcal{T}}\sum^1\_{c=0} \Vert P^c\_t \odot (\hat{\mathcal{X}}\_t(c, :, :) - \mathcal{X}\_t(c, :, :)) \Vert^2\_F
+$$&lt;p>其中 $P^c_t$ 是指示矩阵，表示 $\mathcal{X}_t(c, :, :)$ 中所有非零元素。我们知道对于一个结点来说，它的转入流量之和就是它的流入流量，转出流量之和就是流出流量。定义 2 中定义，$\hat{\mathcal{X}}_t(0, :, :)$ 和 $\hat{\mathcal{X}}_t(1, :, :)$ 分别是流出和流入矩阵。根据 2.1 节定义的方法构建转移矩阵，可知前 $N$ 个通道表示转出流量，后 $N$ 个通道表示转入流量。因此，有下面的损失函数：&lt;/p>
+$$\tag{14}
+\mathop{\mathrm{argmin}}\limits\_{\theta, \phi} \sum\_{t \in \mathcal{T}} \sum\_i \sum\_j (\Vert \hat{\mathcal{X}}\_t(0, i, j) - \sum^{N-1}\_{c=0} \hat{\mathcal{M}}\_t(c,i,j) \Vert^2 + \Vert \hat{\mathcal{M}}\_t(1,i,j) - \sum^{2N-1}\_{c=N} \hat{\mathcal{M}}\_t(c,i,j) \Vert^2)
+$$&lt;p>或者等价的可以写成&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/EQ1.JPG"
+loading="lazy"
+alt="EQ15"
+>&lt;/p>
+&lt;p>最后，我们获得融合的损失：&lt;/p>
+$$\tag{16}
+\mathop{\mathrm{argmin}}\limits\_{\theta, \phi} \lambda\_{node} \mathcal{J}\_{node} + \lambda\_{edge} \mathcal{J}\_{edge} + \lambda\_{mdl} \mathcal{J}\_{mdl}
+$$&lt;p>其中，$\lambda_{node}$, $\lambda_{edge}$, $\lambda_{mdl}$ 是可调节的参数。&lt;/p>
+&lt;h3 id="341-optimization-algorithm">3.4.1 Optimization Algorithm
+&lt;/h3>&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Alg1.JPG"
+loading="lazy"
+alt="Alg1"
+>&lt;/p>
+&lt;p>算法 1 是 MDL 的训练过程。1-4 行是构建训练样例。7-8 行是用批量样本优化目标函数。&lt;/p>
+&lt;h1 id="4-experiments">4 Experiments
+&lt;/h1>&lt;p>两个数据集 &lt;strong>TaxiBJ&lt;/strong> 和 &lt;strong>TaxiNYC&lt;/strong>，看表 2。我们使用 RMSE 和 MAE 作为评价指标。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Table2.JPG"
+loading="lazy"
+alt="Table2"
+>&lt;/p>
+&lt;h2 id="41-settings">4.1 Settings
+&lt;/h2>&lt;h3 id="411-datasets">4.1.1 Datasets
+&lt;/h3>&lt;p>我们使用表 3 中的两个数据集。每个数据集包含两个子集，轨迹/出行和外部因素，细节如下：&lt;/p>
+&lt;ul>
+&lt;li>&lt;strong>TaxiBJ&lt;/strong>: 北京出租车 GPS 轨迹数据有四个时段：20130101-20131030, 20140301-20140630, 20150501-20150630, 201501101-20160410。我们用最后 4 个星期作为测试集，之前的数据作为训练集。&lt;/li>
+&lt;li>&lt;strong>TaxiNYC&lt;/strong>: NYC 2011 到 2014 年的出租车订单数据。订单数据包含上车和下车的时间。上车和下车地点。最后四个星期作为测试集。&lt;/li>
+&lt;/ul>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Table3.JPG"
+loading="lazy"
+alt="Table3"
+>&lt;/p>
+&lt;h3 id="412-baselines">4.1.2 Baselines
+&lt;/h3>&lt;p>HA, ARIMA, SARIMA, VAR, RNN, LSTM. GRU, ST-ANN, ConvLSTM, ST-ResNet, MRF.&lt;/p>
+&lt;h3 id="413-preprocessing">4.1.3 Preprocessing
+&lt;/h3>&lt;p>MDL 的输出，我们用 $\text{tanh}$ 作为最后的激活函数。我们用最大最小归一化。评估的时候，将预测值转换为原来的值。对于外部因素，使用 one-hot，假期和天气放入二值向量中，用最大最小归一化把温度和风速归一化。&lt;/p>
+&lt;h3 id="414-hyperparameters">4.1.4 Hyperparameters
+&lt;/h3>&lt;p>$\lambda_{node} = 1$ 和 $\lambda_{edge} = 1$，$\lambda_{mdl} = 0.0005$，$p$ 和 $q$ 按经验设定为一天和一周。三个依赖序列的长度分别为 $l_c \in \lbrace 1, 2, 3\rbrace$, $l_p \in \lbrace 1,2,3 \rbrace$, $l_q \in \lbrace 1,2,3 \rbrace$。卷积的数量是 5 个。训练集的 90% 用来训练，10% 来验证，用早停选最好的参数。然后使用所有的数据训练模型。网络参数通过随机初始化，Adam 优化。batch size 32。学习率 $\lbrace 0.01, 0.005, 0.001, 0.0005, 0.0001, 0.00005 \rbrace$。&lt;/p>
+&lt;h3 id="415-evaluation-metrics">4.1.5 Evaluation Metrics
+&lt;/h3>&lt;p>RMSE 和 MAE。&lt;/p>
+&lt;h2 id="42-results">4.2 Results
+&lt;/h2>&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Table4.JPG"
+loading="lazy"
+alt="Table4"
+>&lt;/p>
+&lt;p>&lt;strong>Node Flow Prediction.&lt;/strong> 我们先比流入和流出流量的预测。表 4 展示了两个数据集上的评价指标结果。MDL 和 MRF 比其他所有的方法多要好。我们的 MDL 在 NYC 的数据集上明显比 MRF 好。BJ 的数据集上，MDL 比 MRF 差不多。原因是 NYC 数据集比 BJ 数据集大了三倍。换句话说，在大的数据集上，我们的方法比 MRF 更好。我们也注意到训练 MRF 很好使，在 BJ 数据集上训练了一个星期。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Table5.JPG"
+loading="lazy"
+alt="Table5"
+>&lt;/p>
+&lt;p>&lt;strong>Results of Edge Flow Prediction.&lt;/strong> 表6 展示了边流量预测。边流量预测的实验很费时。MDL 比其他的都好。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Table6.JPG"
+loading="lazy"
+alt="Table6"
+>&lt;/p>
+&lt;h2 id="43-evaluation-on-fusing-mechanisms">4.3 Evaluation on Fusing Mechanisms
+&lt;/h2>&lt;p>融合 NODENET 和 EDGENET 有 CONCAT 和 SUM 两种方法。融合外部因素有 GATED 和 SIMPLE 融合，或者不使用。因此总共有 6 种方法。如表 7。使用同样的超参数设定。我们发现 CONCAT + GATING 比其他的方法好。&lt;/p>
+&lt;h2 id="44-evaluation-on-model-hyper-parameters">4.4 Evaluation on Model Hyper-parameters
+&lt;/h2>&lt;h3 id="441-effect-of-training-data-size">4.4.1 Effect of Training Data Size
+&lt;/h3>&lt;p>我们选了 NYC 3 个月，6 个月，1 年，3 年数据。$l_c = 3$, $l_p = 1$, $l_q = 1$。图 8 是结果。我们观察到数据越多，效果越好。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Fig8.JPG"
+loading="lazy"
+alt="Figure8"
+>&lt;/p>
+&lt;h3 id="442-effect-of-network-depth">4.4.2 Effect of Network Depth
+&lt;/h3>&lt;p>图 9 展示了网络深度在 NYC 3 个月数据集上的影响。网络越深，RMSE 会下降，因为网络越深越能捕获更大范围的空间依赖。然而，网络更深 RMSE 就会上升，这是因为网络加深后训练会变得困难。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Fig9.JPG"
+loading="lazy"
+alt="Figure9"
+>&lt;/p>
+&lt;h3 id="443-effect-of-multi-task-component">4.4.3 Effect of multi-task component
+&lt;/h3>&lt;p>表 8 和图 10 展示了多任务组件的影响。&lt;/p>
+&lt;p>我们可以看到转移流量预测任务大多数情况下可以提升，$\lambda_{node} = \lambda_{edge} = 1$，$\lambda_{mdl}=0.1$，我们的模型获得最好的效果，两种任务都获得更好的结果，证明了多任务可以互相提升。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Table8.JPG"
+loading="lazy"
+alt="Table8"
+>&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Fig10.JPG"
+loading="lazy"
+alt="Figure10"
+>&lt;/p>
+&lt;h2 id="45-flow-predictions">4.5 Flow Predictions
+&lt;/h2>&lt;p>图 11 描绘了我们的 MDL 在 NYC 上预测两个节点未来一小时的数据。结点 (10, 1)，总是比 (8, 3) 高。我们的模型在预测曲线上更精确。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Fig11.JPG"
+loading="lazy"
+alt="Figure11"
+>&lt;/p></description></item><item><title>Spatio-Temporal Graph Convolutional Networks: A Deep Learning Framework for Traffic</title><link>https://davidham3.github.io/blog/p/spatio-temporal-graph-convolutional-networks-a-deep-learning-framework-for-traffic/</link><pubDate>Thu, 10 May 2018 15:35:47 +0000</pubDate><guid>https://davidham3.github.io/blog/p/spatio-temporal-graph-convolutional-networks-a-deep-learning-framework-for-traffic/</guid><description>&lt;p>IJCAI 2018，大体思路：使用Kipf &amp;amp; Welling 2017的近似谱图卷积得到的图卷积作为空间上的卷积操作，时间上使用一维卷积对所有顶点进行卷积，两者交替进行，组成了时空卷积块，在加州PeMS和北京市的两个数据集上做了验证。但是图的构建方法并不是基于实际路网，而是通过数学方法构建了一个基于距离关系的网络。原文链接：&lt;a class="link" href="https://arxiv.org/abs/1709.04875v4" target="_blank" rel="noopener"
+>Spatio-Temporal Graph Convolutional Networks: A Deep Learning Framework for Traffic Forecasting&lt;/a>&lt;/p>
+&lt;h1 id="摘要">摘要
+&lt;/h1>&lt;p>实时精确的交通预测对城市交通管控和引导很重要。由于交通流的强非线性以及复杂性，传统方法并不能满足中长期预测的要求，而且传统方法经常忽略对时空数据的依赖。在这篇文章中，我们提出了一个新的深度学习框架，时空图卷积(Spatio-Temporal Graph Convolutional Networks)，来解决交通领域的时间序列预测问题。我们在图上将问题形式化，并且建立了完全卷积的结构，并不是直接应用传统的卷积以及循环神经单元，这可以让训练速度更快，参数更少。实验结果显示通过在多尺度的交通网络上建模，STGCN模型可以有效地捕获到很全面的时空相关性并且在各种真实数据集上表现的要比很多state-of-the-art算法好。&lt;/p>
+&lt;h1 id="引言">引言
+&lt;/h1>&lt;p>交通运输在每个人的生活中都扮演着重要的角色。根据2015年的调查，美国的司机们平均每天要在车上呆48分钟。这种情况下，精确的实时交通状况预测对于路上的用户，private sector和政府来说变得至关重要。广泛使用的交通服务，如交通流控制、路线规划和导航，也依赖于高质量的交通状况预测。总的来说，多尺度的交通预测的研究很有前景而且是城市交通流控制和引导的基础，也是智能交通系统的一个主要功能。&lt;/p>
+&lt;p>在交通研究中，交通流的基本变量，也就是速度、流量和密度，通常作为监控当前交通状态以及未来预测的指示指标。根据预测的长度，交通预测大体分为两个尺度：短期(5~30min)，中和长期预测(超过30min)。大多数流行的统计方法(比如，线性回归)可以在短期预测上表现的很好。然而，由于交通流的不确定性和复杂性，这些方法在相对长期的预测上不是那么的有效。&lt;/p>
+&lt;p>之前在中长期交通预测上的研究可以大体的分为两类：动态建模和数据驱动的方法。动态建模使用了数学工具（比如微分方程）和物理知识通过计算模拟来形式化交通问题[Vlahogiani, 2015]。为了达到一个稳定的状态，模拟进程不仅需要复杂的系统编程，还需要消耗大量的计算资源。模型中不切实际的假设和化简也会降低预测的精度。因此，随着交通数据收集和存储技术的快速发展，一大群研究者正在将他们的目光投向数据驱动的方法。
+典型的统计学和机器学习模型是数据驱动方法的两种体现。在时间序列分析上，自回归移动平均模型（ARIMA）和它的变形是众多统一的方法中基于传统统计学的方法[Ahmed and Cook, 1979; Williams and Hoel, 2003; Lippi $et al.$, 2013]。然而，这种类型的模型受限于时间序列的平稳分布，而且不能考虑时空相关性。因此，这些方法限制了高度非线性的交通流的表示能力。最近，传统的统计方法在交通预测上已经受到了机器学习方法的冲击。这些模型可以获得更高的精度，对更复杂的数据建模，比如k近邻（KNN），支持向量机（SVM）和神经网络（NN）。&lt;/p>
+&lt;p>&lt;strong>深度学习方法&lt;/strong> 最近，深度学习已经被广泛且成功地应用于各式各样的交通任务中，在最近的工作中已经取得了很显著的成果，比如，深度置信网络（DBN）[Jia &lt;em>et al.&lt;/em>, 2016; Huang &lt;em>et al.&lt;/em>, 2014]和层叠自编码器(stacked autoencoder)(SAE)[Lv &lt;em>et al.&lt;/em>, 2015; Chen &lt;em>et al.&lt;/em>, 2016]。然而，这些全连接神经网络很难从输入中提取空间和时间特征。而且，空间属性的严格限制甚至完全缺失，这些网络的表示能力被限制的很严重。&lt;/p>
+&lt;p>为了充分利用空间特征，一些研究者使用了卷积神经网络来捕获交通网络中的临近信息，同时也在时间轴上部署了循环神经网络。通过组合长短期记忆网络[Hochreiter and Schmidhuber, 1997]和1维卷积，Wu和Tan[2016]首先提出一个特征层面融合的架构CLTFP来预测短期交通状况。尽管它采取了一个很简单的策略，CLTFP仍然是第一个尝试对时间和空间规律性对齐的方法。后来，Shi &lt;em>et al.&lt;/em>[2015]提出了卷积LSTM，这是一个带有嵌入卷积层的全连接LSTM的扩展。然而，常规的卷积操作限制了模型只能处理常规的网格结构（如图像或视频），而不是其他的大部分领域（比如Graph）。与此同时，循环神经网络对于序列的学习需要迭代训练，这会导致误差的积累。更进一步地说，循环神经网络（包括基于LSTM的RNN）的难以训练和计算量大是众所周知的。&lt;/p>
+&lt;p>为了克服这些问题，我们引入了一些策略来有效的对交通流的时间动态和空间依赖进行建模。为了完全利用空间信息，我们通过一个广义图对交通网络建模，而不是将交通流看成各个离散的部分（比如网格或碎块）。为了处理循环神经网络的缺陷，我们在时间轴上部署了一个全卷积结构来阻止累积效应（cumulative effects）并且加速模型的训练过程。综上所述，我们提出了一个新的神经网络架构，时空图卷积网络，来预测交通情况。这个架构由多个时空图卷积块组成，这些都是图卷积层和卷积序列学习层（convolutional sequence learning layers）的组合，用来对时间和空间依赖关系进行建模。&lt;/p>
+&lt;p>我们的主要贡献可以归纳为以下三点：&lt;/p>
+&lt;ol>
+&lt;li>我们研究了在交通领域时间与空间依赖结合的好处。为了充分利用我们的知识，这是在交通研究中第一次应用纯卷积层来同时从图结构的时间序列中提取时空信息。&lt;/li>
+&lt;li>我们提出了一个新的由时空块组成的神经网络结构。由于这个架构中是纯卷积操作，它比基于RNN的模型的训练速度快10倍以上，而且需要的参数更少。这个架构可以让我们更有效地处理更大的路网，这部分将在第四部分展示。&lt;/li>
+&lt;li>我们在两个真实交通数据集上验证了提出来的网络。这个实验显示出我们的框架比已经存在的在多长度预测和网络尺度上的模型表现的更好。&lt;/li>
+&lt;/ol>
+&lt;h1 id="准备工作">准备工作
+&lt;/h1>&lt;h2 id="路网上的交通预测">路网上的交通预测
+&lt;/h2>&lt;p>交通预测是一个典型的时间序列预测问题，也就是预测在给定前M个观测样本接下来H个时间戳后最可能的交通流指标（比如速度或交通流），&lt;/p>
+&lt;p>$$&lt;/p>
+&lt;pre>&lt;code>\tag{1} \hat{v}\_{t+1}, ..., \hat{v}\_{t+H} = \mathop{\arg\min}\_{v\_{t+1},...,v\_{t+H}}logP(v\_{t+1},...,v\_{t+H}\vert v\_{t-M+1},...v\_t)
+&lt;/code>&lt;/pre>
+&lt;p>$$&lt;/p>
+&lt;p>这里$v_t \in \mathbb{R}^n$是$n$个路段在时间戳$t$观察到的一个向量，每个元素记录了一条路段的历史观测数据。&lt;/p>
+&lt;p>在我们的工作中，我们在一个图上定义了一个交通网络，并专注于结构化的交通时间序列。观测到的样本$v_t$间不是相互独立的，而是在图中两两相互连接的。因此，数据点$v_t$可以被视为定义在权重为$w_{ij}$，如图1展示的无向图（或有向图）$\mathcal{G}$上的一个信号。在第$t$个时间戳，在图$\mathcal{G_t}=(\mathcal{V_t}, \mathcal{\varepsilon}, W)$, $\mathcal{V_t}$是当顶点的有限集，对应在交通网络中$n$个监测站；$\epsilon$是边集，表示观测站之间的连通性；$W \in \mathbb{R^{n \times n}}$表示$\mathcal{G_t}$的邻接矩阵。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/spatio-temporal-graph-convolutional-networks-a-deep-learning-framework-for-traffic/Fig1.PNG"
+loading="lazy"
+alt="Fig1"
+>&lt;/p>
+&lt;h2 id="图上的卷积">图上的卷积
+&lt;/h2>&lt;p>传统网格上的标准卷积很明显是不能应用在广义图上的。现在有两个基本的方法正在探索如何泛化结构化数据上的CNN。一个是扩展卷积的空间定义[Niepert &lt;em>et al.&lt;/em>, 2016]，另一个是使用图傅里叶变换在谱域中进行操作[Bruna &lt;em>et al.&lt;/em>, 2013]。前一个方法重新将顶点安排至确定的表格形式内，然后就可以使用传统的卷积方法了。后者引入了谱框架，在谱域中应用图卷积，经常被称为谱图卷积。一些后续的研究通过将时间复杂度从$O(n^2)$降至线性[Defferrard &lt;em>et al.&lt;/em>, 2016;Kipf and Welling, 2016]使谱图卷积的效果更好。
+我们基于谱图卷积的定义引入图卷积操作“$\ast_{\mathcal{G}}$”的符号，也就是一个核$\Theta$和信号$x \in \mathbb{R}^n$的乘法，&lt;/p>
+$$\tag{2} \Theta \ast\_{\mathcal{G}}x=\Theta(L)x=\Theta(U \Lambda U^T)x=U\Theta(\Lambda)U^Tx$$&lt;p>这里图的傅里叶基$U \in \mathbb{R}^{n \times n}$是归一化的拉普拉斯矩阵$L=I_n-D^{-1/2}WD^{-1/2}= U \Lambda U^T \in \mathbb{R}^{n \times n}$的特征向量组成的矩阵，其中$I_n$是单位阵，$D \in \mathbb{R}^{n \times n}$是对角的度矩阵$D_{ii}=\sum_j{W_{ij}}$；$\Lambda \in \mathbb{R}^{n \times n}$是$L$的特征值组成的矩阵，卷积核$\Theta(\Lambda)$是一个对角矩阵。通过这个定义，一个图信号$x$是被一个核$\Theta$通过$\Theta$和图傅里叶变换$U^Tx$[Shuman &lt;em>et al.&lt;/em>, 2013]过滤的。&lt;/p>
+&lt;h1 id="提出的模型">提出的模型
+&lt;/h1>&lt;h2 id="网络架构">网络架构
+&lt;/h2>&lt;p>在这部分，我们详细说明了时空图卷积网络的框架。如图二所示，STGCN有多个时空卷积块组成，每一个都是像一个“三明治”结构的组成，有两个门序列卷积层和一个空间图卷积层在中间。每个模块的细节如下。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/spatio-temporal-graph-convolutional-networks-a-deep-learning-framework-for-traffic/Fig2.PNG"
+loading="lazy"
+alt="Fig2"
+>&lt;/p>
+&lt;p>图二：时空图卷积网络的架构图。STGCN的架构有两个时空卷积块和一个全连接的在末尾的输出层组成。每个ST-Conv块包含了两个时间门卷积层，中间有一个空间图卷积层。每个块中都使用了残差连接和bottleneck策略。输入$v_{t-M+1},&amp;hellip;v_t$被ST-Conv块均匀的（uniformly）处理，来获取时空依赖关系。全部特征由一个输出层来整合，生成最后的预测$\hat{v}$。&lt;/p>
+&lt;h2 id="提取空间特征的图卷积神经网络">提取空间特征的图卷积神经网络
+&lt;/h2>&lt;p>交通网络大体上是一个图结构。由数学上的图来构成路网是很自然也很合理的。然而，之前的研究忽视了交通网络的空间属性：因为交通网络被分成了块或网格状，所以网络的全局性和连通性被过分的关注了。即使是在网格上的二维卷积，由于数据建模的折中，也只能捕捉到大体的空间局部性。根据以上情况，在我们的模型中，图卷积被直接的应用在了图结构数据上为了在空间中抽取很有意义的模式和特征。集是在图卷积中由式2可以看出核$\Theta$的计算的时间复杂度由于傅里叶基的乘法可以达到$O(n^2)$，两个近似的策略可以解决这个问题。&lt;/p>
+&lt;p>&lt;strong>切比雪夫多项式趋近&lt;/strong>&lt;/p>
+&lt;p>为了局部化过滤器并且减少参数，核$\Theta$可以被一个关于$\Lambda$的多项式限制起来，也就是$\Theta(\Lambda)=\sum_{k=0}^{K-1} \theta_k \Lambda^k$，其中$\theta \in \mathbb{R}^K$是一个多项式系数的向量。$K$是图卷积核的大小，它决定了卷积从中心节点开始的最大半径。一般来说，切比雪夫多项式$T_k(x)$被用于近似核，作为$K-1$阶展开的一部分，也就是$\Theta(\Lambda) \approx \sum_{k=0}^{K-1} \theta_k T_k(\widetilde{\Lambda})$，其中$\widetilde{\Lambda}=2\Lambda/\lambda_{max}-I_n$（$\lambda_{max}$表示$L$的最大特征值）[Hammond &lt;em>et al.&lt;/em>, 2011]。图卷积因此可以被写成&lt;/p>
+$$
+\tag{3} \Theta \ast\_{\mathcal{G}} x = \Theta(L)x \approx \sum\_{k=0}^{K-1}\theta\_k T\_k(\widetilde{L})x
+$$&lt;p>其中$T_k(\widetilde{L}) \in \mathbb{R}^{n \times n}$是k阶切比雪夫多项式对缩放后（scaled）的拉普拉斯矩阵$\widetilde{L}=2L/\lambda_{max}-I_n$。通过递归地使用趋近后的切比雪夫多项式计算K阶卷积操作，式2的复杂度可以被降低至$O(K\vert \varepsilon \vert)$，如式3所示[Defferrard &lt;em>et al.&lt;/em>, 2016]。&lt;/p>
+&lt;p>&lt;strong>1阶近似&lt;/strong>&lt;/p>
+&lt;p>一个针对层的线性公式可以由堆叠多个使用拉普拉斯矩阵的一阶近似的局部图卷积层[Kipf and Welling, 2016]。结果就是，这样可以构建出一个深的网络，这个网络可以深入地恢复空间信息并且不需要指定多项式中的参数。由于在神经网络中要缩放和归一化，我们可以进一步假设$\lambda_{max} \approx 2$。因此，式3可以简写为&lt;/p>
+$$
+\begin{aligned}
+\Theta \ast\_{\mathcal{G}}x \approx &amp; \theta\_0x+\theta\_1(\frac{2}{\lambda\_{max}}L-I\_n)x\\
+\approx &amp; \theta\_0 x- \theta\_1(D^{-\frac{1}{2}} W D^{-\frac{1}{2}}) x
+\end{aligned}
+$$&lt;p>其中，$\theta_0$，$\theta_1$是核的两个共享参数。为了约束参数并为稳定数值计算，$\theta_0$和$\theta_1$用一个参数$\theta$来替换，$\theta=\theta_0=-\theta_1$；$W$和$D$是通过$\widetilde{W}=W+I_n$和$\widetilde{D}_{ii}=\sum_j\widetilde{W}_{ij}$重新归一化得到的。之后，图卷积就可以表达为&lt;/p>
+$$
+\begin{aligned}
+\Theta \ast\_{\mathcal{G}} x = &amp; \theta(I\_n + D^{-\frac{1}{2}} W D^{\frac{1}{2}})x\\
+= &amp; \theta (\widetilde{D}^{-\frac{1}{2}} \widetilde{W} \widetilde{D}^{-\frac{1}{2}})x
+\end{aligned}
+$$&lt;p>竖直地堆叠一阶近似的图卷积可以获得和平行的K阶卷积相同的效果，所有的卷积可以从一个顶点的$K-1$阶邻居中获取到信息。在这里，$K$是连续卷积操作的次数或是模型中的卷积层数。进一步说，针对层的线性结构是节省参数的，并且对大型的图来说是效率很高的，因为多项式趋近的阶数为1。&lt;/p>
+&lt;p>&lt;strong>图卷积的泛化&lt;/strong>&lt;/p>
+&lt;p>图卷积操作$\ast_{\mathcal{G}}$也可以被扩展到多维张量上。对于一个有着$C_i$个通道的信号$X \in \mathbb{R}^{n \times C_i}$，图卷积操作可以扩展为&lt;/p>
+$$
+y\_j = \sum\_{i=1}^{C\_i} \Theta\_{i,j}(L) x\_i \in \mathbb{R}^n, 1 \leq j \leq C\_o
+$$&lt;p>其中，$C_i \times C_o$个向量是切比雪夫系数$\Theta_{i,j} \in \mathbb{R}^K$（$C_i$，$C_o$分别是feature map的输入和输出大小）。针对二维变量的图卷积表示为$\Theta \ast_{\mathcal{G}} X$，其中$\Theta \in \mathbb{R}^{K \times C_i \times C_o}$。需要注意的是，输入的交通预测是由$M$帧路网组成的，如图1所示。每帧$v_t$可以被视为一个矩阵，它的第$i$列是图$\mathcal{G_t}$中第$i$个顶点的一个为$C_i$维的值，也就是$X \in \mathbb{R}^{n \times C_i}$（在这个例子中，$C_i=1$）。对于$M$中的每个时间步$t$，相同的核与相同的图卷积操作是在$X_t \in \mathbb{R}^{n \times C_i}$中并行进行的。因此，图卷积操作也可以泛化至三维，记为$\Theta \ast_{\mathcal{G}} \mathcal{X}$，其中$\mathcal{X} \in \mathbb{R}^{M \times n \times C_i}$&lt;/p>
+&lt;h2 id="抽取时间特征的门控卷积神经网络">抽取时间特征的门控卷积神经网络
+&lt;/h2>&lt;p>尽管基于RNN的模型可以广泛的应用于时间序列分析，用于交通预测的循环神经网络仍然会遇到费时的迭代，复杂的门控机制，对动态变化的响应慢。相反，CNN训练快，结构简单，而且不依赖于前一步。受到[Gehring &lt;em>et al.&lt;/em>, 2017]的启发，我们在时间轴上部署了整块的卷积结构，用来捕获交通流的动态时间特征。这个特殊的设计可以让并行而且可控的训练过程通过多层卷积结构形成层次表示。&lt;/p>
+&lt;p>如图2右侧所示，时间卷积层包含了一个一维卷积，核的宽度为$K_t$，之后接了一个门控线性单元(GLU)作为激活。对于图$\mathcal{G}$中的每个顶点，时间卷积对输入元素的$K_t$个邻居进行操作，导致每次将序列长度缩短$K_t-1$。因此，每个顶点的时间卷积的输入可以被看做是一个长度为$M$的序列，有着$C_i$个通道，记作$Y \in \mathbb{R}^{M \times C_i}$。卷积核$\Gamma \in \mathbf{R}^{K_t \times C_i \times 2C_o}$是被设计为映射$Y$到一个单个的输出$[P Q] \in \mathbb{R}^{(M-K_t+1) \times (2C_o)}$($P$, $Q$是通道数的一半)。作为结果，时间门控卷积可以定义为：&lt;/p>
+$$
+\Gamma \ast\_ \tau Y = P \otimes \sigma (Q) \in \mathbb{R}^{(M-K\_t+1) \times C\_o}
+$$&lt;p>其中，$P$, $Q$分别是GLU的输入门，$\otimes$表示哈达玛积，sigmoid门$\sigma(Q)$控制当前状态的哪个输入$P$对于发现时间序列中的组成结构和动态方差是相关的。非线性门通过堆叠时间层对挖掘输入也有贡献。除此以外，在堆叠时间卷积层时，实现了残差连接。相似地，通过在每个节点$\mathcal{Y_i} \in \mathbb{R}^{M \times C_i}$(比如监测站)上都使用同样的卷积核$\Gamma$，时间卷积就可以泛化至3D变量上，记作$\Gamma \ast_\tau \mathcal{Y}$，其中$\mathcal{Y} \in \mathbb{R}^{M \times n \times C_i}$。&lt;/p>
+&lt;p>&lt;strong>这里我之前认为残差是用了 padding 的，其实不是，看了作者的代码后发现作者是用了一半数量的卷积核完成卷积，这样就和 P 的维度一致了，然后直接和 P 相加，然后与 sigmoid 激活后的值进行点对点的相乘。&lt;/strong>&lt;/p>
+&lt;h2 id="时空卷积块">时空卷积块
+&lt;/h2>&lt;p>为了同时从空间和时间领域融合特征，时空卷积块(ST-Conv block)的构建是为了同时处理图结构的时间序列的。如图2（中）所示，bottleneck策略的应用形成了三明治的结构，其中含有两个时间门控卷积层，分别在上下两层，一个空间图卷积层填充中间的部分。空间卷积层导致的通道数$C$的减小促使了参数的减少，并且减少了训练的时间开销。除此以外，每个时空块都使用了层归一化来抑制过拟合。&lt;/p>
+&lt;p>ST-Conv块的输入和输出都是3D张量。对于块$l$的输入$v^l \in \mathbb{R}^{M \times n \times C^l}$，输出$v^{l+1} \in \mathbb{R}^{(M-2(K_t-1)) \times n \times C^{l+1}}$通过以下式子计算得到：&lt;/p>
+$$
+v^{l+1} = \Gamma^l\_1 \ast\_\tau \rm ReLU(\Theta^l \ast\_{\mathcal{G}}(\Gamma^l\_0 \ast\_\tau v^l))
+$$&lt;p>其中$\Gamma^l_0$，$\Gamma^l_1$是块$l$的上下两个时间层；$\Theta^l$是图卷积谱核；$\rm ReLU(·)$表示ReLU激活函数。我们在堆叠两个ST-Conv块后，加了一个额外的时间卷积和全连接层作为最后的输出层（图2左侧）。时间卷积层将最后一个ST-Conv块的输出映射到一个最终的单步预测上。之后，我们可以从模型获得一个最后的输出$Z \in \mathbb{R}^{n \times c}$，通过一个跨$c$个通道的线性变换$\hat{v} = Zw+b$来预测$n$个节点的速度，其中$w \in \mathbb{R}^c$是权重向量,$b$是偏置。对交通预测的STGCN的损失函数可以写成：&lt;/p>
+$$
+L(\hat{v}; W\_\theta) = \sum\_t \Vert \hat{v}(v\_{t-M+1, ..., v\_t, W\_\theta}) - v\_{t+1} \Vert^2
+$$&lt;p>其中，$W_\theta$是模型中所有的训练参数; $v_{t+1}$是ground truth，$\hat{v}(·)$表示模型的预测。&lt;/p>
+&lt;p>我们来总结一下我们的STGCN的主要特征：&lt;/p>
+&lt;ol>
+&lt;li>STGCN是处理结构化的时间序列的通用框架，不仅可以解决交通网络建模，还可以应用到其他的时空序列学习的挑战中，比如社交网络和推荐系统。&lt;/li>
+&lt;li>时空块融合了图卷积和门控时间卷积，可以同时抽取有用的空间信息，捕获本质上的时间特征。&lt;/li>
+&lt;li>模型完全由卷积层组成，因此可以在输入序列上并行运算，空间域中参数少易于训练。更重要的是，这个经济的架构可以使模型更高效的处理大规模的网络。&lt;/li>
+&lt;/ol>
+&lt;h1 id="实验">实验
+&lt;/h1>&lt;h2 id="数据集描述">数据集描述
+&lt;/h2>&lt;p>我们在两个真实的数据集上验证了模型，分别是&lt;strong>BJER4&lt;/strong>和&lt;strong>PeMSD7&lt;/strong>，由北京市交委和加利福尼亚运输部提供。每个数据集包含了交通观测数据的关键属性和对应时间的地图信息。&lt;/p>
+&lt;p>&lt;strong>BJER4&lt;/strong>是通过double-loop detector获取的东四环周边的数据。我们的实验中有12条道路。交通数据每五分钟聚合一次。时间是从2014年的7月1日到8月31日，不含周末。我们选取了第一个月的车速速度记录作为训练集，剩下的分别做验证和测试。&lt;/p>
+&lt;p>&lt;strong>PeMSD7&lt;/strong>是Caltrans Performance Measurement System(PeMS)通过超过39000个监测站实时获取的数据，这些监测站分布在加州高速公路系统主要的都市部分[Chen &lt;em>et al&lt;/em>., 2001]。数据是30秒的数据样本聚合成5分钟一次的数据。我们在加州的District 7随机选取了一个小的和一个大的范围作为数据源，分别有228和1026个监测站，分别命名为PeMSD7(S)和PeMSD7(L)（如图3左侧所示）。PeMSD7数据集的时间范围是2012年五月和六月的周末。我们使用同样的原则对数据进行了训练集和测试集的划分。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/spatio-temporal-graph-convolutional-networks-a-deep-learning-framework-for-traffic/Fig3.PNG"
+loading="lazy"
+alt="Fig1"
+>&lt;/p>
+&lt;h2 id="数据预处理">数据预处理
+&lt;/h2>&lt;p>两个数据集的间隔设定为5分钟。因此，路网中的每个顶点每天就有288个数据点。数据清理后使用了线性插值的方法来填补缺失值。通过核对相关性，每条路的方向和OD(origin-destination)点，环路系统可以被数值化成一个有向图。&lt;/p>
+&lt;p>在PeMSD7，路网的邻接矩阵通过交通网络中的监测站的距离来计算。带权邻接矩阵$W$通过以下公式计算：&lt;/p>
+$$
+w\_{ij} = \begin{cases}
+\exp{(-\frac{d^2\_{ij}}{\sigma^2})}&amp;,i \neq j \ \rm and \exp{(-\frac{d^2\_{ij}}{\sigma^2}) \geq \epsilon} \\
+0&amp;, \rm otherwise
+\end{cases}
+$$&lt;p>其中$w_{ij}$是边的权重，通过$d_{ij}$得到，也就是$i$和$j$之间的距离。$\sigma^2$和$\epsilon$是来控制矩阵$W$的分布和稀疏性的阈值，我们用了10和0.5。$W$的可视化在图3的右侧。&lt;/p>
+&lt;h1 id="代码">代码
+&lt;/h1>&lt;p>&lt;a class="link" href="https://github.com/VeritasYin/STGCN_IJCAI-18" target="_blank" rel="noopener"
+>作者代码&lt;/a>，这个是作者提供的代码。&lt;/p>
+&lt;p>&lt;a class="link" href="https://github.com/Davidham3/STGCN" target="_blank" rel="noopener"
+>仓库地址&lt;/a>，我按照论文结合作者的代码进行了复现与修正。&lt;/p></description></item><item><title>Identity Mappings in Deep Residual Networks</title><link>https://davidham3.github.io/blog/p/identity-mappings-in-deep-residual-networks/</link><pubDate>Thu, 08 Mar 2018 18:45:45 +0000</pubDate><guid>https://davidham3.github.io/blog/p/identity-mappings-in-deep-residual-networks/</guid><description>&lt;p>ECCV 2016, ResNet v2, 原文链接：&lt;a class="link" href="https://arxiv.org/abs/1603.05027" target="_blank" rel="noopener"
+>Identity Mappings in Deep Residual Networks&lt;/a>&lt;/p>
+&lt;h1 id="identity-mappings-in-deep-residual-networks">Identity Mappings in Deep Residual Networks
+&lt;/h1>&lt;h2 id="introduction">Introduction
+&lt;/h2>$$y\_l = h(x\_l) + \mathcal{F}(x\_l, \mathcal{W\_l})$$$$x\_{l+1}=f(y\_l)$$&lt;p>
+where $x_l$ and $x_{l+1}$ are input and output of the $l$-th unit, and $\mathcal{F}$ is a residual function.$h(x_l)=x_l$ is an identity mapping and $f$ is a ReLU function.
+The central idea of ResNets is to learn the additive residual function $\mathcal{F}$ with respect to $h(x_l)$, with a key choice of using an identity mapping $h(x_l)=x_l$. This is realized by attaching an identity skip connection (&amp;ldquo;shortcut&amp;rdquo;).
+In this paper, we analyze deep residual networks by focusing on creating a &amp;ldquo;direct&amp;rdquo; path for propagating information &amp;ndash; not only within a residual unit, but through the entire network. Our derivations reveal that &lt;em>if both h(x_l) and f(y_l) are identity mappings, the signal could be directly&lt;/em> propagated from one unit to any other units, in both forward and backward passes.
+To understand the role of skip connections, we analyse and compare various types of $h(x_l)$. We find that the identity mapping $h(x_l) = x_l$ chosen in achieves the fastest error reduction and lowest training loss among all variants we investigated, whereas skip connections of scaling, gating, and $1 \times 1$ convolutions all lead to higher training loss and error. These experiments suggest that keeping a &amp;ldquo;clean&amp;rdquo; information path (indicated by the grey arrows in Fig. 1,2, and 4) is helpful for easing optimization.
+&lt;img src="https://davidham3.github.io/blog/blog/images/identity-mappings-in-deep-residual-networks/Fig1.PNG"
+loading="lazy"
+alt="Fig1"
+>
+Figure 1. Left: (a) original Residual Unit in [1]; (b) proposed Residual Unit. The grey arrows indicate the easiest paths for the information to propagate, corresponding to the additive term &amp;ldquo;x_l&amp;rdquo; in Eqn.(4) (forward propagation) and the additive term &amp;ldquo;1&amp;rdquo; in Eqn.(5) (backward propagation). Right: training curves on CIFAR-10 of 1001-layer ResNets. Solid lines denote test error (y-axis on the right), and dashed lines denote training loss (y-axis on the left). The proposed unit makes ResNet-1001 easier to train.&lt;/p>
+&lt;p>To construct an identity mapping $f(y_l)=y_l$, we view the activation functions (ReLU and BN) as &amp;ldquo;pre-activation&amp;rdquo; of the weight layers, in constrast to conventional wisdom of &amp;ldquo;post-activation&amp;rdquo;. This point of view leads to a new residual unit design, shown in (Fig. 1(b)). Based on this unit, we present competitive results on CIFAR-10/100 with a 1001-layer ResNet, which is much easier to train and generalizes better than the original ResNet in [1]. We further report improved results on ImageNet using a 200-layer ResNet, for which the counterpart of [1] starts to overfit. These results suggest that there is much room to exploit the dimension of &lt;em>network depth&lt;/em>, a key to the success of modern deep learning.&lt;/p>
+&lt;h2 id="analysis-of-deep-residual-networks">Analysis of Deep Residual Networks
+&lt;/h2>$$y\_l = h(x\_l) + \mathcal{F}(x\_l, \mathcal{W-l})$$$$x\_{l+1}=f(y\_l)$$$$x\_{l+1}=x\_l+\mathcal{F}(x\_l, \mathcal{W\_l})$$$$x\_L = x\_l + \sum\_{i=1}^{L-1}\mathcal{F}(x\_i, \mathcal{W\_i})$$&lt;p>
+for &lt;em>any deeper unit&lt;/em> $L$ and &lt;em>any shallower unit&lt;/em> $l$. Eqn.(4) exhibits some nice properties.&lt;/p>
+&lt;ol>
+&lt;li>The feature $x_L$ of any deeper unit $L$ can be represented as the feature $x_l$ of any shallower unit $l$ plus a residual function in a form of $\sum_{i=1}^{L-1}\mathcal{F}$, indicating that the model is in a &lt;em>residual&lt;/em> fashion between any units $L$ and $l$.&lt;/li>
+&lt;li>The feature $x_L = x_0 + \sum_{i=0}^{L-1}\mathcal{F}(x_i, \mathcal{W_i})$, of any deep unit $L$, is the &lt;em>summation&lt;/em> of the outputs of all preceding residual functions (plus $x_0$). This is in contrast to a &amp;ldquo;plain network&amp;rdquo; where a feature $x_L$ is a series of matrix-vector &lt;em>products&lt;/em>, say, $\prod_{i=0}^{L-1}W_ix_0$ (ignoring BN and ReLU).
+Eqn.(4) also leads to nice backward propagation properties. Denoting the loss function as $\varepsilon$, from the chain rule of backpropagation [9] we have:
+$$\frac{\partial{\varepsilon}}{\partial{x\_l}}=\frac{\partial{\varepsilon}}{\partial{x\_L}}\frac{\partial{x\_L}}{\partial{x\_l}}=\frac{\partial{\varepsilon}}{\partial{x\_L}}(1+\frac{\partial}{\partial{x\_l}}\sum\_{i=l}^{L-1}\mathcal{F}(x\_i, \mathcal{W\_i}))$$
+Eqn.(5) indicates that the gradient $\frac{\partial{\varepsilon}}{\partial{x_i}}$ can be decomposed into two additive terms: a term of $\frac{\partial{\varepsilon}}{\partial{x_L}}$ that propagates information directly without concerning any weight layers, and another term of $\frac{\partial{\varepsilon}}{\partial{x_L}}(\frac{\partial}{\partial{x_l}}\sum_{i=l}^{L-1}\mathcal{F})$ that propagates through the weight layers. The additive term of $\frac{\partial{\varepsilon}}{\partial{x_L}}$ ensures that information is directly propagated back to &lt;em>any shallower unit&lt;/em> $l$. Eqn.(5) also suggests that it is unlikely for the gradient $\frac{\partial{\varepsilon}}{\partial{x_l}}$ to be canceled out for a mini-batch, because in general the term $\frac{\partial}{\partial{x_l}}\sum_{i=l}^{L-1}\mathcal{F}$ cannot be always -1 for all samples in a mini-batch. This implies that the gradient of a layer does not vanish even when the weights are arbitrarily small.&lt;/li>
+&lt;/ol>
+&lt;h2 id="on-the-importance-of-identity-skip-connections">On the Importance of Identity Skip Connections
+&lt;/h2>$$x\_{l+1}=\lambda\_lx\_l+\mathcal{F}(x\_l, \mathcal{W\_l})$$$$x\_L = (\prod\_{i=l}^{L-1}\lambda\_i)x\_l+\sum\_{i=l}^{L-1}\hat{\mathcal{F}}(x\_i, \mathcal{W\_i})$$$$\frac{\partial{\varepsilon}}{\partial{x\_l}}=\frac{\partial{\varepsilon}}{\partial{x\_L}}((\prod\_{i=l}^{L-1}\lambda\_i)+\frac{\partial}{\partial{x\_l}}\sum\_{i=l}^{L-1}\hat{\mathcal{F}}(x\_i, \mathcal{W\_i}))$$&lt;p>
+For an extremely deep network ($L$ is large), if $\lambda_i &amp;gt; 1$ for all $i$, this factor can be exponentially large; if $\lambda_i &amp;lt; 1$ for all $i$, this factor can be expoentially small and vanish, which blocks the backpropagated signal from the shortcur and forces it to flow through the weighted layers. This results in optimization difficuties as we show by experiments.
+If the skip connection $h(x_l)$ represents more complicated transforms (such as gating and $1 \times 1$ convolutions), in Eqn.(8) the first term becomes $\prod_{i=l}^{L-1}h_i&amp;rsquo;$ where $h&amp;rsquo;$ is the derivative of $h$. This product may also impede information propagation and hamper the training procedure as witnessed in the following experiments.&lt;/p>
+&lt;h3 id="experiments-on-skip-connections">Experiments on skip Connections
+&lt;/h3>&lt;p>We experiments with the 110-layer ResNet as presented in [1] on CIFAR-10. Though our above analysis is driven by identity $f$, the experiments in this section are all based on $f = ReLU$ as in [1]; we address identity $f$ in the next section. Our baseline ResNet-110 has 6.61% error on the test set. The comparisons of other variants (Fig.2 and Table 1) are summarized as follows:
+&lt;strong>Table 1.&lt;/strong> Classification error on the CIFAR-10 test set using ResNet-110 [1], with different types of shortcut connections applied to all Residual Units. We report &amp;ldquo;fail&amp;rdquo; when the test error is higher than 20%.
+&lt;img src="https://davidham3.github.io/blog/blog/images/identity-mappings-in-deep-residual-networks/Table1.PNG"
+loading="lazy"
+alt="Table1"
+>&lt;/p>
+&lt;p>&lt;strong>Constant scaling&lt;/strong>. We set $\lambda = 0.5$ for all shortcuts (Fig. 2(b)). We further study two cases of scaling $\mathcal{F}$:&lt;/p>
+&lt;ol>
+&lt;li>$\mathcal{F}$ is not scaled;&lt;/li>
+&lt;li>$\mathcal{F}$ is scaled by a constant scalar of $1-\lambda = 0.5$, which is similar to the highway gating [6,7] but with frozen gates. The former case does not converge well; the latter is able to converge, but the test error (Table 1, 12.35%) is substantially higher than the original ResNet-110. Fig 3(a) shows that the training error is higher than that of the original ResNet-110, suggesting that the optimization has difficulties when the shortcut signal is scaled down.&lt;/li>
+&lt;/ol>
+&lt;p>&lt;strong>Exclusive gating&lt;/strong>. Following the Highway Networks [6,7] that adopt a gating mechanism [5], we consider a gating function $g(x)=\sigma(W_gx+b_g)$ where a transform is represented by weights $W_g$ and biases $b_g$ followed by the sigmoid function $\sigma(x)=\frac{1}{1+e^{-x}}$. In a convolutional network $g(x)$ is realized by a $1 \times 1$ convolutional layer. The gating function modulates the signal by element-wise multiplication.
+We investigate the &amp;ldquo;exclusive&amp;rdquo; gates as used in [6,7] &amp;ndash; the $\mathcal{F}$ path is scaled by $g(x)$ and the shortcut path is scaled by $1-g(x)$. See Fig 2(c). We find that the initialization of the biases $b_g$ is critical for training gated models, and following the guidelines in [6,7], we conduct hyper-parameter search on the initial value of $b_g$ in the range of 0 to -10 with a decrement step of -1 on the training set by cross-validation. The best value (-6 here) is then used for training on the training set, leading to a test result of 8.70% (Table 1), which still lags far behind the ResNet-110 baseline. Fig 3(b) shows the training curves. Table 1 also reports the results of using other initialized values, noting that the exclusive gating network does not converge to a good solution when $b_g$ is not appropriately initialized.&lt;/p>
+&lt;p>&lt;strong>Shortcut-only gating&lt;/strong>. In this case the function $\mathcal{F}$ is not scaled; only the shortcut path is gated by $1-g(x)$. See Fig 2(d). The initialized value of $b_g$ is still essential in this case. When the initialized $b_g$ is 0 (so initially the expectation of $1-g(x)$ is 0.5), the network converges to a poor result of 12.86% (Table 1). This is also caused by higher training error (Fig 3(c)).
+When the initialized $b_g$ is very negatively biased (e.g., -6), the value of $1-g(x)$ is closer to 1 and the shortcut connection is nearly an identity mapping. Therefore, the result (6.91%, Table 1) is much closer to the ResNet-110 baseline.&lt;/p>
+&lt;p>&lt;strong>$1 \times 1$ convolutional shortcut&lt;/strong>. Next we experiment with $1 \times 1$ convolutional shortcut connections that replace the identity. This option has been investigated in [1] (known as option C) on a 34-layer ResNet (16 Residual Units) and shows good results, suggesting that $1 \times 1$ shortcut connections could be useful. But we find that this is not the case when there are many Residual Units. The 110-layer ResNet has a poorer result (12.22%, Table 1) when using $1 \times 1$ convolutional shortcuts. Again, the training error becomes higher (Fig 3(d)). When stacking so many Residual Units (54 for ResNet-110), even the shortest path may still impede signal propagation. We witnessed similar phenomena on ImageNet with ResNet-101 when using $1 \times 1$ convolutional shortcuts.&lt;/p>
+&lt;p>&lt;strong>Dropout shortcut&lt;/strong>. Last we experiment with dropout [11] (at a ratio of 0.5) which we adopt on the output of the identity shortcut (Fig. 2(f)). The network fails to converge to a good solution. Dropout statistically imposes a scale of $\lambda $ with an expectation of 0.5 on the shortcut, and similar to constant scaling by 0.5, it impedes signal propagation.&lt;/p>
+&lt;h2 id="on-the-usage-of-activation-functions">On the Usage of Activation Functions
+&lt;/h2>&lt;p>We want to make $f$ an identity mapping, which is done by re-arranging the activation function (ReLU and/or BN). The original Residual Unit in [1] has a shape in Fig.4(a) &amp;ndash; BN is used after each weight layer, and ReLU is adopted after BN expect that the last ReLU in a Residual Unit is after element-wise addition ($f=ReLU$). Fig.4(b-e) show the laternatives we investigated, explained as following.&lt;/p>
+&lt;h2 id="experiments-on-activation">Experiments on Activation
+&lt;/h2>&lt;p>In this section we experiment with ResNet-110 and a 164-layer Bottlenect [1] architecture (denoted as ResNet-164). A bottleneck Residual Unit consist of a $1 \times 1$ layer for reducing dimension, a $3 \times 3$ layer, and a $1 \times 1$ layer for restoring dimension. As designed in [1], its computational complexity is similar to the two-$3 \times 3$ Residual Unit. More details are in the appendix. The baseline ResNet-164 has a competitive result of 5.93% on CIFAR-10 (Table 2).&lt;/p>
+&lt;p>&lt;strong>BN after addition&lt;/strong>. Before turning $f$ into an identity mapping, we go the opposite way by adopting BN after addition (Fig. 4(b)). In this case $f$ involves BN and ReLU. The results become considerably worse than the baseline (Table 2). Unlike the original design, now the BN layer alters the signal that passes through the shortcut and impedes information propagation, as reflected by the difficulties on reducing training loss at the begining of training (Fib. 6 left).&lt;/p>
+&lt;p>&lt;strong>ReLU before addition&lt;/strong>. A naive choice of making $f$ into an identity mapping is to move the ReLU&lt;/p>
+&lt;h2 id="implementation">Implementation
+&lt;/h2>&lt;p>使用mxnet实现了一版&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt"> 10
+&lt;/span>&lt;span class="lnt"> 11
+&lt;/span>&lt;span class="lnt"> 12
+&lt;/span>&lt;span class="lnt"> 13
+&lt;/span>&lt;span class="lnt"> 14
+&lt;/span>&lt;span class="lnt"> 15
+&lt;/span>&lt;span class="lnt"> 16
+&lt;/span>&lt;span class="lnt"> 17
+&lt;/span>&lt;span class="lnt"> 18
+&lt;/span>&lt;span class="lnt"> 19
+&lt;/span>&lt;span class="lnt"> 20
+&lt;/span>&lt;span class="lnt"> 21
+&lt;/span>&lt;span class="lnt"> 22
+&lt;/span>&lt;span class="lnt"> 23
+&lt;/span>&lt;span class="lnt"> 24
+&lt;/span>&lt;span class="lnt"> 25
+&lt;/span>&lt;span class="lnt"> 26
+&lt;/span>&lt;span class="lnt"> 27
+&lt;/span>&lt;span class="lnt"> 28
+&lt;/span>&lt;span class="lnt"> 29
+&lt;/span>&lt;span class="lnt"> 30
+&lt;/span>&lt;span class="lnt"> 31
+&lt;/span>&lt;span class="lnt"> 32
+&lt;/span>&lt;span class="lnt"> 33
+&lt;/span>&lt;span class="lnt"> 34
+&lt;/span>&lt;span class="lnt"> 35
+&lt;/span>&lt;span class="lnt"> 36
+&lt;/span>&lt;span class="lnt"> 37
+&lt;/span>&lt;span class="lnt"> 38
+&lt;/span>&lt;span class="lnt"> 39
+&lt;/span>&lt;span class="lnt"> 40
+&lt;/span>&lt;span class="lnt"> 41
+&lt;/span>&lt;span class="lnt"> 42
+&lt;/span>&lt;span class="lnt"> 43
+&lt;/span>&lt;span class="lnt"> 44
+&lt;/span>&lt;span class="lnt"> 45
+&lt;/span>&lt;span class="lnt"> 46
+&lt;/span>&lt;span class="lnt"> 47
+&lt;/span>&lt;span class="lnt"> 48
+&lt;/span>&lt;span class="lnt"> 49
+&lt;/span>&lt;span class="lnt"> 50
+&lt;/span>&lt;span class="lnt"> 51
+&lt;/span>&lt;span class="lnt"> 52
+&lt;/span>&lt;span class="lnt"> 53
+&lt;/span>&lt;span class="lnt"> 54
+&lt;/span>&lt;span class="lnt"> 55
+&lt;/span>&lt;span class="lnt"> 56
+&lt;/span>&lt;span class="lnt"> 57
+&lt;/span>&lt;span class="lnt"> 58
+&lt;/span>&lt;span class="lnt"> 59
+&lt;/span>&lt;span class="lnt"> 60
+&lt;/span>&lt;span class="lnt"> 61
+&lt;/span>&lt;span class="lnt"> 62
+&lt;/span>&lt;span class="lnt"> 63
+&lt;/span>&lt;span class="lnt"> 64
+&lt;/span>&lt;span class="lnt"> 65
+&lt;/span>&lt;span class="lnt"> 66
+&lt;/span>&lt;span class="lnt"> 67
+&lt;/span>&lt;span class="lnt"> 68
+&lt;/span>&lt;span class="lnt"> 69
+&lt;/span>&lt;span class="lnt"> 70
+&lt;/span>&lt;span class="lnt"> 71
+&lt;/span>&lt;span class="lnt"> 72
+&lt;/span>&lt;span class="lnt"> 73
+&lt;/span>&lt;span class="lnt"> 74
+&lt;/span>&lt;span class="lnt"> 75
+&lt;/span>&lt;span class="lnt"> 76
+&lt;/span>&lt;span class="lnt"> 77
+&lt;/span>&lt;span class="lnt"> 78
+&lt;/span>&lt;span class="lnt"> 79
+&lt;/span>&lt;span class="lnt"> 80
+&lt;/span>&lt;span class="lnt"> 81
+&lt;/span>&lt;span class="lnt"> 82
+&lt;/span>&lt;span class="lnt"> 83
+&lt;/span>&lt;span class="lnt"> 84
+&lt;/span>&lt;span class="lnt"> 85
+&lt;/span>&lt;span class="lnt"> 86
+&lt;/span>&lt;span class="lnt"> 87
+&lt;/span>&lt;span class="lnt"> 88
+&lt;/span>&lt;span class="lnt"> 89
+&lt;/span>&lt;span class="lnt"> 90
+&lt;/span>&lt;span class="lnt"> 91
+&lt;/span>&lt;span class="lnt"> 92
+&lt;/span>&lt;span class="lnt"> 93
+&lt;/span>&lt;span class="lnt"> 94
+&lt;/span>&lt;span class="lnt"> 95
+&lt;/span>&lt;span class="lnt"> 96
+&lt;/span>&lt;span class="lnt"> 97
+&lt;/span>&lt;span class="lnt"> 98
+&lt;/span>&lt;span class="lnt"> 99
+&lt;/span>&lt;span class="lnt">100
+&lt;/span>&lt;span class="lnt">101
+&lt;/span>&lt;span class="lnt">102
+&lt;/span>&lt;span class="lnt">103
+&lt;/span>&lt;span class="lnt">104
+&lt;/span>&lt;span class="lnt">105
+&lt;/span>&lt;span class="lnt">106
+&lt;/span>&lt;span class="lnt">107
+&lt;/span>&lt;span class="lnt">108
+&lt;/span>&lt;span class="lnt">109
+&lt;/span>&lt;span class="lnt">110
+&lt;/span>&lt;span class="lnt">111
+&lt;/span>&lt;span class="lnt">112
+&lt;/span>&lt;span class="lnt">113
+&lt;/span>&lt;span class="lnt">114
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-python" data-lang="python">&lt;span class="line">&lt;span class="cl">&lt;span class="kn">from&lt;/span> &lt;span class="nn">mxnet&lt;/span> &lt;span class="kn">import&lt;/span> &lt;span class="n">nd&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kn">import&lt;/span> &lt;span class="nn">mxnet&lt;/span> &lt;span class="k">as&lt;/span> &lt;span class="nn">mx&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kn">import&lt;/span> &lt;span class="nn">numpy&lt;/span> &lt;span class="k">as&lt;/span> &lt;span class="nn">np&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kn">import&lt;/span> &lt;span class="nn">pickle&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kn">from&lt;/span> &lt;span class="nn">mxnet&lt;/span> &lt;span class="kn">import&lt;/span> &lt;span class="n">image&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kn">import&lt;/span> &lt;span class="nn">matplotlib.pyplot&lt;/span> &lt;span class="k">as&lt;/span> &lt;span class="nn">plt&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="k">def&lt;/span> &lt;span class="nf">unpickle&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">file&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">with&lt;/span> &lt;span class="nb">open&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">file&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s1">&amp;#39;rb&amp;#39;&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="k">as&lt;/span> &lt;span class="n">fo&lt;/span>&lt;span class="p">:&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">dicts&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">pickle&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">load&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">fo&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">encoding&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s1">&amp;#39;bytes&amp;#39;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">return&lt;/span> &lt;span class="n">dicts&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="k">def&lt;/span> &lt;span class="nf">residual_unit&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">channels&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">name&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">same_shape&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kc">True&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">stride&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">1&lt;/span> &lt;span class="k">if&lt;/span> &lt;span class="n">same_shape&lt;/span> &lt;span class="k">else&lt;/span> &lt;span class="mi">2&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">net&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">mx&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">sym&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">BatchNorm&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">data&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">x&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">fix_gamma&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kc">False&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">name&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;&lt;/span>&lt;span class="si">%s&lt;/span>&lt;span class="s1">_bn1&amp;#39;&lt;/span>&lt;span class="o">%&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">name&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="n">momentum&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="mf">0.9&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">net&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">mx&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">sym&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Activation&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">data&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">net&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">act_type&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;relu&amp;#39;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">name&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;&lt;/span>&lt;span class="si">%s&lt;/span>&lt;span class="s1">_relu1&amp;#39;&lt;/span>&lt;span class="o">%&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">name&lt;/span>&lt;span class="p">))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">net&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">mx&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">sym&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Convolution&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">data&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">net&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">num_filter&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">channels&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">kernel&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="mi">3&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">3&lt;/span>&lt;span class="p">),&lt;/span>\
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">pad&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">1&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="n">stride&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="n">stride&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">stride&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="n">name&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;&lt;/span>&lt;span class="si">%s&lt;/span>&lt;span class="s1">_conv1&amp;#39;&lt;/span>&lt;span class="o">%&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">name&lt;/span>&lt;span class="p">))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">net&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">mx&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">sym&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">BatchNorm&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">data&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">net&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">fix_gamma&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kc">False&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">name&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;&lt;/span>&lt;span class="si">%s&lt;/span>&lt;span class="s1">_bn2&amp;#39;&lt;/span>&lt;span class="o">%&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">name&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="n">momentum&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="mf">0.9&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">net&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">mx&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">sym&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Activation&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">data&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">net&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">act_type&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;relu&amp;#39;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">name&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;&lt;/span>&lt;span class="si">%s&lt;/span>&lt;span class="s1">_relu2&amp;#39;&lt;/span>&lt;span class="o">%&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">name&lt;/span>&lt;span class="p">))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">net&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">mx&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">sym&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Convolution&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">data&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">net&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">num_filter&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">channels&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">kernel&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="mi">3&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">3&lt;/span>&lt;span class="p">),&lt;/span>\
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">pad&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">1&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="n">name&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;&lt;/span>&lt;span class="si">%s&lt;/span>&lt;span class="s1">_conv2&amp;#39;&lt;/span>&lt;span class="o">%&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">name&lt;/span>&lt;span class="p">))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">if&lt;/span> &lt;span class="ow">not&lt;/span> &lt;span class="n">same_shape&lt;/span>&lt;span class="p">:&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">x&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">mx&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">sym&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Convolution&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">data&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">x&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">num_filter&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">channels&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">pad&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">),&lt;/span>\
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">stride&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="n">stride&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">stride&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="n">kernel&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">1&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="n">name&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;&lt;/span>&lt;span class="si">%s&lt;/span>&lt;span class="s2">_conv3&amp;#34;&lt;/span>&lt;span class="o">%&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">name&lt;/span>&lt;span class="p">))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">return&lt;/span> &lt;span class="n">net&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">x&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="k">def&lt;/span> &lt;span class="nf">ResNet&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">units&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">nums&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">data&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">mx&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">sym&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Variable&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s1">&amp;#39;data&amp;#39;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">net&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">mx&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">sym&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Convolution&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">data&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">num_filter&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">16&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">kernel&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="mi">3&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">3&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="n">pad&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">1&lt;/span>&lt;span class="p">))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">for&lt;/span> &lt;span class="n">num&lt;/span> &lt;span class="ow">in&lt;/span> &lt;span class="n">nums&lt;/span>&lt;span class="p">:&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">net&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">residual_unit&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">net&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">num&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s1">&amp;#39;r&lt;/span>&lt;span class="si">%s%s&lt;/span>&lt;span class="s1">&amp;#39;&lt;/span>&lt;span class="o">%&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">num&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">1&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="kc">False&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">for&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="ow">in&lt;/span> &lt;span class="nb">range&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="mi">2&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">units&lt;/span>&lt;span class="o">+&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">net&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">residual_unit&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">net&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">num&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s1">&amp;#39;r&lt;/span>&lt;span class="si">%s%s&lt;/span>&lt;span class="s1">&amp;#39;&lt;/span>&lt;span class="o">%&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">num&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">i&lt;/span>&lt;span class="p">))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">net&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">mx&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">sym&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">BatchNorm&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">net&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">name&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;batch1&amp;#39;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">momentum&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="mf">0.9&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">net&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">mx&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">sym&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Activation&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">net&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">act_type&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;relu&amp;#39;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">name&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;relu1&amp;#39;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">net&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">mx&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">sym&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Pooling&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">net&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">pool_type&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;avg&amp;#39;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">kernel&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="mi">3&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">3&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="n">name&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;pool1&amp;#39;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">net&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">mx&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">sym&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Flatten&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">net&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">name&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;flat1&amp;#39;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">net&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">mx&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">sym&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">FullyConnected&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">net&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">name&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;fc1&amp;#39;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">num_hidden&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">10&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">net&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">mx&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">sym&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">SoftmaxOutput&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">net&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">name&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;softmax&amp;#39;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">return&lt;/span> &lt;span class="n">net&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">all_data&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">[]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="k">for&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="ow">in&lt;/span> &lt;span class="nb">range&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">6&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">data&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">unpickle&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s1">&amp;#39;../data/cifar-10-batches-py/data_batch_&lt;/span>&lt;span class="si">%s&lt;/span>&lt;span class="s1">&amp;#39;&lt;/span>&lt;span class="o">%&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="p">))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">all_data&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">append&lt;/span>&lt;span class="p">((&lt;/span>&lt;span class="n">nd&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">array&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">data&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="sa">b&lt;/span>&lt;span class="s1">&amp;#39;data&amp;#39;&lt;/span>&lt;span class="p">]),&lt;/span> &lt;span class="n">nd&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">array&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">data&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="sa">b&lt;/span>&lt;span class="s1">&amp;#39;labels&amp;#39;&lt;/span>&lt;span class="p">])))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">X&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">y&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nb">zip&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">all_data&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">trainX&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">trainY&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">nd&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">concat&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">X&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">dim&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">reshape&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">shape&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">3&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">32&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">32&lt;/span>&lt;span class="p">))&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">astype&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s1">&amp;#39;float32&amp;#39;&lt;/span>&lt;span class="p">),&lt;/span>\
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">nd&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">concat&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">y&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">dim&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">data&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">unpickle&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s1">&amp;#39;../data/cifar-10-batches-py/test_batch&amp;#39;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">testX&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">nd&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">array&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">data&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="sa">b&lt;/span>&lt;span class="s1">&amp;#39;data&amp;#39;&lt;/span>&lt;span class="p">])&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">reshape&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">shape&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">3&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">32&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">32&lt;/span>&lt;span class="p">))&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">astype&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s1">&amp;#39;float32&amp;#39;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">testY&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">nd&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">array&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">data&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="sa">b&lt;/span>&lt;span class="s1">&amp;#39;labels&amp;#39;&lt;/span>&lt;span class="p">])&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># batch_size = 128&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">batch_size&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">128&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">train_iter&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">mx&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">io&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">NDArrayIter&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">trainX&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">trainY&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">batch_size&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">shuffle&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kc">True&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">test_iter&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">mx&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">io&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">NDArrayIter&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">testX&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">testY&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">batch_size&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">shuffle&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kc">False&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">net&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">ResNet&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="mi">12&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="mi">64&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">128&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">256&lt;/span>&lt;span class="p">])&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">mod&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">mx&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">mod&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Module&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">symbol&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="n">net&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">context&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">mx&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">gpu&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="k">for&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="ow">in&lt;/span> &lt;span class="nb">range&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">2&lt;/span>&lt;span class="p">)],&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># context = mx.gpu(0),&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">data_names&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="s1">&amp;#39;data&amp;#39;&lt;/span>&lt;span class="p">],&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">label_names&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="s1">&amp;#39;softmax_label&amp;#39;&lt;/span>&lt;span class="p">])&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">mod&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">bind&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">data_shapes&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">train_iter&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">provide_data&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">label_shapes&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">train_iter&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">provide_label&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">mod&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">init_params&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">initializer&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="n">mx&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">init&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">Xavier&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">rnd_type&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s1">&amp;#39;gaussian&amp;#39;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">factor_type&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;in&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">magnitude&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="mi">2&lt;/span>&lt;span class="p">))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">mod&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">init_optimizer&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">optimizer&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s1">&amp;#39;nag&amp;#39;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">optimizer_params&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="p">((&lt;/span>&lt;span class="s1">&amp;#39;learning_rate&amp;#39;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mf">0.1&lt;/span>&lt;span class="p">),&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">(&lt;/span>&lt;span class="s1">&amp;#39;wd&amp;#39;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mf">0.0001&lt;/span>&lt;span class="p">),&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">(&lt;/span>&lt;span class="s1">&amp;#39;momentum&amp;#39;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mf">0.9&lt;/span>&lt;span class="p">)))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># mod.init_optimizer(optimizer=&amp;#39;adam&amp;#39;, optimizer_params=((&amp;#39;learning_rate&amp;#39;, 5e-4),&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># (&amp;#39;beta1&amp;#39;, 0.9),&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># (&amp;#39;beta2&amp;#39;, 0.99)))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">losses&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">[]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">accuracy&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">[]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">metrics&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="n">mx&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">metric&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">create&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s1">&amp;#39;acc&amp;#39;&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="n">mx&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">metric&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">CrossEntropy&lt;/span>&lt;span class="p">()]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="k">for&lt;/span> &lt;span class="n">epoch&lt;/span> &lt;span class="ow">in&lt;/span> &lt;span class="nb">range&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="mi">10&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">train_iter&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">reset&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">[&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">reset&lt;/span>&lt;span class="p">()&lt;/span> &lt;span class="k">for&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="ow">in&lt;/span> &lt;span class="n">metrics&lt;/span>&lt;span class="p">]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">for&lt;/span> &lt;span class="n">batch&lt;/span> &lt;span class="ow">in&lt;/span> &lt;span class="n">train_iter&lt;/span>&lt;span class="p">:&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">mod&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">forward&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">batch&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">is_train&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kc">True&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">mod&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">update_metric&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">metrics&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">],&lt;/span> &lt;span class="n">batch&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">label&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">mod&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">update_metric&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">metrics&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">],&lt;/span> &lt;span class="n">batch&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">label&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">mod&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">backward&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">mod&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">update&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">if&lt;/span> &lt;span class="n">epoch&lt;/span> &lt;span class="o">%&lt;/span> &lt;span class="mi">1&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">:&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">score&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">mod&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">score&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">test_iter&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="s1">&amp;#39;acc&amp;#39;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">mx&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">metric&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">CrossEntropy&lt;/span>&lt;span class="p">()])&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">losses&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">append&lt;/span>&lt;span class="p">((&lt;/span>&lt;span class="n">metrics&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">]&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">get&lt;/span>&lt;span class="p">()[&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">],&lt;/span> &lt;span class="n">score&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">][&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">]))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">accuracy&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">append&lt;/span>&lt;span class="p">((&lt;/span>&lt;span class="n">metrics&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">]&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">get&lt;/span>&lt;span class="p">()[&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">],&lt;/span> &lt;span class="n">score&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">][&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">]))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nb">print&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s1">&amp;#39;Epoch &lt;/span>&lt;span class="si">%d&lt;/span>&lt;span class="s1">, Training acc &lt;/span>&lt;span class="si">%s&lt;/span>&lt;span class="s1">, loss &lt;/span>&lt;span class="si">%s&lt;/span>&lt;span class="s1">&amp;#39;&lt;/span>&lt;span class="o">%&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">epoch&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">accuracy&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">][&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">],&lt;/span> &lt;span class="n">losses&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">][&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">]))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nb">print&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s1">&amp;#39;Epoch &lt;/span>&lt;span class="si">%d&lt;/span>&lt;span class="s1">, Validation acc &lt;/span>&lt;span class="si">%s&lt;/span>&lt;span class="s1">, loss &lt;/span>&lt;span class="si">%s&lt;/span>&lt;span class="s1">&amp;#39;&lt;/span>&lt;span class="o">%&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">epoch&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">accuracy&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">][&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">],&lt;/span> &lt;span class="n">losses&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">][&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">]))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nb">print&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">plt&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">figure&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">figsize&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="mi">10&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">8&lt;/span>&lt;span class="p">))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">train_loss&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">test_loss&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nb">zip&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">losses&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">plt&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">plot&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">train_loss&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s1">&amp;#39;-&amp;#39;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">color&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;blue&amp;#39;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">label&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;training loss&amp;#39;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">plt&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">plot&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">test_loss&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s1">&amp;#39;-&amp;#39;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">color&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;red&amp;#39;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">label&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;testing loss&amp;#39;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">plt&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">legend&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">loc&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;upper right&amp;#39;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">plt&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">xlabel&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s1">&amp;#39;iteration&amp;#39;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">plt&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">ylabel&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s1">&amp;#39;loss&amp;#39;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">plt&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">show&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">plt&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">figure&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">figsize&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="mi">10&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">8&lt;/span>&lt;span class="p">))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">train_acc&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">test_acc&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nb">zip&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">accuracy&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">plt&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">plot&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">train_acc&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s1">&amp;#39;-&amp;#39;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">color&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;blue&amp;#39;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">label&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;training acc&amp;#39;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">plt&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">plot&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">test_acc&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s1">&amp;#39;-&amp;#39;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">color&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;red&amp;#39;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">label&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;testing acc&amp;#39;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">plt&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">legend&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">loc&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;upper right&amp;#39;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">plt&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">xlabel&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s1">&amp;#39;iteration&amp;#39;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">plt&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">ylabel&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s1">&amp;#39;acc&amp;#39;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">plt&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">show&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div></description></item><item><title>Deep Residual Learning for Image Recognition</title><link>https://davidham3.github.io/blog/p/deep-residual-learning-for-image-recognition/</link><pubDate>Sun, 04 Mar 2018 18:59:20 +0000</pubDate><guid>https://davidham3.github.io/blog/p/deep-residual-learning-for-image-recognition/</guid><description>&lt;p>CVPR 2015，ResNet，原文链接：&lt;a class="link" href="https://arxiv.org/abs/1512.03385" target="_blank" rel="noopener"
+>Deep Residual Learning for Image Recognition&lt;/a>&lt;/p>
+&lt;h1 id="deep-residual-learning-for-image-recongnition">Deep Residual Learning for Image Recongnition
+&lt;/h1>&lt;h2 id="problems">problems
+&lt;/h2>&lt;p>When deeper networks are able to start converging, a degradation problem has been exposed: with the network depth increasing, accuracy gets saturated (which might be unsurprising) and then degrades rapidly. Unexpectedly, such degradation is not caused by overfitting, and adding more layers to a suitably deep model leads to higher training error, as reported in [11, 42] and thoroughly verified by our experiments. Fig. 1 shows a typical example.
+&lt;img src="https://davidham3.github.io/blog/blog/images/deep-residual-learning-for-image-recognition/Fig1.PNG"
+loading="lazy"
+alt="Fig1"
+>&lt;/p>
+&lt;p>Figure 1. Training error (left) and test error (right) on CIFAR-10 with 20-layer and 56-layer “plain” networks. The deeper network has higher training error, and thus test error. Similar phenomena on ImageNet is presented in Fig. 4.&lt;/p>
+&lt;p>The degradation (of training accuracy) indicates that not all systems are similarly easy to optimize. Let us consider a shallower architecture and its deeper counterpart that adds more layers onto it. There exists a solution &lt;em>by construction&lt;/em> to the deeper model: the added layers are &lt;em>identity&lt;/em> mapping and the other layers are copied from the learned shallower model. The existence of this constructed solution indicates that a deeper model should produce no higher training error than its shallower counterpart. But experiments show that our current solvers on hand are unable to find solutions that are comparably good or better than the constructed solution (or unable to do so in feasible time).&lt;/p>
+&lt;h2 id="deep-residual-learning">Deep Residual Learning
+&lt;/h2>&lt;h3 id="residual-learning">Residual Learning
+&lt;/h3>&lt;p>Let us consider $\mathcal{H}(x)$ as an underlying mapping to be fit by a few stacked layers (not necessarily the entire net), with $x$ denoting the inputs to the first of these layers. If one hypothesizes that multiple nonlinear layers can asymptotically approximate complicated functions, then it is equivalent to hypothesize that they can asymptotically approximate the residual functions, $i.e.$, $\mathcal{H}(x)-x$ (assuming that the input and output are of the same dimensions). So rather than expect stacked layers to approximate $\mathcal{H}(x)$, we explicitly let these layers approximate a residual function $\mathcal{F}(x):=\mathcal{H}(x)-x$. The original function thus becomes $\mathcal{F}(x)+x$. Although both forms should be able to asymptotically approximate the desired functions (as hypothesized), the ease of learning might be different.&lt;/p>
+&lt;h3 id="identity-mapping-by-shortcuts">Identity Mapping by Shortcuts
+&lt;/h3>$$y = \mathcal{F}(x, {W\_i})+x$$&lt;p>
+Here $x$ and $y$ are the input and output vectors of the layers considered. The function $\mathcal{F}(x, W_i)$ represents the residual mapping to be learned. For the example in Fig. 2 that has two layers, $\mathcal{F} = W_2\sigma (W_1x)$ in which $\sigma $ denotes ReLU and the bias are omitting for simplifying notations. The operation $\mathcal{F}+x$ is performed by a shortcut connection and element-wise addition. We adopt the second nonlinearity after the addtion (&lt;em>i.e.&lt;/em>, $\sigma(y)$, see Fig.2).
+&lt;img src="https://davidham3.github.io/blog/blog/images/deep-residual-learning-for-image-recognition/Fig2.PNG"
+loading="lazy"
+alt="Fig2"
+>&lt;/p>
+&lt;p>Figure2. Residual learning: a building block.&lt;/p>
+$$y = \mathcal{F}(x, {W\_i}) + W\_sx$$&lt;p>
+We can also use a square matrix $W_s$ in Eqn.(1). But we will show by experiments that the identity mapping is sufficient for addressing the degradation problem and is economical, and thus $W_s$ is only used when matching dimensions.
+We also note that although the above notations are about fully-connected layers for simplicity, they are applicable to convolutional layers. The function $\mathcal{F}(x, {W_i})$ can represent multiple convolutional layers. The element-wise addition is performed on two feature maps, channel by channel.&lt;/p>
+&lt;h2 id="residual-network">Residual Network
+&lt;/h2>&lt;p>The identity shortcuts can be directly used when the input and output are of the same dimensions (solid line shortcuts in Fig.3). When the dimensions increase (dotted line shortcuts in Fig.3), we consider two options: (A) The shortcut still performs identity mapping, with extra zero entries padded for increasing dimensions. This option introduces no extra parameter; (B) The projection shortcut in Eqn.(2) is used to match dimensions (done by $1 \times 1$ convolutions). For both options, when the shortcuts go across feature maps of two sizes, they are performed with a stride of 2.
+&lt;img src="https://davidham3.github.io/blog/blog/images/deep-residual-learning-for-image-recognition/Fig3.PNG"
+loading="lazy"
+alt="Fig3"
+>&lt;/p>
+&lt;p>Figure3. Example network architectures for ImageNet. &lt;b>Left&lt;/b>: the VGG-19 model. &lt;b>Middle&lt;/b>: a plain network with 34-parameter layers. &lt;strong>Right&lt;/strong>: a residual network with 34 parameter layers. The dotted shortcuts increase dimensions. &lt;b>Table 1&lt;/b> shows more details and other variants.&lt;/p>
+&lt;h2 id="implementation">Implementation
+&lt;/h2>&lt;p>Our implementation for ImageNet follows the practice in &lt;em>[Imagenet classification
+with deep convolutional neural networks]&lt;/em> and &lt;em>[Very deep convolutional networks for large-scale image recognition]&lt;/em>.&lt;/p>
+&lt;ol>
+&lt;li>The Image is resized with its shorter side randomly sampled in $[256, 480]$ for scale agumentation.&lt;/li>
+&lt;li>A $224 \times 224$ crop is randomly sampled from an image or its horizontal flip, with the per-pixel mean subtracted.&lt;/li>
+&lt;li>The standard color augmentation in &lt;em>Imagenet classification
+with deep convolutional neural networks&lt;/em> is used.&lt;/li>
+&lt;li>We adopt batch normalization (BN) right after each convolution and before activation.&lt;/li>
+&lt;li>We initialize the weights as in &lt;em>Delving deep into rectifiers:
+Surpassing human-level performance on imagenet classification&lt;/em> and train all plain/residual nets from scratch.&lt;/li>
+&lt;li>We use SGD with a mini-batch size of 256.&lt;/li>
+&lt;li>The learning rate starts from 0.1 and is divided by 10 when the error plateaus, and the models are trained from up to $60 \times 10^4$ iterations.&lt;/li>
+&lt;li>We use a weight decay of 0.0001 and a momentum of 0.9.&lt;/li>
+&lt;li>We do not use dropout, following the practice in &lt;em>Batch normalization: Accelerating deep
+network training by reducing internal covariate shift&lt;/em>.&lt;/li>
+&lt;li>In testing, for comparison studies we adopt the standard 10-crop testing.[&lt;em>Imagenet classification
+with deep convolutional neural networks&lt;/em>]&lt;/li>
+&lt;li>For best results, we adopt the fully-convolutional form as in &lt;em>Very deep convolutional networks for large-scale image recognition&lt;/em> and &lt;em>Delving deep into rectifiers: Surpassing human-level performance on imagenet classification&lt;/em>, and average the scores at multiple scales (images are resized such that the shorter side is in $\lbrace 224, 256, 384, 480, 640\rbrace $.&lt;/li>
+&lt;/ol>
+&lt;h2 id="imagenet-classification">ImageNet classification
+&lt;/h2>&lt;h3 id="deeper-bottleneck-architecture">Deeper Bottleneck Architecture
+&lt;/h3>&lt;p>Next we describe our deeper nets for ImageNet. Because of concerns on the training time that we can afford, we modify the building block as a &lt;em>bottleneck&lt;/em> design. For each residual function $\mathcal{F}$, we use a stack of 3 layers instead of 2 (Fig. 5). The three layers are $1 \times 1$, $3 \times 3$, and $1 \times 1$ convolutions, where the $1 \times 1$ layers are responsible for reducing and then increasing (restoring) dimensions, leaving the $3 \times 3$ layer a bottleneck with smaller input/output dimensions. Fig. 5 shows an example, where both designs have similar time complexity.
+The parameter-free indentity shortcuts are particularly important for the bottleneck architectures. If the identity&lt;/p>
+&lt;h2 id="cifar-10-and-analysis">CIFAR-10 and Analysis
+&lt;/h2>&lt;p>The plain/residual architectures follow the form in Fig.3(middle/right). The network inputs are $32 \times 32$ images, with the per-pixel mean subtracted. The first layer is $3 \times 3$ convolutions. Then we use a stack of $6n$ layers with $3 \times 3$ convolutions on the feature maps of sizes $\lbrace 32, 16, 8\rbrace $ respectively, with $2n$ layers for each feature map size. The numbers of filters are $\lbrace 16, 32, 64\rbrace $ respectively, with $2n$ layers for each feature map size. The subsampling is performed by convolutions with a stride of 2. The network ends with a global average pooling, a 10-way fully-connected layer, and softmax.
+When shortcut connections are used, they are connected to the pairs of $3 \times 3$ layers(totally $3n$ shortcuts). On this dataset we use identity shortcuts in all cases (&lt;em>i.e.&lt;/em>, option A), so our residual models have exactly the same depth, width and number of parameters as the plain counterparts.
+We use a weight decay of 0.0001 and momentum of 0.9, and adopt the weight initialization in &lt;em>Delving deep into rectifiers: Surpassing human-level performance on imagenet classification&lt;/em> and BN in &lt;em>Accelerating deep network training by reducing internal covariate shift&lt;/em> but with no dropout. These models are trained with a mini-batch size of 128 on two GPUs. We start with a learning rate of 0.1, divide it by 10 at 32k and 48k iterations, and terminate training at 64k iterations, which is determined on a 45k/5k train/val split. We follow the simple data augmentation in &lt;em>Deeply-supervised nets&lt;/em> for training: 4 pixels are padded on each side, and a $32 \times 32$ crop is randomly sampled from the padded image or its horizontal flip. For testing, we only evaluate the single view of the original $32 \times 32$ image.
+We compare $n=\lbrace 3, 5, 7, 9\rbrace $, leading to 20, 32, 44, and 56-layer networks.&lt;/p></description></item></channel></rss>

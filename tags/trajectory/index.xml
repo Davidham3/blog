@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Trajectory on Davidham的博客</title><link>https://davidham3.github.io/blog/tags/trajectory/</link><description>Recent content in Trajectory on Davidham的博客</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Mon, 06 Jan 2025 12:41:49 +0000</lastBuildDate><atom:link href="https://davidham3.github.io/blog/tags/trajectory/index.xml" rel="self" type="application/rss+xml"/><item><title>TrajDL</title><link>https://davidham3.github.io/blog/p/trajdl/</link><pubDate>Mon, 06 Jan 2025 12:41:49 +0000</pubDate><guid>https://davidham3.github.io/blog/p/trajdl/</guid><description>&lt;img src="https://trajdl.readthedocs.io/en/latest/_static/wide-logo.svg" alt="Featured image of post TrajDL" />&lt;p>记录一下关于TrajDL的信息。TrajDL是我编写的第一个体系完整的python工具包，面向轨迹深度学习，目的是支持很多轨迹深度学习算法，包括轨迹表示学习、轨迹分类、下一位置预测等方法。&lt;/p>
+&lt;p>目前已经在GitHub上开源，项目主页是：&lt;a class="link" href="https://github.com/Spatial-Temporal-Data-Mining/TrajDL" target="_blank" rel="noopener"
+>https://github.com/Spatial-Temporal-Data-Mining/TrajDL&lt;/a>，已经发布了0.1.0版本，可以在pypi上下载，官方文档是：&lt;a class="link" href="https://trajdl.readthedocs.io/en/latest/" target="_blank" rel="noopener"
+>https://trajdl.readthedocs.io/en/latest/&lt;/a>，可以通过这个文档查阅它的使用方法。&lt;/p>
+&lt;p>目前0.1.0版本只支持了TULER、t2vec、GMVSAE、ST-LSTM 4个算法，当然还开发了比如CTLE、HIER这样的算法，但是还没有开发完。&lt;/p>
+&lt;p>TrajDL的核心优势在于帮用户管理了数据集，用户可以快速下载公开数据集，并且通过TrajDL设计的dataset高效地完成实验，一些关键算子通过C++实现，数据集基于Arrow构建，所以整个框架在性能、内存使用上都有比较好的效果。整个训练过程构建在lightning上，所以即支持API开发训练代码，又支持通过配置文件进行训练。&lt;/p>
+&lt;p>0.2.0版本主要会在轨迹相似度计算上面实现一些算法，目前还在开发中。&lt;/p></description></item><item><title>NEUTRAJ</title><link>https://davidham3.github.io/blog/p/neutraj/</link><pubDate>Tue, 24 Dec 2024 07:17:09 +0000</pubDate><guid>https://davidham3.github.io/blog/p/neutraj/</guid><description>&lt;p>&lt;a class="link" href="https://ieeexplore.ieee.org/abstract/document/8731427" target="_blank" rel="noopener"
+>ICDE 2019：Computing Trajectory Similarity in Linear Time: A Generic Seed-Guided Neural Metric Learning Approach&lt;/a>.&lt;/p>
+&lt;p>提出的方法叫NEUTRAJ，主要解决轨迹相似度计算时的性能问题，在线性时间内计算完毕。这个方法是要用户提前选择一种非学习的度量方式，然后这个框架可以去拟合这个度量方式的值，因此这个框架可以支持很多度量方式，比如DTW，Frechet等。模型层面有两个创新，在RNN上增加了带有记忆模块的attention机制；另外是在损失的时候增加了排序信息。&lt;/p>
+&lt;h1 id="definition">Definition
+&lt;/h1>&lt;p>文章里面的轨迹使用$T$表示，$f(T_i, T_j)$ 表示相似度，这个相似度可以使用DTW，Frechet，可以使用各种非学习的度量方式。但是很多这样的度量方法的时间复杂度都达到了平方级，本文的一个目标就是学习一个 $g(\cdot, \cdot)$，这个函数的时间复杂度要达到 $O(n)$，训练方式就是将 $\vert f(T_i, T_j) - g(T_i, T_j) \vert$ 最小化。&lt;/p>
+&lt;h1 id="overview">Overview
+&lt;/h1>&lt;p>$\mathfrak{S}$ 是从所有轨迹里面随机取出的 $N$ 条轨迹，这批轨迹称为种子。然后通过 $f$ 计算一个矩阵 $\mathbf{D} \in \mathbb{R}^{N \times N}$ 出来，然后做一个normalization，得到 $\mathbf{S}$。对于任意两条轨迹，NEUTRAJ会生成两个 $d$ 维向量 $\mathbf{E_i}, \mathbf{E_j}$，使得 $f(T_i, T_j) \approx g(T_i, T_j)$。&lt;/p>
+&lt;h2 id="预处理">预处理
+&lt;/h2>&lt;p>将空间划分成网格，将轨迹序列转换成位置序列，位置就是网格的id。假设网格的大小是 $P \times Q$，那么定义一个memory tensor $\mathbf{M} \in \mathbb{R}^{P \times Q \times d}$，训练前全都置为0。这个tensor会和RNN一起训练。&lt;/p>
+&lt;h2 id="带有记忆模块的rnn">带有记忆模块的RNN
+&lt;/h2>$$
+(\mathbf{f_t, i_t, s_t, o_t}) = \sigma (\mathbf{W_g} \cdot X^c_t + \mathbf{U_g \cdot h_{t-1} + b_g})
+$$$$
+\mathbf{\tilde{c_t}} = \tanh (\mathbf{W_c} \cdot X^c_t + \mathbf{U_c \cdot h_{t-1} + b_c})
+$$$$
+\mathbf{\hat{c_t} = f_t \cdot c_{t-1} + i_t \cdot \tilde{c_t}}
+$$$$
+\mathbf{c_t} = \mathbf{\hat{c_t} + s_t} \cdot \text{read}(\mathbf{\hat{c_t}}, X^g_t, \mathbf{M})
+$$$$
+\text{write}(\mathbf{c_t, s_t}, X^g_t, \mathbf{M})
+$$$$
+\mathbf{h_t} = \mathbf{o_t} \cdot \tanh(\mathbf{c_t})
+$$&lt;p>where $\mathbf{W_g} \in \mathbb{R}^{4d \times 2}, \mathbf{U_g} \in \mathbb{R}^{4d \times d}, \mathbf{W_c} \in \mathbb{R}^{d \times 2}, \mathbf{U_c} \in \mathbb{R}^{d \times d}$。&lt;/p>
+&lt;p>这里需要注意的是 $X^c_t, X^g_t$ 分别表示轨迹的经纬度点和经纬度点所在的网格。读写操作就是对 $\mathbf{M}$ 进行读取和写入。&lt;/p>
+&lt;p>读操作使用两个输入，一个是网格输入 $X^g_t$，另一个是中间细胞状态 $\mathbf{\hat{c_t}}$，然后会输出一个向量 $\mathbf{c^{his}_t}$，这个是用来增强 $\mathbf{\hat{c_t}}$ 的。大体原理就是通过当前的这个网格位置，以它为矩形中心，去读取周围一个正方形区域内这些网格的memory，然后通过一个注意力机制将其变成一个 $d$ 维向量。假设正方形区域的边长是5个格子的长度，那么就会扫描一个 $5 \times 5$ 的区域，获得这些memory。&lt;/p>
+&lt;p>注意力机制的计算公式：&lt;/p>
+$$
+\mathbf{A} = \text{softmax}(\mathbf{G_t \cdot \hat{c_t}})
+$$$$
+\mathbf{mix = G^T_t \cdot A}
+$$$$
+\mathbf{c^{cat}_t = [\hat{c_t}, mix]}
+$$$$
+\mathbf{c_{t}^{his}} = \tanh ( \mathbf{W_{his} \cdot c_{t}^{his} + b_{his}})
+$$&lt;p>这里的 $G_t \in \mathbb{R}^{(2w + 1)^2 \times d}$。&lt;/p>
+&lt;p>写入操作：&lt;/p>
+$$
+\mathbf{M}(X_g)_{new} = \sigma(\mathbf{s_t}) \cdot \mathbf{c_t} + (1 - \sigma(\mathbf{s_t})) \cdot \mathbf{M}(X_g)\_{old}
+$$&lt;h2 id="metric-learning-procedures">Metric Learning Procedures
+&lt;/h2>&lt;p>RNN最后的隐藏状态作为轨迹表示。&lt;/p>
+&lt;p>作者说直接去拟合 $\mathbf{S}$ 会过拟合，所以要给MSE加权。具体做法是从种子里面选出一个anchor轨迹，然后看这条轨迹在 $\mathbf{S}$ 里面的哪一行，取出这一行 $\mathbf{I_a}$，然后进行采样。首先用这个向量的权重采样正样本 $n$ 个，然后用 $1 - \mathbf{I_a}$ 采 $n$ 个负样本。然后给他们按相似和不相似分别排好序，给他们赋予权重，权重是 $\mathbf{r} = (1, 1/2, \dots, 1/l, \dots, 1/n)$，然后再除以 $\sum^n_{l=1} r_l$ 进行归一化。&lt;/p>
+&lt;p>然后定义正样本损失函数为&lt;/p>
+$$
+L^s_a = \sum^n_{l=1} r_l \cdot (g(T_a, T^s_l)- f(T_a, T^s_l))^2
+$$&lt;p>负样本损失：&lt;/p>
+$$
+L^d_a = \sum^n_{l=1} r_l \cdot [\text{ReLU}(g(T_a, T^d_l) - f(T_a, T^d_l))]^2
+$$&lt;p>我觉得不相似样本的损失函数设计的不对，如果 $f$ 是DTW这类算法，DTW值越小说明两条轨迹越相似。那么如果 $g &amp;gt; f$，那就说明模型认为两条轨迹的距离比真实距离大。当前这些样本本身就是不相似的，所以 $f$ 应该会非常大，而如果 $g &amp;gt; f$ ，说明模型认为他们更不相似，此时是合理的，如果 $g &amp;lt; f$，说明模型认为这些样本是相似的，此时应该优化。因此如果 $ g &amp;lt; f$，即 $ g - f &amp;lt; 0$，那么此时应该让模型去优化参数，如果 $g - f &amp;gt; 0$，就不用优化了，因此这里的损失函数里面缺少了一个负号。通过阅读源码，发现作者使用是 $ f - g $，因此这里可以认为是论文撰写错误。&lt;/p>
+&lt;p>然后把两个损失相加，得到最终的loss&lt;/p>
+$$
+L_{\mathfrak{S}} = \sum_{a \in [1, \dots, N]} (L^s_a + L^d_a)
+$$&lt;h1 id="experiments">Experiments
+&lt;/h1>&lt;p>实验是在Geolife和Porto上面做的。做了一个top-k搜索，还做了一个聚类。&lt;/p></description></item><item><title>DeepTEA: Effective and Efficient Online Time-dependent Trajectory Outlier Detection</title><link>https://davidham3.github.io/blog/p/deeptea-effective-and-efficient-online-time-dependent-trajectory-outlier-detection/</link><pubDate>Fri, 09 Sep 2022 14:24:04 +0000</pubDate><guid>https://davidham3.github.io/blog/p/deeptea-effective-and-efficient-online-time-dependent-trajectory-outlier-detection/</guid><description>&lt;p>PVLDB 2022. &lt;a class="link" href="https://www.vldb.org/pvldb/vol15/p1493-han.pdf" target="_blank" rel="noopener"
+>DeepTEA: Effective and Efficient Online Time-dependent Trajectory Outlier&lt;br>
+Detection&lt;/a>&lt;/p>
+&lt;h1 id="abstract">Abstract
+&lt;/h1>&lt;p>研究异常轨迹检测，目的是提取道路中车辆的异常移动。可以帮助理解交通行为，识别出租车欺诈。由于交通状况在不同时间不同地点会发生变化，所以这个问题具有挑战。本文提出了Deep-probabilistic-based time-dependent anomaly detection algorithm (DeepTEA)。使用深度学习方法从大量轨迹里面获得time-dependent outliners，可以处理复杂的交通状况，并精确地检测异常现象。本文还提出了一个快速的近似方法，为了在实时环境下捕获到异常行为。相比SOTA方法，本文方法提升了17.52%，并且可以处理百万计的轨迹数据。&lt;/p>
+&lt;h1 id="2-problem-definition">2. Problem Definition
+&lt;/h1>&lt;p>Definition 1(Trajectory). 轨迹点$p_{t_i}$是一个三元组$(t_i, x, y)$，分别是时间戳、纬度、经度。轨迹$T$是一个轨迹点的有序序列，其中$t_1 &amp;lt; \dots &amp;lt; t_i &amp;lt; \dots &amp;lt; t_n$。&lt;/p>
+&lt;p>轨迹异常检测分为两类，一类是只考虑与正常路线不同的异常轨迹。另一种是考虑与time-dependent的正常路线不同的异常轨迹。&lt;/p>
+&lt;p>Definition 2(Time-dependent Trajectory Outlier)。给一条轨迹$T$，起点$S_T$，终点是$D_T$，还有travel时间，一个time-dependent轨迹异常定义为：相同的$S_T$和$D_T$以及相同的出发、到达时间下的轨迹里面，一个很稀有的、不同于其他轨迹的轨迹。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/deeptea-effective-and-efficient-online-time-dependent-trajectory-outlier-detection/Fig1.jpg"
+loading="lazy"
+alt="Figure1"
+>&lt;/p>
+&lt;p>举例，如果一个轨迹在2016年10月1日的上午10点出发，11点到达，那么一条稀有的轨迹且和相同时间相同OD的轨迹不同的轨迹就是这个Time-dependent Trajectory Outlier.&lt;/p>
+&lt;p>Problem 1(Online Time-dependent Trajectory Outlier Detection)。给定一条正在前进的轨迹$T$，实时计算并更新这条轨迹是时间依赖的异常轨迹的概率。&lt;/p>
+&lt;h1 id="3-the-deeptea-model">3. The DeepTEA Model
+&lt;/h1>&lt;h2 id="31-framework">3.1 Framework
+&lt;/h2>&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/deeptea-effective-and-efficient-online-time-dependent-trajectory-outlier-detection/Fig2.jpg"
+loading="lazy"
+alt="Figure2"
+>&lt;/p>
+&lt;p>给定轨迹$T$，在旅行过程中推算latent traffic pattern $q(z \mid T)$。轨迹观测值 $\tau$ 反映时间依赖的轨迹转移，可以在 inference network 里面用来建模latent time-dependent route $r$。之后，time-dependent route $r$用来生成轨迹观测值$\tau$。&lt;/p>
+&lt;h2 id="32-latent-traffic-pattern-inference">3.2 Latent Traffic Pattern Inference
+&lt;/h2>&lt;p>latent traffic pattern $z$，表示旅途过程中的动态交通状况，比如 ${\text{smooth} \rightarrow \text{congested} \rightarrow \text{smooth} }$，或者${\text{congested} \rightarrow \text{smooth} }$。&lt;/p>
+&lt;h3 id="321-challenges">3.2.1 Challenges
+&lt;/h3>&lt;p>给定轨迹 $T$，我们想基于 $T$ 的空间转移，推算出 latent traffic pattern $q(z \mid T)$。举个例子，一个远距离的移动表明当时的交通状况是通畅的。但是一个轨迹 $T$ 可能表示一些随机行为，比如停车休息，这种行为不能表明当时的交通状况。这是在表示实际交通模式时的第一个挑战。第二个挑战是交通状态在不同的地方，不同的时间是不同的，动态的。同一时间，不同OD也是不一样的。而且在整个旅途中的交通状态变化也是剧烈的。可能开始的时候顺畅，结束的时候拥堵。捕获交通状态很重要，因为它对时间依赖的正常路径影响很大。&lt;/p>
+&lt;h3 id="322-design">3.2.2 Design
+&lt;/h3>&lt;p>为了解决第一个挑战，我们从时间 $t_i$ 的一组轨迹 ${ T_{t_i} }$ 里面学习latent traffic pattern $z$，而不是单条轨迹 $T$。这里我们用 time point series 表示旅行时间。为了从 ${ T_{t_i} }$ 里面很好地组织交通信息，我们使用一个 map grid matrix $Z_{t_i}$，这里面每个单元表示平均速度，用这个对 $t_i$ 的交通状态建模。从图2可以看出，红色表示速度低，表示拥堵。绿色表示畅通。黄色表示即将拥堵，平均速度介于红绿之间。为了解决同一时间不同位置交通状态的多样性，我们用CNN建模。对于没有车辆的区域，CNN可以从有车辆的单元学到信息，而不是将他们表示为缺失值。因为实时状态下交通状况变得很频繁，我们用RNN捕获这种不断变化的动态性，解决第二个挑战。交通状态的变化可以通过RNN很好的建模。然后我们用一个高斯分布和RNN的隐藏状态，推算 latent traffic pattern $z$。CNN+RNN选用了 Convolutional LSTM。&lt;/p>
+&lt;p>我们用上面的随时间变化的动态交通状态来推算latent traffic pattern $z$。这里的想法是交通状态会因为复杂的实时特征发生变化，比如信号灯、事故、早晚高峰。因此，我们在DeepTEA里面会随时间变化更新$Z$，表示为$Z_{t_i}$，表示轨迹点$p_{t_i}$在时间$t_i$的交通状态。我们会从实际交通状况$Z = { Z_{t_i}, Z_{t_{i+1}}, \dots, Z_{t_{i+n}} }$里面推算latent traffic pattern $z$。这里面的交通状况对应的时间分别是对应轨迹点${ p_t, p_{t+1}, \dots, p_{t_{i+n}} }$的时间。对于真实交通状况$Z$，我们可以得到轨迹$T$经过的时间的平均速度。换句话说就是，真实交通状况$Z_{t_i}$是一个平均速度矩阵，它包含了整个城市在$t_i$的移动状态。如果两个轨迹点之间的时间差很小，那么$Z_{t_i}$和$Z_{t_{i+1}}$可能会很相似。这样的话，我们需要把速度按时段提前聚合起来，就取平均速度，比如10分钟的时段，而不再使用时间点。为了减轻稀疏的问题，我们使用CNN将有车辆的位置的信息传播到没有车辆没数据的位置上。为了捕获不同时段的动态变化，我们用RNN建模时间维度的交通转移。这样，spatial traffic correlation和temporal transition通过$f_1(Z)$来捕获：&lt;/p>
+$$
+\tag{1} f\_1(Z) = \text{RNN}(\text{CNN}(Z)),
+$$&lt;p>这里函数$f_1(\cdot)$是一个CNN+RNN，CNN对每个$Z_i$都使用，然后用RNN对他们建模，捕获traffic transition。&lt;/p>
+&lt;p>为了让模型具有生成能力，并且对交通状态的不确定性建模，在给定实际交通状态$Z$的时候，我们用高斯分布对latent traffic pattern $z$建模，可以用来在给定轨迹$T$时近似latent traffic pattern $z$的分布，如公式2所示。我们将参数记为$\phi$，&lt;/p>
+$$
+\tag{2} q\_\phi(z \mid T) \coloneqq q\_\phi(z \mid Z) = \mathcal{N}(\mu\_Z, \text{diag}(\sigma^2\_Z)),
+$$&lt;p>均值$\mu_Z$和标准差$\sigma_Z$通过MLP函数 $g_1(f_1(Z))$得到，参数是$\phi = { f_1(\cdot), g_1(\cdot) }$。&lt;/p>
+&lt;p>这种方式在给定轨迹$T$的时候可以很好的推断出latent traffic pattern $z$。在训练阶段，参数$\phi$可以学到如何捕获latent traffic pattern $z$，而且能表示交通状态的多样性和动态性。&lt;/p>
+&lt;h2 id="33-latent-time-dependent-route-inference">3.3 Latent Time-dependent Route Inference
+&lt;/h2>&lt;h3 id="331-challenges">3.3.1 Challenges
+&lt;/h3>&lt;p>轨迹$T$不仅可以表示位置信息，还可以表示两个轨迹点之间转移的latent traffic pattern $z$。相比只最大化位置信息的似然，对位置和latent traffic pattern $z$同时做更informative，因为它可以反映在时间依赖的交通状态下的轨迹转移。&lt;/p>
+&lt;h3 id="332-design">3.3.2 Design
+&lt;/h3>&lt;p>一条轨迹 $T$ 不仅能反映位置 $p_{t_i}$，还能基于两个连续轨迹点 $p_{t_{i-1}}$ 和 $p_{t_i}$ 之间的转移，传递出 latent traffic pattern $z$。这里我们用 $o(p_{t_i}, z)$ 表示轨迹 $T$ 背后的观测值 $\tau_i$。这里希望用一个神经网络处理观测值 $p_{t_i}$ 和 $z$：&lt;/p>
+$$
+\tag{3} \tau\_i = o(p\_{t\_i}, z) = f\_2(p\_{t\_i}, z) = \text{NN}(p\_{t\_i}, z),
+$$&lt;p>我们使用一个神经网络学习 latent traffic pattern $z$ 的观测值 $p_{t_i}$：&lt;/p>
+$$
+\tag{4} \text{NN}(p\_{t\_i}, z) = W p\_{t\_i} + Q z,
+$$&lt;p>$\text{NN}$的参数是$W$和$Q$。&lt;/p>
+&lt;p>然后，我们学习一条轨迹 $T$ 经过的 latent time-dependent route $r$。我们解释过，轨迹 $T$ 不仅能表示轨迹点 $p_{t_i}$ 的位置信息，还能指明两个轨迹点之间转移的 latent traffic pattern $z$。latent time-dependent route $r$ 的含义可以解释为：高峰时间段城市路段的交通状态是拥堵的，驾驶员通常会上高速，因为那里会畅通。&lt;/p>
+&lt;p>轨迹 $T$ 经过的 latent time-dependent route $r$ 的表示为：&lt;/p>
+$$
+\tag{5} r\_T \sim q\_\gamma (r \mid T),
+$$&lt;p>$\gamma$ 是推测 latent time-dependent route $r$ 时的参数。&lt;/p>
+&lt;p>基于之前的轨迹点和 latent traffic pattern $z$，我们可以用RNN获得轨迹观测值之间的转移，RNN记为 $f_3$，这里使用GRU：&lt;/p>
+$$
+\tag{6} h\_i = f\_3 (h\_{i-1}, \tau\_i),
+$$&lt;p>$h_{i-1}$ 是之前观测值 $\tau_{i-1}$ 的隐藏状态，也就是轨迹点 $p_{t_{i-1}}$ 带着 latent traffic pattern $z$。&lt;/p>
+&lt;p>对于轨迹观测值的不确定性，我们通过高斯分布建模 $q_\gamma (r \mid T)$：&lt;/p>
+$$
+\tag{7} q\_\gamma (r \mid T) = \mathcal{N} (\mu\_T, \text{diag}(\sigma^2\_T)),
+$$&lt;p>我们用一个神经网络 $g_3(h_n)$ 来学习均值和标准差。&lt;/p>
+&lt;p>为了在 latent traffic pattern 里面区分正常的轨迹转移和异常的轨迹转移，需要设计一个模块对轨迹里 latent time-dependent normal route建模，这里 $z$ 会提供 time-dependent traffic 信息。使用高斯分布：&lt;/p>
+$$
+\tag{8} p\_\gamma (r \mid k, z) = \mathcal{N}(\mu\_r, \text{diag}(\sigma^2\_r)),
+$$&lt;p>$k$ 表示 latent time-dependent route 的类型，服从多项式分布：&lt;/p>
+$$
+\tag{9} p\_\gamma (k) = \text{Mult} (\pi),
+$$&lt;p>$\pi$ 是多项式分布的参数。然后，趋近 $q_\gamma (r \mid T)$ 的均值的 latent time-dependent route 是time-dependent normal route。&lt;/p>
+&lt;p>然后，推断网络可以从给定的轨迹 $T$ 里面推算 latent time-dependent route $r$，latent time-dependent route type $k$，还有 latent traffic pattern $z$ 为 $q_{\gamma,\phi}(r, k, z \mid T)$。通过使用 mean-field approximation，可以分解为：&lt;/p>
+$$
+\tag{10} q\_{\gamma,\phi}(r, k, z \mid T) = q\_\gamma(r \mid T) \ q\_\phi(z \mid T) \ q\_\gamma (k \mid T),
+$$&lt;p>$q_\gamma (k \mid T)$ 可以转换为在给定 轨迹 $T$ 经过 latent time-dependent route $r$ 的条件下，route type $k$ 的分布：&lt;/p>
+$$
+\tag{11} q\_\gamma (k \mid T) \coloneqq p\_\gamma (k \mid r\_T) = \frac{p\_\gamma (k) p\_\gamma (r\_T \mid k)}{\sum^K\_{i=1} p\_\gamma (k\_i) p\_\gamma (r\_T \mid k\_i)},
+$$&lt;p>$K$ 是一个超参数，表示 route 类型的个数。&lt;/p>
+&lt;p>因此，推断网络可以从轨迹 $T$ 的观测值 $o(p_{t_i}, z)$ 推断出 latent time-dependent route $r$。$\gamma = { f_2(\cdot), f_3(\cdot), g_3(\cdot), \pi, \mu_r, \sigma_r }$ 这些都是参数。&lt;/p>
+&lt;h2 id="34-trajectory-observation-generation">3.4 Trajectory Observation Generation
+&lt;/h2>&lt;p>生成轨迹观测值的目标是给定 latent time-dependent route $r$，time-dependent route type $k$ 和 latent traffic pattern $z$ 时，最大化生成轨迹观测值 $\tau_i$ 的概率，也就是 $o(p_{t_i}, z)$。这个概率记为 $p_\theta (T \mid r, z, k)$，$\theta$ 表示用于生成过程的参数。从对称的角度来看，我们用RNN来生成轨迹观测值 $\tau_i$，也就是 $o(p_{t_i}, z)$：&lt;/p>
+$$
+\tag{12} \begin{align} \eta\_i &amp;= f\_4 (\tau\_i, \eta\_{i-1}) \\ &amp;= f\_4(o(p\_{t\_i}, z), \eta\_{i-1}) \\ &amp;= \text{RNN} (o(p\_{t\_i}, z), \eta\_{i-1}), i = 1, 2, \dots, n, \ and \ \eta\_o = r, \end{align}
+$$&lt;p>RNN的起始输入是 $\eta_0$。从 $\eta_1$ 开始，输入变成上一个隐藏状态 $\eta_{i-1}$ 和轨迹观测值 $o(p_{t_i}, z)$。因此，观测值 $\tau_i$，也就是 $p_{t_i}$ 在 latent traffic pattern $z$ 的时候，可以通过下面的公式生成：&lt;/p>
+$$
+\tag{13} \begin{align} \tau\_i &amp;= o(p\_{t\_i}, z) \sim p\_\theta (o(p\_{t\_i}, z) \mid o(p\_{1:i-1}, z), r) \\ &amp;= p\_\theta(\tau \mid \eta\_{i-1}) \\ &amp;= \text{Mult}(\text{softmax}(g\_4 (\eta\_{i-1}))), \end{align}
+$$&lt;p>$g_4(\cdot)$是一个函数，把输出映射到网格的个数。softmax 用来把概率的和变成1。然后轨迹观测值 $\tau_i$ 可以通过多项式分布生成。&lt;/p>
+&lt;p>因此，轨迹观测值 $\tau_i$，也就是 $o(p_{t_i}, z)$，可以基于 latent time-dependent route $r$，route type $k$ 和 latent traffic pattern $z$ 生成。我们给生成用的参数记为 $\theta = { f_4(\cdot), g_4(\cdot) }$。这些参数会在训练的过程中学到。&lt;/p>
+&lt;h2 id="35-optimization">3.5 Optimization
+&lt;/h2>&lt;p>我们上面讲了，轨迹观测值不仅能反映位置信息，还能基于两个连续的轨迹点的转移传递出 latent traffic pattern。因此，目标函数是最大化观测到的轨迹的边缘对数似然：&lt;/p>
+$$
+\tag{14} \log p\_\theta(T^{(1)}, T^{(2)}, \dots, T^{(N)}) \coloneqq \log p\_\theta (\tau^{(1)}, \tau^{(2)}, \dots, \tau^{(N)}).
+$$&lt;p>我们通过最大化ELBO来优化上面的边缘对数似然函数：&lt;/p>
+$$
+\tag{15} \log p\_\theta (T) \geq \text{ELBO} = \mathcal{L}(\phi, \gamma, \theta; T).
+$$&lt;p>轨迹 $T$ 的边缘对数似然函数的 ELBO 通过下面的公式计算：&lt;/p>
+$$
+\tag{16} \begin{align} \mathcal{L}(\phi, \gamma, \theta; T) &amp;= \mathbb{E}\_{q\_{\gamma, \phi}(r, k, z \mid T)}[ \log \frac{p\_{\phi, \gamma, \theta}(r, k, z, T)}{q\_{\gamma, \theta}(r, k, z \mid T)}] \\ &amp;= - \mathbb{E}\_{q\_\gamma(r \mid T)} D\_{KL} (q\_\gamma (k \mid T) \Vert p\_\gamma (k)) \\ &amp; - \mathbb{E}\_{q\_\gamma (k \mid T)} D\_{KL} ( q\_\gamma (r \mid T) \Vert p\_\gamma (r \mid k, z)) \\ &amp; - D\_{KL} (q\_\phi (z \mid T) \Vert p\_\phi(z)) + \mathbb{E}\_{q\_{\gamma, \phi}(r, k, z \mid T)} \log p\_\theta (T \mid r, z, k), \end{align}
+$$&lt;p>其中，$p_\theta(z)$ 是 latent traffic pattern $z$ 的先验概率。生成网络 $\log p_\theta(T \mid r, z, k)$ 可以通过下面公式计算：&lt;/p>
+$$
+\tag{17} \log p\_\theta (T \mid r, z, k) = \sum^n\_{i=1} \log p\_\theta (\tau\_i \mid \tau\_{1: i-1}, r, z, k)
+$$&lt;p>整个训练过程的算法如算法1所示。在训练过程中，模型参数通过优化轨迹 $T$ 的 ELBO 来学习。然后这些学到的参数会用于 online anomaly detection，后面会介绍。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/deeptea-effective-and-efficient-online-time-dependent-trajectory-outlier-detection/Algo1.jpg"
+loading="lazy"
+alt="Algo1"
+>&lt;/p>
+&lt;h2 id="36-complexity-analysis">3.6 Complexity Analysis
+&lt;/h2>&lt;p>训练 DeepTEA 的复杂度是 $O(N \cdot (d_{Z_1} d_{Z_2} \bar{V} + \bar{n}))$，$N$ 是轨迹数，$d_{Z_1}$ 和 $d_{Z_2}$ 是 $Z$ 的大小，$\bar{V}$ 是时间间隔的平均个数，$\bar{n}$ 是轨迹的平均长度。&lt;/p>
+&lt;h1 id="online-trajectory-outlier-detection-by-deeptea">Online Trajectory Outlier Detection by DeepTEA
+&lt;/h1>&lt;p>基于算法1学习得到的参数，当下一个轨迹观测值 $\tau_{i+1}$ 实时过来的时候，异常分数会实时更新。这个过程要快。而且直到轨迹完成，这个异常分数都要更新。&lt;/p>
+&lt;h2 id="41-online-detection-by-generation">4.1 Online Detection by Generation
+&lt;/h2>&lt;p>图3展示了在线异常轨迹检测的步骤。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/deeptea-effective-and-efficient-online-time-dependent-trajectory-outlier-detection/Fig3.jpg"
+loading="lazy"
+alt="Figure3"
+>&lt;/p>
+&lt;p>我们通过学到的网络生成观测到的轨迹来检测异常。latent time-dependent route 的分布 $q_\gamma (r \mid T)$ 可以通过参数 $\gamma$ 来计算。latent traffic pattern $z$ 可以通过参数 $\phi$ 和 $Z$ 获得。给定 $q_\gamma (r \mid T)$ 里面第 $k$ 个均值 $u_k$，我们用 RNN 生成轨迹观测值：&lt;/p>
+$$
+\tag{18} \eta\_i = f\_4(\tau\_i, \eta\_{i-1}) = \text{RNN} (\tau\_i, \eta\_{i - 1}), i = 1, 2, \dots, n, \text{and} \ \eta\_0 = u\_k,
+$$&lt;p>RNN的起始输入是 $\eta_0$，这里设置为 $u_k$。从 $\eta_1$ 开始，输入标称隐藏状态 $\eta_{i-1}$ 和轨迹观测值 $\tau_i$，即 $o(p_{t_i}, z)$。因此 $\tau_{i+1}$ 可以用下面的公式生成：&lt;/p>
+$$
+\tag{19} p\_\theta (\tau\_{i+1} \mid \tau\_{i:i}, u\_k) = \text{softmax}(g\_4 (\eta\_{i-1})),
+$$&lt;p>$g_4(\cdot)$ 是用来把输出映射到网格数的函数。&lt;/p>
+&lt;p>给定学到的 $q_\gamma (r \mid T)$ 和 latent traffic pattern $z$，轨迹 $T$ 的实时异常分数 $s_a(\tau_{i:i})$ 可以计算为 1 - 生成轨迹观测值 $\tau_{i:i}$ 的似然，即 ${ \tau_1 \rightarrow \tau_2 \rightarrow \dots \tau_i }$：&lt;/p>
+$$
+\tag{20} s\_a(\tau\_{i:i}) = 1 - \arg \max\_k \exp [\frac{\sum^n\_{i=1} \log p\_\theta (\tau\_i \mid \tau\_{1:i-1}, u\_k)}{n}]
+$$&lt;p>在线上场景下，给定之前的轨迹观测值 $\tau_{i:i}$，下一个轨迹观测值的异常分数可以通过之前这个数来计算：&lt;/p>
+$$
+\tag{21} s\_a(\tau\_{i:i+1}) = 1 - \arg \max\_k \exp [\frac{\log p\_\theta (\tau\_{1:i} \mid u\_k) p\_\theta(\tau\_{i+1} \mid \tau\_{1:i}, u\_k)}{i + 1}]
+$$&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/deeptea-effective-and-efficient-online-time-dependent-trajectory-outlier-detection/Algo2.jpg"
+loading="lazy"
+alt="Algo2"
+>&lt;/p>
+&lt;p>算法2是在线检测的过程。输入是轨迹 $T$，参数是从算法1学到的。对于新来的轨迹观测值 $\tau_{i+1}$，如果 latent traffic pattern $z$ 变了，那我们就更新 $z$。然后基于 $\tau_{1:i}$ 计算 $\tau_{1:i+1}$。最后返回异常分数。&lt;/p>
+&lt;h2 id="42-complexity-analysis">4.2 Complexity Analysis
+&lt;/h2>&lt;p>整个检测的复杂度是 $\mathcal{O}(d_{Z_1} d_{Z_2})$，$d_{Z_1}$ 和 $d_{Z_2}$ 是 $Z$ 的大小。&lt;/p>
+&lt;h1 id="5-the-deeptea-a-model-approximate-online-detection">5 The DeepTEA-A Model: Approximate Online Detection
+&lt;/h1>&lt;h2 id="51-approximation-algorithm">5.1 Approximation Algorithm
+&lt;/h2>&lt;h3 id="511-challenge">5.1.1 Challenge
+&lt;/h3>&lt;p>基于 $\tau_{1:i}$ 的异常分数更新依赖 $t_{i+1}$ 的交通状态矩阵 $Z$，如果路网很大，这里耗时会长。&lt;/p>
+&lt;h3 id="512-design">5.1.2 Design
+&lt;/h3>&lt;p>受 GM-VSAE 的启发，本文提出了近似算法。使用 $\tau_1$ 的时段的交通状态矩阵 $Z$ 作为整个 trip 过程的交通状况的近似。这样，$Z$ 只要在第一个轨迹观测值 $\tau_1$ 的时候算一下就好了。online 更新的时候就不需要再算这个了。&lt;/p>
+&lt;p>给定一个起点 $S_T$ 和终点 $D_T$，从 $q(k \mid S_T, D_T, z_{S_T})$ 这里面取出最优的 latent route type $k$ 来近似最有 latent route pattern $u_k$，这需要从 $q_\gamma (r \mid T)$ 的 $k$ 个均值里面找，$Z_{S_T}$ 是 trip 开始时的交通状况。这样，最优的 latent route type $k$ 在 trip 一开始的时候就能拿到。从第二个轨迹观测值开始，这个 $k$ 就不需要再算了。&lt;/p>
+&lt;p>对于起点 $S_T$，交通状况 $Z_{S_T}$ 的隐藏状态可以通过下面公式计算：&lt;/p>
+$$
+\tag{22} f\_1(Z\_{S\_T}) = \text{CNN} (Z\_{S\_T}),
+$$&lt;p>然后 $z_{S_T}$ 可以从 $q_\phi (z_{S_T} \mid Z_{S_T})$ 里面采样得到：&lt;/p>
+$$
+\tag{23} q\_\phi (z\_{S\_T} \mid Z\_{S\_T}) = \mathcal{N}(\mu\_{Z\_{S\_T}}, diag(\sigma^2\_{Z\_{S\_T}})),
+$$&lt;p>然后，$\tau_{S_T}$ 可以通过 $f_2(\cdot)$ 得到：&lt;/p>
+$$
+\tag{24} \tau\_{S\_T} = f\_2(S\_T, z\_{S\_T}) = \text{NN}(S\_T, z\_{S\_T}) = W S\_T + Q z\_{S\_T},
+$$&lt;p>同理，$\tau_{D_T}$ 按同样的方式计算。&lt;/p>
+&lt;p>然后 $q(k \mid S_T, D_T, z_{S_T})$ 通过 MLP 计算：&lt;/p>
+$$
+\tag{25} q(k \mid S\_T, D\_T, z\_{S\_T}) = \text{softmax}(f\_t(\tau\_{S\_T}, \tau\_{D\_T})),
+$$&lt;p>$f_5$ 就是 MLP。参数记为 $\delta = { f_5 (\cdot) }$。&lt;/p>
+&lt;p>公式20里面，为了获得最优的 $k$，需要跑 $k$ 次。一个简单的方法是通过 $q_\gamma (k \mid T)$ 从轨迹 $T$ 里面找到最优的 $k$。因此 $q(k \mid S_T, D_T, z_{S_T})$ 和 $q_\gamma (k \mid T)$ 要尽可能的相近。我们用交叉熵最小化两个分布的差别：&lt;/p>
+$$
+\tag{26} l\_k = - \sum^K\_{k=1} q\_\gamma (k \mid T) \log q(k \mid S\_T, D\_T, z\_{S\_T}),
+$$&lt;p>这个交叉熵 $l_k$ 会和公式 16 的ELBO同时训练。然后在线检测阶段的时候，最优的 $k$ 是 $q(k \mid S_T, D_T, z_{S_T})$ 里面最高概率的那个。然后直接就能拿到最优 latent time-dependent route $u_k$。&lt;/p>
+&lt;p>需要注意的是，近似算法的训练过程和算法1不一样。首先，交通状况的使用不一样，近似算法只用了 $Z_{S_T}$。第二，公式26，是一个 co-training 过程，为了近似两个分布。训练后得到模型参数 $\phi, \gamma, \theta, \delta$。整个训练过程如算法3所示。先从 $Z_{S_T}$ 里面获得 $z_{S_T}$。然后获得最优的 latent time-dependent route $u_k$，这个数只要在轨迹开始的时候算一下就好了。然后基于 $p_\theta(\tau_{1:i} \mid u_k)$ 更新异常分数就好了。&lt;/p>
+&lt;h2 id="52-complexity-analysis">5.2 Complexity Analysis
+&lt;/h2>&lt;p>在线检测的复杂度 $\mathcal{O}(d_{h_t}(d_{h_t} + d_{\tau_i}))$。这项是新的轨迹观测值 $\tau_{i+1}$ 到来的时候 RNN 的变换过程的复杂度。因为 $d_{h_t}, d_{\tau_i}$ 是常数，所以近似算法的复杂度是 $\mathcal{O}(1)$&lt;/p></description></item></channel></rss>

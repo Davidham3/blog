@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Event Sequence on Davidham的博客</title><link>https://davidham3.github.io/blog/tags/event-sequence/</link><description>Recent content in Event Sequence on Davidham的博客</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Wed, 25 May 2022 15:01:51 +0000</lastBuildDate><atom:link href="https://davidham3.github.io/blog/tags/event-sequence/index.xml" rel="self" type="application/rss+xml"/><item><title>Modeling The Intensity Function Of Point Process Via Recurrent Neural Networks</title><link>https://davidham3.github.io/blog/p/modeling-the-intensity-function-of-point-process-via-recurrent-neural-networks/</link><pubDate>Wed, 25 May 2022 15:01:51 +0000</pubDate><guid>https://davidham3.github.io/blog/p/modeling-the-intensity-function-of-point-process-via-recurrent-neural-networks/</guid><description>&lt;p>AAAI 2017, Intensity RNN: &lt;a class="link" href="https://arxiv.org/pdf/1705.08982.pdf" target="_blank" rel="noopener"
+>Modeling The Intensity Function Of Point Process Via Recurrent Neural Networks&lt;/a>。相比RMTPP，用LSTM。然后模型加了一个时间序列模块，主要是为了支持有时间序列信息的数据集。然后计算事件发生时间的损失时，用了一个高斯核函数。本质上还是MSE，没啥区别。&lt;/p>
+&lt;h1 id="1-introduction">1 Introduction
+&lt;/h1>&lt;p>${z_i, t_i }^N_{i=1}$表示事件数据。事件序列的时间间隔不像时间序列那样相等。点过程是研究事件序列的重要方法。&lt;/p>
+&lt;p>最近一些机器学习方法在数学公式和优化技术上做了一些巧妙的修改，还有一些新的条件强度函数建模方法，主要是用一些数据集上的先验知识来刻画数据的性质。点过程的主要缺点是表达能力受限，模型太弱了，难以捕获复杂的数据。而且如果模型选错了的话，效果会很差。&lt;/p>
+&lt;p>本文将点过程的条件强度看作是模型的输入信息到事件发生强度之间的非线性映射。输入i西南西包含事件的类型、事件信息、系统历史。这样的非线性映射目标是足够复杂且足够灵活，可以对事件数据的特性建模。&lt;/p>
+&lt;p>本文用RNN编码这种非线性关系，在不用先验知识的情况下以端到端的形式建模非线性强度映射。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/modeling-the-intensity-function-of-point-process-via-recurrent-neural-networks/Fig1.jpg"
+loading="lazy"
+alt="Figure1"
+>&lt;/p>
+&lt;h1 id="3-network-structure-and-end-to-end-learning">3 Network Structure and End-to-End Learning
+&lt;/h1>&lt;p>RNN的输入序列${\mathbf{x}}^T_{t=1}$，隐藏状态${\mathbf{h}}^T_{t=1}$。本文用LSTM。&lt;/p>
+$$
+\begin{align} \mathbf{i}\_t &amp;= \sigma(\mathbf{W}\_i \mathbf{x}\_t + \mathbf{U}\_i \mathbf{h}\_{t-1} + \mathbf{V}\_i \mathbf{c}\_{t-1} + \mathbf{b}\_i),\\ \mathbf{f}\_t &amp;= \sigma(\mathbf{W}\_f \mathbf{x}\_t + \mathbf{U}\_f \mathbf{h}\_{t-1} + \mathbf{V}\_f \mathbf{c}\_{t-1} + \mathbf{b}\_f),\\ \mathbf{c}\_t &amp;= \mathbf{f}\_t \mathbf{c}\_{t-1} + \mathbf{i}\_t \odot \text{tanh}(\mathbf{W}\_c \mathbf{x}\_t + \mathbf{U}\_c \mathbf{h}\_{t-1} + \mathbf{b}\_c),\\ \mathbf{o}\_t &amp;= \sigma(\mathbf{W}\_o \mathbf{x}\_t + \mathbf{U}\_o \mathbf{h}\_{t-1} + \mathbf{V}\_o \mathbf{c}\_t + \mathbf{b}\_o),\\ \mathbf{h}\_t &amp;= \mathbf{o}\_t \odot \text{tanh}(\mathbf{c}\_t) \end{align}
+$$&lt;p>$\odot$表示element-wise multiplication，$\sigma$是sigmoid。&lt;/p>
+&lt;p>上述LSTM可以写为：&lt;/p>
+$$
+(\mathbf{h}\_t, \mathbf{c}\_t) = \text{LSTM}(\mathbf{x}\_t, \mathbf{h}\_{t-1} + \mathbf{c}\_{t-1})
+$$&lt;p>考虑两类输入：&lt;/p>
+&lt;ol>
+&lt;li>连续等间隔分布的时间序列&lt;/li>
+&lt;li>间隔随机的事件数据&lt;/li>
+&lt;/ol>
+&lt;p>网络由两部分组成，一个RNN建模时间序列${y_t}^T_{t=1}$，捕获事件发生的background intensity，另一个建模事件序列${z_i, t_i}^N_{i=1}$，捕获long-range事件的依赖关系。因此：&lt;/p>
+$$
+\begin{align} (\mathbf{h}^y\_t, \mathbf{c}^y\_t) &amp;= \text{LSTM}\_y(\mathbf{y}\_t, \mathbf{h}^y\_{t-1} + \mathbf{c}^y\_{t-1}),\\ (\mathbf{h}^z\_t, \mathbf{c}^z\_t) &amp;= \text{LSTM}\_z(\mathbf{z}\_t, \mathbf{h}^z\_{t-1} + \mathbf{c}^z\_{t-1}),\\ \mathbf{e}\_t &amp;= \text{tanh}(\mathbf{W}\_f [\mathbf{h}^y\_t, \mathbf{h}^z\_t] + \mathbf{b}\_f),\\ \mathbf{U}\_t &amp;= \text{softMax}(\mathbf{W}\_U \mathbf{e}\_t + \mathbf{b}\_U),\\ \mathbf{u}\_t &amp;= \text{softMax}(\mathbf{W}\_u[\mathbf{e}\_t, \mathbf{U}\_t] + \mathbf{b}\_u),\\ s\_t &amp;= \mathbf{W}\_s \mathbf{e}\_t + b\_s,\\ \end{align}
+$$&lt;p>$U$和$u$分别表示事件的主要类型和子类，$s$表示事件的时间戳，损失定义为：&lt;/p>
+$$
+\sum^N\_{j=1}(- W^j\_U \log(U^j\_t) - w^j\_u \log(u^j\_t) - \log(f(s^j\_t \mid h^j\_{t-1})))
+$$&lt;p>$N$是样本数，$j$是样本的index，$s^j_t$是下一个事件的时间戳，$h^j_{t-1}$是历史信息。第三项的含义是，我们不仅要预测对下一个事件的类型，也要让下一个事件的预测发生时间尽可能准确。这里用一个高斯惩罚函数，$\sigma^2 = 10$：&lt;/p>
+$$
+f(s^j\_t \mid h^j\_{t-1}) = \frac{1}{\sqrt{2 \pi \sigma}} \exp(\frac{-(s^j\_t - \tilde{s}^j\_t)^2}{2\sigma^2})
+$$&lt;p>时间戳预测层的输出$\tilde{s}^j_t$计算损失的时候，要计算上面的惩罚。&lt;/p>
+&lt;p>$W, w$分别是主类和子类的权重，用来平衡样本。这里说，如果主类和子类的预测是相互独立的，那么就把这两个数设为0。这里明显不对吧，设为0了损失不久只剩下事件发生时间了吗。。。。。。&lt;/p>
+&lt;p>用RMSprop优化。&lt;/p></description></item><item><title>Fully Neural Network based Model for General Temporal Point Processes</title><link>https://davidham3.github.io/blog/p/fully-neural-network-based-model-for-general-temporal-point-processes/</link><pubDate>Tue, 17 May 2022 13:11:14 +0000</pubDate><guid>https://davidham3.github.io/blog/p/fully-neural-network-based-model-for-general-temporal-point-processes/</guid><description>&lt;p>NIPS 2019: &lt;a class="link" href="https://arxiv.org/abs/1905.09690v3" target="_blank" rel="noopener"
+>Fully Neural Network based Model for General Temporal Point Processes&lt;/a>。创新点是之前的条件强度函数有一个积分项，这个积分项不是很好求，本文提出用一个FNN计算累积强度函数，这样条件强度函数的计算只需要计算累积强度函数对事件时间间隔的偏导数就可以得到了。代码：&lt;a class="link" href="https://github.com/omitakahiro/NeuralNetworkPointProcess" target="_blank" rel="noopener"
+>https://github.com/omitakahiro/NeuralNetworkPointProcess&lt;/a>&lt;/p>
+&lt;h1 id="2-method">2 Method
+&lt;/h1>&lt;p>条件强度函数：&lt;/p>
+$$
+\tag{5} \lambda(t \mid H\_t) = \phi(t - t\_i \mid h\_i)
+$$&lt;p>这里$\phi$是非负函数，表示hazard函数。&lt;/p>
+&lt;p>Du et al., 2016提出的近似形式：&lt;/p>
+$$
+\tag{6} \phi(\tau \mid h\_i) = \exp{(w^t \tau + v^\phi \cdot h\_i + b^\phi)}
+$$&lt;p>对数似然函数：&lt;/p>
+$$
+\tag{8} \log{L(\{ t\_i \})} = \sum\_i[ \log{\phi(t\_{i+1} - t\_i \mid h\_i)} - \int^{t\_{i+1} - t\_i}\_0 \phi(\tau \mid h\_i)d\tau]
+$$&lt;p>使用BPTT优化，$h_i$是RNN的隐藏状态。&lt;/p>
+&lt;h2 id="24-proposed-model">2.4 Proposed Model
+&lt;/h2>&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/fully-neural-network-based-model-for-general-temporal-point-processes/Fig1.jpg"
+loading="lazy"
+alt="Figure1"
+>&lt;/p>
+&lt;p>这里建模累积hazard函数：&lt;/p>
+$$
+\tag{9} \Phi(\tau \mid h\_i) = \int^\tau\_0 \phi(s \mid h\_i)ds
+$$&lt;p>hazard函数通过对上式求偏导数得到：&lt;/p>
+$$
+\tag{10} \phi(\tau \mid h\_i) = \frac{\partial}{\partial \tau} \Phi(\tau \mid h\_i)
+$$&lt;p>对数似然函数可以改写为：&lt;/p>
+$$
+\tag{11} \log{L(\{t\_i\})} = \sum\_i[\log{\{\frac{\partial}{\partial \tau} \Phi(\tau = t\_{i+1} - t\_i \mid h\_i)\}} - \Phi(t\_{i+1} - t\_i \mid h\_i)]
+$$&lt;p>累积Hazard函数是一个关于$\tau$的正的单调递增函数。本文用一个FNN网络近似这个函数。为了保证这个性质，只要在$\tau$到最后的损失的路径上权重都是正的就好了。网络架构如图1所示。在模型参数更新的时候，如果权重变成负的，就用绝对值替换它。&lt;/p>
+&lt;p>这里看了代码后发现是把RNN的最后一个预测值与$\tau$一起输入到FNN中了。中间这些层的权重都是正的，而且激活函数是$tanh$，最后一层的激活函数是$softplus$，即$\log{(1 + \exp(\cdot))}$。&lt;/p>
+&lt;p>预测下一个事件的发生时间的方式是：给定过去事件${t_1, t_2, \dots t_i}$，下一个事件的发生时间$t_{i+1}$的条件密度函数$p^\ast(t \mid t_1, t_2, \dots, t_i)$通过公式2计算。&lt;/p>
+&lt;p>\tag{2} p(t_{i+1} \mid t_1, t_2, \dots, t_i) = \lambda(t_{i+1} \mid H_{t_{i+1}}) \exp{{- \int^{t_{i+1}}_{t_i} \lambda(t \mid H_t) dt }}&lt;/p>
+&lt;p>这里使用预测分布$p^\ast$的中位数$t^\ast_{i+1}$来预测$t_{i+1}$。这里利用$\Phi(t^\ast_{i+1} - t_i \mid h_i) = \log{(2)}$这个关系来计算中位数$t^\ast_{i+1}$。这个关系通过在$[t_i, t_{i+1})$上面对强度函数积分得到，此时指数分布的均值为1，还可以对公式2直接积分得到。中位数$t^\ast_{i+1}$可以使用root finding方法，比如二分方法直接获得。本文的模型只需要1s就可以给20000个事件生成预测结果。因此累积hazard函数在生成中位数的预测中也很重要。&lt;/p></description></item><item><title>Recurrent Marked Temporal Point Processes: Embedding Event History to Vector</title><link>https://davidham3.github.io/blog/p/recurrent-marked-temporal-point-processes-embedding-event-history-to-vector/</link><pubDate>Sun, 01 May 2022 09:18:43 +0000</pubDate><guid>https://davidham3.github.io/blog/p/recurrent-marked-temporal-point-processes-embedding-event-history-to-vector/</guid><description>&lt;p>KDD 2016: RMTPP &lt;a class="link" href="https://www.kdd.org/kdd2016/papers/files/rpp1081-duA.pdf" target="_blank" rel="noopener"
+>Recurrent Marked Temporal Point Processes: Embedding Event History to Vector&lt;/a>。经典论文，利用RNN近似条件强度函数，将传统点过程带入到神经点过程。&lt;/p>
+&lt;h1 id="1-introduction">1. Introduction
+&lt;/h1>\[26\]&lt;p>可以用来建模两个连续事件之间的continuous time-interval，通过假设interval之间是一个简单的分布，但是随着阶数的增加，计算仍然会爆炸。&lt;/p>
+&lt;p>第二类是marked temporal point processes和intensity function，这两类是建模这种事件数据更通用的数学框架。地震学中，时间点过程广泛用用在建模地震和余震上面。每个地震表示时空空间中的一个点，地震学已经提出不同的公式来捕获这些事件的随机性。金融领域，时间点过程是经济学的活跃方向，可以给出现代金融市场复杂动态性的一些简答解释。&lt;/p>
+&lt;p>但是实际中典型的这些点过程模型的假设一般做不到，而且这些模型的表达能力有限。我们提出了新的marked时间点过程模型，RMTPP，同步建模事件的事件和标记。我们方法的核心是将一个时间点过程的intensity function看作是一个历史过程的非线性函数，这个函数用RNN表示。&lt;/p>
+&lt;h1 id="2-问题定义">2. 问题定义
+&lt;/h1>&lt;p>一组序列 $\mathcal{C} = { S^1, S^2, \dots, }$&lt;/p>
+&lt;p>序列 $\mathcal{S}^i = ((t^i_1, y^i_1), (t^i_2, y^i_2), \dots)$ 是$(t^i_j, y^i_j)$组成的序列，$t^i_j$是事件发生的时间，$y^i_j$是事件的类别。&lt;/p>
+&lt;ul>
+&lt;li>给定实体$i$，预测下一个事件pair $(t^i_{n+1}, y^i_{n+1})$&lt;/li>
+&lt;li>计算一个给定序列的likelihood&lt;/li>
+&lt;li>通过学习得到的模型模拟一个新的序列&lt;/li>
+&lt;/ul>
+&lt;h1 id="3-related-work">3. Related Work
+&lt;/h1>&lt;p>现存工作的一个主要的限制就是对latent dynamics的各种参数假设，latent dynamics控制了观测到的点过程的生成。&lt;/p>
+&lt;h1 id="4-marked-temporal-point-process">4. Marked Temporal Point Process
+&lt;/h1>&lt;p>这个第四节主要介绍了之前的一些点过程使用的条件强度函数。&lt;/p>
+&lt;p>标记时间点过程是一个对观测到的随时间发生的随机事件模式进行建模的强有力工具。因为一个事件的出现与历史发生了什么有关，我们可以指定一些模型，给定我们已知的过去，对下一个事件建模。严格来讲，一个标记时间点过程是一个随机过程，这个随机过程包含了一个带有时间信息的离散事件的列表，${ t_j, y_j }$，$t_j \in \mathbb{R}^+, y_j \in \mathcal{Y}, j \in \mathbb{Z}^+$，$t$是时间，$y$是标记。历史 $\mathcal{H}_t$ 是直到时间$t$的事件时间和标记组成的list。连续事件时间之间的时间差 $d_{j+1} = t_{j+1} - t_j$ 称为事件间的duration。&lt;/p>
+&lt;p>给定过去事件的历史，我们可以指定下一个事件类型$y$在时间$t$发生的条件密度函数为 $f^{\ast}(t, y) = f(t, y \mid \mathcal{H}_t)$，$f^{\ast}(t, y)$强调了这个密度是基于历史的这个条件。利用链式法则，可以得到一个序列的联合似然为：&lt;/p>
+$$
+\tag{1} f(\{ (t\_j, y\_j) \}^n\_{j=1}) = \prod\_j f(t\_j, y\_j \mid \mathcal{H}\_t) = \prod\_j f^{\ast}(t\_j, y\_j)
+$$&lt;p>$f^{\ast}(t_j, y_j)$ 有很多种形式可以选择。但是实际中人们一般选择非常简单可分解的形式，比如$f(t_j, y_j \mid \mathcal{H}_t) = f(y_j) f(t_j \mid \dots, t_{j-2}, t_{j-1})$，要不然对事件标记和时间进行联合建模会非常复杂。我们可以认为在$y_j$只可取有限个值且与历史完全无关的时候，$f(y_j)$是一个多项式分布。$f(t_j \mid \dots, t_{j-2}, t_{j-1})$是给定过去事件的时间的序列时，事件发生在$t_j$的条件密度。而且需要注意的是，$f^{\ast}(t_j)$不能捕获过去事件标记的影响。&lt;/p>
+&lt;h2 id="41-parametrizations">4.1 Parametrizations
+&lt;/h2>&lt;p>一个标记点过程的时间信息可以通过一个典型的时间点过程来捕获。一个刻画时间点过程的重要方式是通过条件强度函数——给定过去所有事件，对下一个事件建模的随机模型。在一个小的时间窗口$[t, t + dt)$里，$\lambda^{\ast}(t)dt$是一个新事件在给定历史$\mathcal{H}_t$时出现的概率：&lt;/p>
+$$
+\tag{2} \lambda^{\ast}(t)dt = \mathbb{P}\{ \text{event in }[t, t+dt) \mid \mathcal{H}\_t \}
+$$&lt;p>$\ast$是用来提醒我们这个函数是依赖历史的。给定条件密度函数$f^{\ast}(t)$，条件强度函数为：&lt;/p>
+$$
+\tag{3} \lambda^{\ast}(t)dt = \frac{f^{\ast}(t)dt}{S^{\ast}(t)} = \frac{f^{\ast}(t)dt}{1 - F^{\ast}(t)},
+$$&lt;p>$F^{\ast}(t)$是在最后一个事件时间$t_n$之后，一个新事件发生在$t$之前的累积概率，$S^{\ast}(t) = \text{exp}(- \int^t_{t_n} \lambda^{\ast}(\tau) d\tau)$ 是$t_n$到$t$之间没有新事件发生的概率。因此条件密度函数可以写成：&lt;/p>
+$$
+\tag{4} f^{\ast}(t) = \lambda^{\ast}(t) \text{exp}(- \int^t\_{t\_n} \lambda^{\ast}(\tau) d\tau).
+$$&lt;h1 id="5-recurrent-marked-temporal-point-process">5. Recurrent Marked Temporal Point Process
+&lt;/h1>&lt;p>条件强度函数的形式决定了一类点过程的事件性质。但是，为了考虑marker和事件信息，在缺少前沿知识的情况下很难决定使用哪种形式的条件强度函数。为了解决这个问题，作者提出了一个统一的模型，可以在历史的事件和marker信息上对非线性依赖建模的模型。&lt;/p>
+&lt;h2 id="51-model-formulation">5.1 Model Formulation
+&lt;/h2>&lt;p>公式5，6，7有不同的表达形式，而且是对过去事件不同类型的依赖结构。受到这一点的启发，我们希望能学习到一个趋近于历史未知依赖结构的通用表示。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/recurrent-marked-temporal-point-processes-embedding-event-history-to-vector/Fig2.jpg"
+loading="lazy"
+alt="Figure2"
+>&lt;/p>
+&lt;p>我们的想法是用RNN来实现这一步。如图2所示，RNN在时间步$t_j$的输入是$(t_j, y_j)$。$y_i$是事件的类型。$h_{j-1}$表示从过去事件和事件得到的影响的memory，在更新的时候会考虑当前的事件和时间。因为$h_j$表示过去一直到第$j$个事件的影响，那么下一个事件时间的条件强度函数就可以表示为：&lt;/p>
+$$
+\tag{8} f^{\ast}(t\_{j + 1}) = f(t\_{j+1} \mid \mathcal{H}\_t) = f(t\_{j+1} \mid h\_j) = f(d\_{j + 1} \mid h\_j),
+$$&lt;p>$d_{j+1} = t_{j+1} - t_j$。因此，我们可以用$h_j$去预测时间$\hat{t}_{j + 1}$和下一事件类型$\hat{y}_{j + 1}$。&lt;/p>
+&lt;p>这个公式的好处是我们将历史事件嵌入到了一个隐向量空间，然后通过公式4，我们不用指定一个固定的参数形式来建模历史的依赖结构，可以用一个更简单的形式得到条件强度函数$\lambda^{\ast}(t)$。图3展示了RMTPP模型的架构。给定一个事件序列$\mathcal{S} = ((t_j, y_j)^n_{j=1})$，通过迭代以下组件，得到一个隐藏单元${ h_j }$的序列。&lt;/p>
+&lt;p>&lt;strong>Input Layer&lt;/strong>，先用一个input layer对one-hot的事件表示进行投影。$y_j = W^T_{em} y_j + b_{em}$。然后事件步$t_j$也投影成一个向量$t_j$。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/recurrent-marked-temporal-point-processes-embedding-event-history-to-vector/Fig3.jpg"
+loading="lazy"
+alt="Figure3"
+>&lt;/p>
+&lt;p>&lt;strong>Hidden Layer&lt;/strong>&lt;/p>
+$$
+\tag{9} h\_j = \text{max} \{ W^y y\_j + W^t t\_j + W^h h\_{j-1} + b\_h, 0 \}
+$$&lt;p>&lt;strong>Marker Generation&lt;/strong>，给定表示$h_j$，我们用一个多项式分布建模marker的生成：&lt;/p>
+$$
+\tag{10} P(y\_{j+1} = k \mid h\_j) = \frac{ \text{exp}(V^y\_{k,:} h\_j + b^y\_k) }{ \sum^K\_{k=1} \text{exp} ( V^y\_{k,:} h\_j + b^y\_k ) },
+$$&lt;p>$K$是marker的个数，$V^y_{k,:}$是矩阵$V^y$的第$k$行。&lt;/p>
+&lt;p>&lt;strong>Conditional Intensity&lt;/strong>，基于$h_j$，可以得到条件强度函数：&lt;/p>
+$$
+\tag{11} \lambda^{\ast}(t) = \text{exp}( \mathcal{v}^{t^T} \cdot h\_j + w^t (t - t\_j) + b^t ),
+$$&lt;p>$\mathcal{v}^t$是一个列向量，$w^t, b^t$是标量。&lt;/p>
+&lt;ul>
+&lt;li>第一项 $\mathcal{v}^{t^T} \cdot h_j$ 表示过去的事件和时间信息累积的影响。对比公式5，6，7对过去影响固定的公式，现在这个是对过去影响的高度非线性通用表示。&lt;/li>
+&lt;li>第二项强调当前事件$j$的影响。&lt;/li>
+&lt;li>最后一项对下一个事件的出现给了一个基础的强度等级。&lt;/li>
+&lt;li>指数函数是一个非线性函数，且保证强度永远是正的。&lt;/li>
+&lt;/ul>
+&lt;p>通过公式4，我们可以得到给定历史的情况下，下一个事件在时间$t$出现的likelihood：&lt;/p>
+$$
+\tag{12} f^{\ast}(t) = \lambda^{\ast}(t) \text{exp}( - \int^t\_{t\_j} \lambda^{\ast}(\tau) d\tau) \ = \text{exp} \{ \mathcal{v}^{t^T} \cdot h\_j + w^t (t - t\_j) + b^t + \frac{1}{w} \text{exp}(\mathcal{v}^{t^T} + b^t) \ - \frac{1}{w} \text{exp}(\mathcal{v}^{t^T} \cdot h\_j + w^t(t - t\_j) + b^t) \}
+$$&lt;p>然后，下一个事件的时间可以用期望来计算&lt;/p>
+$$
+\tag{13} \hat{t}\_{j+1} = \int^\infty\_{t\_j} t \cdot f^{\ast}(t) dt.
+$$\[32\]&lt;p>的用于一维函数的数值积分技术来计算公式13。&lt;/p>
+&lt;p>&lt;strong>Remark&lt;/strong>。因为我们用RNN表示历史，所以条件强度函数$\lambda^{\ast}(t_{j+1})$的公式11，捕获了过去事件和时间两部分信息。另一方面，因为marker的预测也依赖于过去的时间信息，当时间和事件信息相互关联的时候，就可以提升模型的性能。后面的实验证明了这种互相提升的现象确实存在。&lt;/p>
+&lt;h2 id="52-参数学习">5.2 参数学习
+&lt;/h2>&lt;p>最大对数似然&lt;/p>
+$$
+\tag{14} \ell(\{\mathcal{S}^i \}) = \sum\_i \sum\_j (\text{log} P(y^i\_{j+1} \mid h\_j) + \text{log} f(d^i\_{j+1} \mid h\_j) ),
+$$&lt;p>$\mathcal{C} = { \mathcal{S}^i }$是一组序列, $\mathcal{S}^i = ((t^i_j, y^i_j)^{n_i}_{j=1})$。用BPTT训练。&lt;/p></description></item><item><title>Time-dependent representation for neural event sequence prediction</title><link>https://davidham3.github.io/blog/p/time-dependent-representation-for-neural-event-sequence-prediction/</link><pubDate>Wed, 27 Apr 2022 15:37:58 +0000</pubDate><guid>https://davidham3.github.io/blog/p/time-dependent-representation-for-neural-event-sequence-prediction/</guid><description>&lt;p>ICLR 2018 workshop, &lt;a class="link" href="https://arxiv.org/abs/1708.00065" target="_blank" rel="noopener"
+>Time-dependent representation for neural event sequence prediction&lt;/a>。事件序列的表示学习模型。主要是对事件的嵌入表示有了一些创新，加入了对事件duration的考虑。模型整体还是RNN架构。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/time-dependent-representation-for-neural-event-sequence-prediction/Fig1.jpg"
+loading="lazy"
+alt="Figure1"
+>&lt;/p>
+&lt;p>在事件序列中，有两个时间段(time span)，一个是duration，事件的持续时长，另一个是interval，事件与事件之间的间隔。为了统一这两个时间段，作者将interval看作是一个空闲事件(idle event)。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/time-dependent-representation-for-neural-event-sequence-prediction/Fig2.jpg"
+loading="lazy"
+alt="Figure2"
+>&lt;/p>
+&lt;p>图2是模型架构，就是把事件做嵌入表示，然后把duration考虑进去，得到事件序列里面每个时间步的嵌入表示，然后丢到RNN里面，最后是要预测下一个event是什么，同时可以把下一个event的duration拿进来计算损失，起到一个正则的作用。&lt;/p>
+&lt;h2 id="31-contextualizing-event-embedding-with-time-mask">3.1 Contextualizing Event Embedding With Time Mask
+&lt;/h2>&lt;p>这里有一个观点，就是在机器翻译中，RNN会花一定的capacity去区分不同context下一个词的意思。为了解决这个问题，Choi et al., 2016 提出了一个mask计算。本文借助这个思想，提出了一个时间依赖的嵌入表示。&lt;/p>
+$$
+\tag{1} c^d = \phi (\log(d\_t);\theta)
+$$&lt;p>上式是一个FNN，$\phi$是非线性变换，参数是$\theta$。加对数是为了降低$d_t$的范围。然后用一个单层sigmoid的非线性变换把$c^d$映射到$m^d \in \mathbb{R}^E$上，这个就是mask。&lt;/p>
+$$
+\tag{2} m\_d = \sigma(c^d W\_d + b\_d)
+$$&lt;p>然后&lt;/p>
+$$
+\tag{3} x\_t \leftarrow x\_t \odot m\_d
+$$&lt;p>把mask和一个事件的embedding相乘，element-wise production，这个东西放入RNN。&lt;/p>
+&lt;h2 id="32-event-time-joint-embedding">3.2 Event-Time Joint Embedding
+&lt;/h2>&lt;p>这里有个观点，我们平时只会说“和谁简单地聊了一会儿”，不会说具体聊了多少分钟。我们对于事件时长的感受依赖事件的类型。基于这个直觉，我们用了一个sort one-hot嵌入表示，做了一个事件的联合表示。&lt;/p>
+&lt;p>首先把事件时长映射到一个向量上去&lt;/p>
+$$
+\tag{4} p^d = d\_t W\_d + b\_d \in \mathbb{R}^P
+$$&lt;p>然后在这个向量上面做一个softmax运算&lt;/p>
+$$
+\tag{5} s^d\_i = \frac{\exp(p^d\_i)}{\sum^P\_{k=1} \exp(p^d\_k)}
+$$&lt;p>然后做一个线性变换&lt;/p>
+$$
+\tag{6} g\_d = s^d E^s \in \mathbb{R}^E
+$$&lt;p>然后把事件嵌入和这个时间嵌入求平均，得到事件嵌入表示：&lt;/p>
+$$
+\tag{7} x\_t \leftarrow \frac{x\_t + g\_d}{2} \in \mathbb{R}^E
+$$&lt;h1 id="4-next-event-duration-as-a-regularizer">4 Next Event Duration as A Regularizer
+&lt;/h1>&lt;p>这里讨论的是通过让模型去预测下一事件的时长来增强模型。这个时长是通过对RNN循环层做线性变换得到的。对于时间步$t$，来说，需要预测的duration是$d’_{t+1}$。它的损失回传后会起到一个正则的作用。而且可以对事件预测输出层路径上的多个层进行正则。&lt;/p>
+&lt;h2 id="41-negative-log-lieklihood-of-time-prediction-error">4.1 Negative Log Lieklihood of Time Prediction Error
+&lt;/h2>&lt;p>这里说，对于连续值的预测，一般用MSE，但是MSE这个指标需要和事件预测的损失在同一个数量级上。而事件损失，一般是一个log形式的损失，也就是说这个数会比较小。Hinton &amp;amp; van Camp, 1993研究证明最小化平方损失可以写成最大化0均值高斯分布的概率密度，而且不需要duration服从高斯分布，但是预测误差需要。因此正则项要做一个标准化，&lt;/p>
+$$
+\tag{8} R^N\_t = \frac{(d'\_{t+1} - d\_{t+1})^2}{2\sigma^2\_i}
+$$&lt;p>$\sigma_i$是通过训练集的duration算出来的，然后在训练的过程中，通过时长预测误差的分布来更新。&lt;/p>
+&lt;h2 id="42-cross-entropy-loss-on-time-projection">4.2 Cross Entropy Loss on Time Projection
+&lt;/h2>&lt;p>这里说，对于时长的损失计算还可以用softmax。&lt;/p>
+&lt;p>因为3.2节提到了一个把连续值映射到向量空间的办法，使用同样的办法可以计算另一种损失：&lt;/p>
+$$
+\tag{9} R^X\_t = - \sum^P\_{k=1} Proj\_k (d\_{t+1}) \log{Proj\_k (d'\_{t+1})}
+$$&lt;p>$Proj$就是公式4和5定义的投影函数，$Proj_k$是投影向量中的第$k$项。当3.2节的事件与时间的联合嵌入表示和这个损失都使用的时候，可以把投影函数的权重共享。&lt;/p>
+&lt;h1 id="5-experiments">5 Experiments
+&lt;/h1>&lt;p>用了5个数据集。&lt;/p>
+&lt;h2 id="51-数据预处理">5.1 数据预处理
+&lt;/h2>&lt;p>做了一些特别稀有的事件的过滤。有些事件少于5次的用OOV代替了。使用MAP@K和Precision@K来评估。&lt;/p>
+&lt;p>训练、验证、测试的比例是8:1:1&lt;/p>
+&lt;h2 id="52-模型配置">5.2 模型配置
+&lt;/h2>&lt;ul>
+&lt;li>NoTime: 就用一个简单的LSTM&lt;/li>
+&lt;li>TimeConcat: 把duration做log变换，与事件嵌入表示拼接，输入RNN&lt;/li>
+&lt;li>TimeMask: 3.1节的方法&lt;/li>
+&lt;li>TimeJoint: 3.2节的方法&lt;/li>
+&lt;li>RMTPP: &lt;a class="link" href="https://www.kdd.org/kdd2016/papers/files/rpp1081-duA.pdf" target="_blank" rel="noopener"
+>RMTPP&lt;/a>&lt;/li>
+&lt;/ul>
+&lt;h2 id="54-实验结果">5.4 实验结果
+&lt;/h2>&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/time-dependent-representation-for-neural-event-sequence-prediction/Fig3.jpg"
+loading="lazy"
+alt="Figure3"
+>&lt;/p>
+&lt;p>Effectiveness of Temporal Representation: 图3展示出了TimeMask和TimeJoint的有效性。MIMIC II数据集上面没效果，可能是加时间本来就没啥用。结论就是，用这两个东西肯定比只加时间的值到RNN里面要有效。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/time-dependent-representation-for-neural-event-sequence-prediction/Table1_2.jpg"
+loading="lazy"
+alt="Table 1 &amp; 2"
+>&lt;/p>
+&lt;p>表1和表2也证明了加入时间的有效性。而且有些时候直接加时间可能会伤害模型的效果。&lt;/p>
+&lt;p>Effectiveness of Event Duration Regularization: 表1和表2证明了正则的有效性。&lt;/p>
+&lt;p>Learned Time Representation: 这段说的不明所以，论文里面还有错误，图画的也不清晰，没懂。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/time-dependent-representation-for-neural-event-sequence-prediction/Fig4.jpg"
+loading="lazy"
+alt="Figure4"
+>&lt;/p></description></item><item><title>Event sequence metric learning</title><link>https://davidham3.github.io/blog/p/event-sequence-metric-learning/</link><pubDate>Tue, 26 Apr 2022 14:38:05 +0000</pubDate><guid>https://davidham3.github.io/blog/p/event-sequence-metric-learning/</guid><description>&lt;p>这是一篇讲事件序列度量学习的文章，提出的模型叫MeLES，Metric Learning for Event Sequences。&lt;a class="link" href="https://arxiv.org/abs/2002.08232" target="_blank" rel="noopener"
+>Event sequence metric learning&lt;/a>&lt;/p>
+&lt;p>事件序列主要是指连续时间下的离散事件。比如用户的信用卡交易、在网站上的点击行为等等。&lt;/p>
+&lt;h1 id="1-模型架构">1. 模型架构
+&lt;/h1>&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/event-sequence-metric-learning/Fig1.jpg"
+loading="lazy"
+alt="Figure1"
+>&lt;/p>
+&lt;h1 id="2-原理">2. 原理
+&lt;/h1>&lt;h2 id="21-样本构成">2.1 样本构成
+&lt;/h2>&lt;p>每 $N$ 个序列构成一个batch，对这个batch内的序列进行切分，有三种切分方式：&lt;/p>
+&lt;ol>
+&lt;li>保持事件顺序，随机不放回采样&lt;/li>
+&lt;li>随机切分序列，子序列之间不重叠&lt;/li>
+&lt;li>随机切分序列，子序列之间重叠&lt;/li>
+&lt;/ol>
+&lt;p>不管怎么切，都能把一个序列切成多个子序列，这里将每个序列切成 $K$ 个子序列，那么一个batch就可以得到 $N \times K$ 个子序列。&lt;/p>
+&lt;p>在这些子序列中，来自同一个序列的两个子序列组成的pair，为正样本，来自不同序列的两个子序列组成的pair为负样本。这样，对于每个子序列，就有 $K - 1$ 个正样本，$(N - 1) \times K$ 个负样本。&lt;/p>
+&lt;h2 id="22-序列表示">2.2 序列表示
+&lt;/h2>&lt;p>然后使用RNN或者是transformer对子序列进行编码，编码后可以得到一个向量，这个向量就是这个子序列的嵌入表示。拿到这个表示，就可以计算损失了。&lt;/p>
+&lt;h2 id="23-损失">2.3 损失
+&lt;/h2>&lt;p>计算损失的时候，最简单的想法肯定就是类似交叉熵一样的损失，正样本的损失加上负样本的损失即可。&lt;/p>
+&lt;p>但是之前的研究认为，有些嵌入表示，他们的距离过于远，这种样本对模型训练没什么用，因此本文给了两个损失函数来剔除这种情况。一个叫contrastive loss，一个叫margin loss，原理都是一样的。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/event-sequence-metric-learning/loss.jpg"
+loading="lazy"
+alt="loss"
+>&lt;/p>
+&lt;p>对于contrastive loss来说，正样本的损失正常计算，而负样本的损失，如果pair中的两个表示的距离大于 $m$ ，就不要了。&lt;/p>
+&lt;p>对于margin loss是同样的原理，$b + m$ 和 $b - m$ 构成了损失函数的边界，正样本的距离要大于 $b - m$ 才有意义，而负样本的距离要小于 $b + m$ 才有意义。而且，当 $b &amp;lt; m$ 的时候，这个损失就会变得和上面的contrastive loss一样，只考虑负样本的margin，因为只要距离是欧式距离，在任何情况下 $max(0, D^i_W - b + m) = D^i_W - b + m &amp;gt; 0$。&lt;/p>
+&lt;h2 id="24-负样本采样策略">2.4 负样本采样策略
+&lt;/h2>&lt;p>然后，除了上述的损失函数可以控制两个距离过远的负样本不计算损失，还可以做负样本采样，也就是刚才说的 $(N - 1) \times K$ 个负样本，只取出一部分用来训练。这里有4种方式：&lt;/p>
+&lt;ol>
+&lt;li>随机采样&lt;/li>
+&lt;li>难例挖掘，对每个整理生成$k$个难例作为负样本&lt;/li>
+&lt;li>负样本采样的时候考虑距离因素&lt;/li>
+&lt;li>第四个没看明白他在说啥，倒是给了个参考文献：Florian Schroff, Dmitry Kalenichenko, and James Philbin. 2015. FaceNet: A&lt;br>
+unified embedding for face recognition and clustering. 2015 IEEE Conference on&lt;br>
+Computer Vision and Pattern Recognition (CVPR) (2015), 815–823.&lt;/li>
+&lt;/ol>
+&lt;p>不管是上述哪种负采样方案，除了第一种，都是要算距离的，也就是算两个embedding之间的距离。而且是要算batch内任意两个embedding之间的距离，或者说是算 $(N - 1) \times K$ 个距离。如果用欧氏距离计算嵌入 $A$ 和 $B$ 之间的距离，那么 $D(A, B) = \sqrt{\sum_i (A_i - B_i)^2} = \sqrt{\sum_i A^2_i + \sum_i B^2_i - 2 \sum_i A_i B_i}$，这里为了计算简便，只要让 $\Vert A \Vert = \Vert B \Vert = 1$ 就好了，那就能转换成 $D(A, B) = \sqrt{2 - 2(A \cdot B)}$。所以，为了达成上面的目标，让 $A$ 和 $B$ 的模等于1，只要对这些嵌入表示做标准化，就可以实现了。论文里面说，做了这个操作之后，负样本采样的计算复杂度是 $O(n^2h)$，这个我还没想明白，后面再说吧。&lt;/p>
+&lt;h1 id="3-实验">3. 实验
+&lt;/h1>&lt;p>两个数据集都是银行交易数据，主要是通过交易事件序列预测用户的年龄与性别。&lt;/p>
+&lt;h2 id="31-baselines">3.1 Baselines
+&lt;/h2>&lt;ol>
+&lt;li>
+&lt;p>手工特征+GBM，手工构建了近1k个特征，然后用LightGBM。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Contrastive Predictive Coding(CPC)，一个自监督学习方法，Aäron van den Oord, Yazhe Li, and Oriol Vinyals. 2018. Representation&lt;br>
+Learning with Contrastive Predictive Coding. CoRR abs/1807.03748 (2018).&lt;br>
+arXiv:1807.03748 &lt;a class="link" href="http://arxiv.org/abs/1807.03748" target="_blank" rel="noopener"
+>http://arxiv.org/abs/1807.03748&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>除了上面两个方法，作者还试了编码器网络+分类网络直接用于监督学习任务，这里就没有预训练了。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;h2 id="32-参数选择">3.2 参数选择
+&lt;/h2>&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/event-sequence-metric-learning/Table4_to_7.jpg"
+loading="lazy"
+alt="result"
+>&lt;/p>
+&lt;p>上面4个表的结论：&lt;/p>
+&lt;ol>
+&lt;li>不同编码器效果不同&lt;/li>
+&lt;li>在训练集上表现最好的损失函数在测试集上不一定是最好的&lt;/li>
+&lt;li>随机slice比随机采样更好&lt;/li>
+&lt;li>难例挖掘带来的提升是显著的（但是论文前边根本没仔细介绍难例挖掘好吧。。。）&lt;/li>
+&lt;/ol>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/event-sequence-metric-learning/Fig2.jpg"
+loading="lazy"
+alt="Figure2"
+>&lt;/p>
+&lt;p>图2是说嵌入在800维的时候效果最好，用bias-variance来解释。维数少的时候高bias，信息丢失，维数高的时候高variance，噪声多了。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/event-sequence-metric-learning/Fig3.jpg"
+loading="lazy"
+alt="Figure3"
+>&lt;/p>
+&lt;p>图3一样，256到2048比较平缓，下游任务的效果没有明显增强。&lt;/p>
+&lt;p>作者说嵌入维数的增加，训练时间和显存消耗都是线性增加的。&lt;/p>
+&lt;h2 id="33-嵌入可视化">3.3 嵌入可视化
+&lt;/h2>&lt;p>tSNE，染色是用数据集中的target value染色的。学习完全是自监督的。交易序列表示的是用户的行为，因此模型可以捕获行为模式，产出的embedding如果相近，则说明用户的行为模式相似。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/event-sequence-metric-learning/Fig4.jpg"
+loading="lazy"
+alt="Figure4"
+>&lt;/p>
+&lt;h2 id="34-结果">3.4 结果
+&lt;/h2>&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/event-sequence-metric-learning/Table8.jpg"
+loading="lazy"
+alt="Table8"
+>&lt;/p>
+&lt;p>对比手工构建的特征，模型效果强劲。fine-tuned的表示效果最好。另外可以看到的是，使用手工特征+事件序列嵌入表示的模型效果比纯手工特征效果更好。&lt;/p>
+&lt;h3 id="341-关于半监督的实验">3.4.1 关于半监督的实验
+&lt;/h3>&lt;p>只取了一部分标签做实验，就像监督学习一样用手工特征的lightgbm和CPC。对于嵌入生成方法（MeLES和CPC），分别使用lightgbm和fine-tuned模型来评估效果。同时还比了监督模型在这些label上的效果。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/event-sequence-metric-learning/Fig5.jpg"
+loading="lazy"
+alt="Figure5"
+>&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/event-sequence-metric-learning/Fig6.jpg"
+loading="lazy"
+alt="Figure6"
+>&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/event-sequence-metric-learning/Fig78.jpg"
+loading="lazy"
+alt="Figure7_and_Figure8"
+>&lt;/p>
+&lt;p>结论就是标签少的时候，效果很好。&lt;/p>
+&lt;h1 id="4-结论">4. 结论
+&lt;/h1>&lt;p>提出了MeLES，效果很好，而且还可以在半监督中做预训练。好处是基本不用怎么对数据做处理就可以拿到嵌入表示，获得好的效果。而且在新的事件加入的时候，甚至是可以增量更新已经计算的嵌入表示。另一方面是嵌入表示无法还原原始的事件序列，可以起到数据加密的作用。&lt;/p>
+&lt;p>这里提到的增量更新其实就是，RNN的计算只要上一个时间步的信息就好了，不需要从头再训练一次，因此如果有新的事件到来，从最后一次的状态开始算就好了，这就叫增量更新。&lt;/p></description></item></channel></rss>

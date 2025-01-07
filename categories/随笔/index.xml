@@ -1,0 +1,532 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>随笔 on Davidham的博客</title><link>https://davidham3.github.io/blog/categories/%E9%9A%8F%E7%AC%94/</link><description>Recent content in 随笔 on Davidham的博客</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Sat, 09 Nov 2019 00:21:08 +0000</lastBuildDate><atom:link href="https://davidham3.github.io/blog/categories/%E9%9A%8F%E7%AC%94/index.xml" rel="self" type="application/rss+xml"/><item><title>重装系统后hexo博客的恢复</title><link>https://davidham3.github.io/blog/p/%E9%87%8D%E8%A3%85%E7%B3%BB%E7%BB%9F%E5%90%8Ehexo%E5%8D%9A%E5%AE%A2%E7%9A%84%E6%81%A2%E5%A4%8D/</link><pubDate>Sat, 09 Nov 2019 00:21:08 +0000</pubDate><guid>https://davidham3.github.io/blog/p/%E9%87%8D%E8%A3%85%E7%B3%BB%E7%BB%9F%E5%90%8Ehexo%E5%8D%9A%E5%AE%A2%E7%9A%84%E6%81%A2%E5%A4%8D/</guid><description>&lt;p>先重装一下node.js，然后把GitHub上面的密钥换一下好像就OK了。。。&lt;/p>
+&lt;ol>
+&lt;li>重装node.js&lt;/li>
+&lt;li>更换GitHub上面仓库的密钥&lt;/li>
+&lt;li>随便写个文章push上去试试&lt;/li>
+&lt;li>不知道为什么好久之前的文章跑到首页来了。。。时间出现了问题？
+我折腾了一下，发现有两篇文章的时间hexo好像计算得不太对。。。明天把所有的插件删除再装一次试试，但是难点是我已经不太记得我装过哪些插件了。。。
+好像有个统计字数的，还有一个picture assets。&lt;/li>
+&lt;/ol></description></item><item><title>复杂网络基础</title><link>https://davidham3.github.io/blog/p/%E5%A4%8D%E6%9D%82%E7%BD%91%E7%BB%9C%E5%9F%BA%E7%A1%80/</link><pubDate>Sat, 21 Jul 2018 18:10:09 +0000</pubDate><guid>https://davidham3.github.io/blog/p/%E5%A4%8D%E6%9D%82%E7%BD%91%E7%BB%9C%E5%9F%BA%E7%A1%80/</guid><description>&lt;p>觉得最近应该把复杂网络的基础知识捡一捡，去年上课虽然学过，不过基本都忘了，什么betweeness，都不知道是什么了。最近要做复杂网络方面的研究，这些知识是必需的。打算看一下Newman的书&amp;quot;Networks an Introduction&amp;quot;。&lt;/p>
+&lt;p>&lt;strong>为什么我们对复杂网络感兴趣？&lt;/strong>&lt;/p>
+&lt;p>很多系统都是由网络组成的。因特网，人类社会都是。有人研究个体组成，即顶点的性质，有人研究关系，即连接，还有人研究这些系统，也就是components和connections之间的&lt;em>pattern&lt;/em>。&lt;/p>
+&lt;p>特殊的模式会在系统中产生很大影响。除非我们知道网络结构，否则很难完全理解整个系统如何工作。&lt;/p>
+&lt;p>网络是对一个系统的简单表示，只有基本的连接模式和其他的一点东西。顶点和边可以标记上额外的信息，来详细描述这个系统，但是在表示网络的时候通常会丢失信息。这就是它的缺点，但是也有优点。&lt;/p>
+&lt;p>这些年来，科学家们使用数学、计算机、统计学方法对复杂网络进行分析、建模、理解。很多工具从一个简单的网络表示开始，一组顶点和边，在适当的计算后会得到一些有用的信息：比如哪个是最好的顶点，或是一个顶点到另一个顶点的路径长度。其他工具使用可以做预测的网络的形式，比如互联网流量或传染病在社区内扩散的途径。因为这些工具是在抽象形式下工作，所以理论上可以应用到任何可以表示成网络的系统上。因此如果你感兴趣的系统可以表示成网络，那就有很多工具可以使用。当然不是所有的工具都能给出有效的结果，有些方法是用在特定问题上的。但是如果你有一个关于网络的well-posed question，大多数型框架，还是有一个可以解决这个问题的工具的。&lt;/p>
+&lt;p>&lt;strong>一些网络的例子&lt;/strong>&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/%e5%a4%8d%e6%9d%82%e7%bd%91%e7%bb%9c%e5%9f%ba%e7%a1%80/Fig1.1.JPG"
+loading="lazy"
+alt="Figure1"
+>
+&lt;img src="https://davidham3.github.io/blog/blog/images/%e5%a4%8d%e6%9d%82%e7%bd%91%e7%bb%9c%e5%9f%ba%e7%a1%80/Fig1.1-2.JPG"
+loading="lazy"
+alt="Figure1"
+>
+最出名的且广泛研究的网络之一就是好论文。计算机组成的网络，计算机是顶点，物理数据连接是边，如光纤或电话线。图1.1展示了互联网的结构，2003年的一个snapshot，通过数据包的流通构建的网络。尽管互联网是人工制造的，而且是很细致的工程，但是我们并不知道它的结构是什么，因为它是由很多不同的人群构建出来的，大家并不了解其他人的行动，很少有中央控制。&lt;/p>
+&lt;p>有很多令人激动的实用原因让我们想研究因特网的结构。因特网的功能是在不同地方的计算机之间传播数据，他们会将数据分成片或包，然后再网络中的顶点间传送，直到这些包到达他们的目的地。网络的结构会影响他们完成这些任务的效率，而且如果我们直到网络的结构，我们可以解决很多实际问题。我们应该选择哪个路由来传输数据？最短路径总是最快的吗？如果不是，怎么才能找到最快的？我们怎么避免bottleneck使流量阻塞？当一个顶点或一条边挂掉时会发生什么？等等问题。&lt;/p>
+&lt;p>因特网结构的知识在研发新的通讯标准中是至关重要的。新的标准和协议还是为因特网所设计，老的会被翻新。协议的参数会为了网络的结构而优化。在网络的早些时候，不是网络结构的主要模型在调整过程中使用，而是那些更好的结构数据变得可获得后，我们可以更好的理解这些数据并且提升模型的性能。&lt;/p></description></item><item><title>hexo yilia 主题</title><link>https://davidham3.github.io/blog/p/hexo-yilia-%E4%B8%BB%E9%A2%98/</link><pubDate>Fri, 13 Jul 2018 23:01:12 +0000</pubDate><guid>https://davidham3.github.io/blog/p/hexo-yilia-%E4%B8%BB%E9%A2%98/</guid><description>&lt;p>发现了一个特别好看的主题，yilia，但是已经不维护了，坑还挺多的，记录一下。&lt;/p>
+&lt;p>主题地址：https://github.com/litten/hexo-theme-yilia&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>首先git clone到themes目录中，记得要改名，目录名九教yilia，把前面的hexo-theme去掉&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>修改完hexo根目录下_config.yml里面的theme为yilia后，运行服务器，发现出现&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;span class="lnt">6
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">&amp;lt;%- partial(&amp;#39;_partial/head&amp;#39;) %&amp;gt;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&amp;lt;%- partial(&amp;#39;_partial/header&amp;#39;) %&amp;gt;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&amp;lt;%- body %&amp;gt;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&amp;lt;% if (theme.sidebar &amp;amp;&amp;amp; theme.sidebar !== &amp;#39;bottom&amp;#39;){ %&amp;gt; &amp;lt;%- partial(&amp;#39;_partial/sidebar&amp;#39;) %&amp;gt; &amp;lt;% } %&amp;gt;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&amp;lt;%- partial(&amp;#39;_partial/footer&amp;#39;) %&amp;gt;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&amp;lt;%- partial(&amp;#39;_partial/mobile-nav&amp;#39;) %&amp;gt; &amp;lt;%- partial(&amp;#39;_partial/after-footer&amp;#39;) %&amp;gt;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>说明少装了插件，执行以下命令安装插件：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">npm install hexo-renderer-ejs --save
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">npm install hexo-renderer-stylus --save
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">npm install hexo-renderer-marked --save
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;/li>
+&lt;li>
+&lt;p>进入文章后，头像就显示不出来了，这是源码中的bug。
+修改themes\yilia\layout_partial\left-col.ejs的第六行，改为&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">&amp;lt;img src=&amp;#34;&amp;lt;%=theme.root%&amp;gt;&amp;lt;%=theme.avatar%&amp;gt;&amp;#34; class=&amp;#34;js-avatar&amp;#34;&amp;gt;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>头像就设置为&amp;quot;img/avatar.jpg&amp;quot;即可。
+同时，还要修改themes\yilia\layout_partial\mobile-nav.ejs
+里面的第10行，修改为&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">&amp;lt;img src=&amp;#34;&amp;lt;%=theme.root%&amp;gt;&amp;lt;%=theme.avatar%&amp;gt;&amp;#34; class=&amp;#34;js-avatar&amp;#34;&amp;gt;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;/li>
+&lt;li>
+&lt;p>打赏的二维码也有这个问题
+修改themes\yilia\layout_partial\article.ejs
+找到&amp;lt;img class=&amp;ldquo;reward-img&amp;quot;这个标签，改后面src的值
+支付宝的改成这个&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">&amp;lt;%=theme.root%&amp;gt;&amp;lt;%= theme.alipay%&amp;gt;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>微信的改成这个&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">&amp;lt;%=theme.root%&amp;gt;&amp;lt;%= theme.weixin%&amp;gt;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;/li>
+&lt;li>
+&lt;p>“所有文章”按钮的安装
+首先使用命令&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">node -v
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>检查版本是不是大于6.2
+然后在hexo的配置文件_config.yml最下面加上&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">jsonContent:
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> meta: false
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> pages: false
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> posts:
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> title: true
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> date: true
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> path: true
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> text: false
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> raw: false
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> content: false
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> slug: false
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> updated: false
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> comments: false
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> link: false
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> permalink: false
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> excerpt: false
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> categories: false
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> tags: true
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>重启服务器即可&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>分享功能有问题，我发现share_jia的微信分享不好使，就使用了Mob分享
+先去官网注册账号http://mob.com/，然后申请shareSDK，会得到一个App Key
+在yilia主题里面的_config.yml中的最后，加上&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">sharesdk: true #是否开启分享
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">shareSDKappkey: 你的App Key
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>然后在layout中的_partial中新建目录share，
+创建文件：yilia/layout/_partial/share/share.ejs&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-html" data-lang="html">&lt;span class="line">&lt;span class="cl">&lt;span class="c">&amp;lt;!--MOB SHARE BEGIN--&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">&amp;lt;&lt;/span>&lt;span class="nt">div&lt;/span> &lt;span class="na">class&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s">&amp;#34;-mob-share-ui-button -mob-share-open&amp;#34;&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>分享&lt;span class="p">&amp;lt;/&lt;/span>&lt;span class="nt">div&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">&amp;lt;&lt;/span>&lt;span class="nt">div&lt;/span> &lt;span class="na">class&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s">&amp;#34;-mob-share-ui&amp;#34;&lt;/span> &lt;span class="na">style&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s">&amp;#34;display: none&amp;#34;&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">&amp;lt;&lt;/span>&lt;span class="nt">ul&lt;/span> &lt;span class="na">class&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s">&amp;#34;-mob-share-list&amp;#34;&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">&amp;lt;&lt;/span>&lt;span class="nt">li&lt;/span> &lt;span class="na">class&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s">&amp;#34;-mob-share-weibo&amp;#34;&lt;/span>&lt;span class="p">&amp;gt;&amp;lt;&lt;/span>&lt;span class="nt">p&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>新浪微博&lt;span class="p">&amp;lt;/&lt;/span>&lt;span class="nt">p&lt;/span>&lt;span class="p">&amp;gt;&amp;lt;/&lt;/span>&lt;span class="nt">li&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">&amp;lt;&lt;/span>&lt;span class="nt">li&lt;/span> &lt;span class="na">class&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s">&amp;#34;-mob-share-tencentweibo&amp;#34;&lt;/span>&lt;span class="p">&amp;gt;&amp;lt;&lt;/span>&lt;span class="nt">p&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>腾讯微博&lt;span class="p">&amp;lt;/&lt;/span>&lt;span class="nt">p&lt;/span>&lt;span class="p">&amp;gt;&amp;lt;/&lt;/span>&lt;span class="nt">li&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">&amp;lt;&lt;/span>&lt;span class="nt">li&lt;/span> &lt;span class="na">class&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s">&amp;#34;-mob-share-qzone&amp;#34;&lt;/span>&lt;span class="p">&amp;gt;&amp;lt;&lt;/span>&lt;span class="nt">p&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>QQ空间&lt;span class="p">&amp;lt;/&lt;/span>&lt;span class="nt">p&lt;/span>&lt;span class="p">&amp;gt;&amp;lt;/&lt;/span>&lt;span class="nt">li&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">&amp;lt;&lt;/span>&lt;span class="nt">li&lt;/span> &lt;span class="na">class&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s">&amp;#34;-mob-share-qq&amp;#34;&lt;/span>&lt;span class="p">&amp;gt;&amp;lt;&lt;/span>&lt;span class="nt">p&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>QQ好友&lt;span class="p">&amp;lt;/&lt;/span>&lt;span class="nt">p&lt;/span>&lt;span class="p">&amp;gt;&amp;lt;/&lt;/span>&lt;span class="nt">li&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">&amp;lt;&lt;/span>&lt;span class="nt">li&lt;/span> &lt;span class="na">class&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s">&amp;#34;-mob-share-weixin&amp;#34;&lt;/span>&lt;span class="p">&amp;gt;&amp;lt;&lt;/span>&lt;span class="nt">p&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>微信&lt;span class="p">&amp;lt;/&lt;/span>&lt;span class="nt">p&lt;/span>&lt;span class="p">&amp;gt;&amp;lt;/&lt;/span>&lt;span class="nt">li&lt;/span>&lt;span class="p">&amp;gt;&lt;/span> &lt;span class="p">&amp;lt;&lt;/span>&lt;span class="nt">li&lt;/span> &lt;span class="na">class&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s">&amp;#34;-mob-share-twitter&amp;#34;&lt;/span>&lt;span class="p">&amp;gt;&amp;lt;&lt;/span>&lt;span class="nt">p&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>Twitter&lt;span class="p">&amp;lt;/&lt;/span>&lt;span class="nt">p&lt;/span>&lt;span class="p">&amp;gt;&amp;lt;/&lt;/span>&lt;span class="nt">li&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">&amp;lt;&lt;/span>&lt;span class="nt">li&lt;/span> &lt;span class="na">class&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s">&amp;#34;-mob-share-youdao&amp;#34;&lt;/span>&lt;span class="p">&amp;gt;&amp;lt;&lt;/span>&lt;span class="nt">p&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>有道云笔记&lt;span class="p">&amp;lt;/&lt;/span>&lt;span class="nt">p&lt;/span>&lt;span class="p">&amp;gt;&amp;lt;/&lt;/span>&lt;span class="nt">li&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">&amp;lt;&lt;/span>&lt;span class="nt">li&lt;/span> &lt;span class="na">class&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s">&amp;#34;-mob-share-mingdao&amp;#34;&lt;/span>&lt;span class="p">&amp;gt;&amp;lt;&lt;/span>&lt;span class="nt">p&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>明道&lt;span class="p">&amp;lt;/&lt;/span>&lt;span class="nt">p&lt;/span>&lt;span class="p">&amp;gt;&amp;lt;/&lt;/span>&lt;span class="nt">li&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">&amp;lt;&lt;/span>&lt;span class="nt">li&lt;/span> &lt;span class="na">class&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s">&amp;#34;-mob-share-linkedin&amp;#34;&lt;/span>&lt;span class="p">&amp;gt;&amp;lt;&lt;/span>&lt;span class="nt">p&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>LinkedIn&lt;span class="p">&amp;lt;/&lt;/span>&lt;span class="nt">p&lt;/span>&lt;span class="p">&amp;gt;&amp;lt;/&lt;/span>&lt;span class="nt">li&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">&amp;lt;/&lt;/span>&lt;span class="nt">ul&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">&amp;lt;&lt;/span>&lt;span class="nt">div&lt;/span> &lt;span class="na">class&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s">&amp;#34;-mob-share-close&amp;#34;&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>取消&lt;span class="p">&amp;lt;/&lt;/span>&lt;span class="nt">div&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">&amp;lt;/&lt;/span>&lt;span class="nt">div&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">&amp;lt;&lt;/span>&lt;span class="nt">div&lt;/span> &lt;span class="na">class&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s">&amp;#34;-mob-share-ui-bg&amp;#34;&lt;/span>&lt;span class="p">&amp;gt;&amp;lt;/&lt;/span>&lt;span class="nt">div&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">&amp;lt;&lt;/span>&lt;span class="nt">script&lt;/span> &lt;span class="na">id&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s">&amp;#34;-mob-share&amp;#34;&lt;/span> &lt;span class="na">src&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s">&amp;#34;http://f1.webshare.mob.com/code/mob-share.js?appkey={{ theme.shareSDKappkey }}&amp;#34;&lt;/span>&lt;span class="p">&amp;gt;&amp;lt;/&lt;/span>&lt;span class="nt">script&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c">&amp;lt;!--MOB SHARE END--&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>然后编辑layout/_partial/article.ejs
+找个合适的位置加入以下内容&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">&amp;lt;% if (!index &amp;amp;&amp;amp; theme.sharesdk){ %&amp;gt;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &amp;lt;%- partial(&amp;#39;_partial/share/share.ejs&amp;#39;) %&amp;gt;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&amp;lt;% } %&amp;gt;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;/li>
+&lt;li>
+&lt;p>左边昵称的字体有点丑，在themes\yilia\source\main.0cf68a.css里面修改，找到header-author，修改里面的font-family，我改成了&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-css" data-lang="css">&lt;span class="line">&lt;span class="cl">&lt;span class="nt">font-family&lt;/span>&lt;span class="o">:&lt;/span>&lt;span class="s2">&amp;#34;Times New Roman&amp;#34;&lt;/span>&lt;span class="o">,&lt;/span>&lt;span class="nt">Georgia&lt;/span>&lt;span class="o">,&lt;/span>&lt;span class="nt">Serif&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;/li>
+&lt;li>
+&lt;p>之前的那个share_jia我修复了，之前微信分享之所以不成功，好像是因为百度网盘取消了生成二维码的功能，导致之前的链接不可用了。解决方法是修改themes\yilia\layout_partial\post\share.ejs
+把第49行中的&lt;code>//pan.baidu.com/share/qrcode?url=&lt;/code>修改为&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">//api.qrserver.com/v1/create-qr-code/?size=150x150&amp;amp;data=
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;/li>
+&lt;li>
+&lt;p>如何在左侧显示总文章数？
+修改themes\yilia\layout_partial\left-col.ejs
+在&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;span class="lnt">6
+&lt;/span>&lt;span class="lnt">7
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-gdscript3" data-lang="gdscript3">&lt;span class="line">&lt;span class="cl">&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">nav&lt;/span> &lt;span class="k">class&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;header-menu&amp;#34;&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">ul&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="o">&amp;lt;%&lt;/span> &lt;span class="k">for&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">var&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="ow">in&lt;/span> &lt;span class="n">theme&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">menu&lt;/span>&lt;span class="p">){&lt;/span> &lt;span class="o">%&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">li&lt;/span>&lt;span class="o">&amp;gt;&amp;lt;&lt;/span>&lt;span class="n">a&lt;/span> &lt;span class="n">href&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;&amp;lt;&lt;/span>&lt;span class="si">%- u&lt;/span>&lt;span class="s2">rl_for(theme.menu[i]) %&amp;gt;&amp;#34;&lt;/span>&lt;span class="o">&amp;gt;&amp;lt;%=&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="o">%&amp;gt;&amp;lt;/&lt;/span>&lt;span class="n">a&lt;/span>&lt;span class="o">&amp;gt;&amp;lt;/&lt;/span>&lt;span class="n">li&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="o">&amp;lt;%&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="o">%&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="o">&amp;lt;/&lt;/span>&lt;span class="n">ul&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="o">&amp;lt;/&lt;/span>&lt;span class="n">nav&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>后面加入&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">&amp;lt;nav&amp;gt;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> 总文章数 &amp;lt;%=site.posts.length%&amp;gt;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&amp;lt;/nav&amp;gt;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;/li>
+&lt;li>
+&lt;p>添加评论系统
+yilia默认带了几个系统，但我是从next这个主题转过来的，之前用的是来必力(livere)，不想换了，就得手动在yilia里面加。
+首先是去注册livere，然后获取到自己的id
+新建themes\yilia\layout_partial\comment\livere.ejs
+内容如下：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-gdscript3" data-lang="gdscript3">&lt;span class="line">&lt;span class="cl">&lt;span class="o">&amp;lt;!--&lt;/span> &lt;span class="err">来必力&lt;/span>&lt;span class="n">City版安装代码&lt;/span> &lt;span class="o">--&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">div&lt;/span> &lt;span class="n">id&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;lv-container&amp;#34;&lt;/span> &lt;span class="n">data&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="n">id&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;city&amp;#34;&lt;/span> &lt;span class="n">data&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="n">uid&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;&amp;lt;%=theme.livere_uid%&amp;gt;&amp;#34;&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">script&lt;/span> &lt;span class="n">type&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;text/javascript&amp;#34;&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">(&lt;/span>&lt;span class="n">function&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">d&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">s&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">var&lt;/span> &lt;span class="n">j&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">e&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">d&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">getElementsByTagName&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">)[&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">];&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">if&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nb">typeof&lt;/span> &lt;span class="n">LivereTower&lt;/span> &lt;span class="o">===&lt;/span> &lt;span class="s1">&amp;#39;function&amp;#39;&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">{&lt;/span> &lt;span class="k">return&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">j&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">d&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">createElement&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">j&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">src&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;https://cdn-city.livere.com/js/embed.dist.js&amp;#39;&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">j&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">async&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="bp">true&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">e&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">parentNode&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">insertBefore&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">j&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">e&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">})(&lt;/span>&lt;span class="n">document&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s1">&amp;#39;script&amp;#39;&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="o">&amp;lt;/&lt;/span>&lt;span class="n">script&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">noscript&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="err">为正常使用来必力评论功能请激活&lt;/span>&lt;span class="n">JavaScript&lt;/span>&lt;span class="o">&amp;lt;/&lt;/span>&lt;span class="n">noscript&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="o">&amp;lt;/&lt;/span>&lt;span class="n">div&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="o">&amp;lt;!--&lt;/span> &lt;span class="n">City版安装代码已完成&lt;/span> &lt;span class="o">--&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>然后编辑themes\yilia\layout_partial\article.ejs
+找到这句话：&lt;code>&amp;lt;% if (!index &amp;amp;&amp;amp; post.comments){ %&amp;gt;&lt;/code>
+在下面直接加入：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;span class="lnt">6
+&lt;/span>&lt;span class="lnt">7
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">&amp;lt;% if (theme.livere){ %&amp;gt;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&amp;lt;%- partial(&amp;#39;comment/livere&amp;#39;, {
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">key: post.slug,
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">title: post.title,
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">url: config.url+url_for(post.path)
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">}) %&amp;gt;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&amp;lt;% } %&amp;gt;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>意思就是如果主题配置文件中有livere这个变量，且不为false，那就在下面加入comment/livere.ejs里面的内容
+所以接下来需要在主题配置文件(themes\yilia_config.yml)中添加以下内容：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">livere: true
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">livere_uid: 你的id
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;/li>
+&lt;li>
+&lt;p>添加字数统计
+首先需要安装&lt;a class="link" href="https://github.com/willin/hexo-wordcount" target="_blank" rel="noopener"
+>hexo-wordcount&lt;/a>
+使用如下命令安装&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">npm i --save hexo-wordcount
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h1 id="node-版本760之前请安装-2x-版本-nodejs-v760-and-previous">Node 版本7.6.0之前,请安装 2.x 版本 (Node.js v7.6.0 and previous)
+&lt;/h1>&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">npm install hexo-wordcount@2 --save
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>然后在themes\yilia\layout_partial\left-col.ejs中添加&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">总字数 &amp;lt;span class=&amp;#34;post-count&amp;#34;&amp;gt;&amp;lt;%= totalcount(site, &amp;#39;0,0.0a&amp;#39;) %&amp;gt;&amp;lt;/span&amp;gt;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>编辑themes\yilia\layout_partial\article.ejs
+在header下面加入&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">&amp;lt;div align=&amp;#34;center&amp;#34; class=&amp;#34;post-count&amp;#34;&amp;gt;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> 字数：&amp;lt;%= wordcount(post.content) %&amp;gt;字 | 预计阅读时长：&amp;lt;%= min2read(post.content) %&amp;gt;分钟
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&amp;lt;/div&amp;gt;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>即可显示单篇字数和预计阅读时长。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>关于访问litten.me:9005的问题，这个主题的作者之前为了更好地完善这个主题，有时候会收集用户的客户端信息，详情请见&lt;a class="link" href="https://github.com/litten/hexo-theme-yilia/issues/528" target="_blank" rel="noopener"
+>https://github.com/litten/hexo-theme-yilia/issues/528&lt;/a>，如果不想被统计，就将themes\yilia\source-src\js\report.js里面的内容清空，不过这个请求是异步的，不会影响博客加载速度，而且作者已经不维护了，所以关不关都行。&lt;/p>
+&lt;/li>
+&lt;/ol></description></item><item><title>读研一周年随笔</title><link>https://davidham3.github.io/blog/p/%E8%AF%BB%E7%A0%94%E4%B8%80%E5%91%A8%E5%B9%B4%E9%9A%8F%E7%AC%94/</link><pubDate>Sun, 08 Jul 2018 18:08:00 +0000</pubDate><guid>https://davidham3.github.io/blog/p/%E8%AF%BB%E7%A0%94%E4%B8%80%E5%91%A8%E5%B9%B4%E9%9A%8F%E7%AC%94/</guid><description>&lt;p>读研一周年总结&lt;/p>
+&lt;p>今天有幸参加KDD CUP 2018的一个线下聚会，遇到了很多高手，学到了很多，主要是开拓了视野，优秀的人真的很多。&lt;/p>
+&lt;p>大四跨专业考研计算机成功。记得大四是6月30日毕业，正好周五，周末在家呆了两天马上就奔赴实验室了，7月3日周一，正式开始了我快(gou)乐(ri)的研究生之旅。&lt;/p>
+&lt;p>记得去年7月和8月，实验室新开了个交通数据挖掘方向，让我和我师姐一起去调研，然后就疯狂给甲方出方案，出文档，出PPT。当时反正也没学到什么，感受到的就是每天都在写文档，然后反复改，还得去甲方开会，感觉没啥意义，对我来说。那个暑假同时还负责研究hadoop HA的搭建，写了份初稿，然后发到简书上的博客去了，还被加入了什么专栏，前几天回头再看的时候感觉写的跟shi一样。暑假的时候第一次感受到了在北京挺辛苦的。当时没地方住，只能回家，回家坐公交车1个小时，就这样每天都得坐公交来回两个小时，晚上经常在车上睡着。当时项目上还有点开发任务，我记得当时用spark做了一些车辆轨迹的分析，当时学会了怎么写spark。然后就没啥了，那个暑假在coursera上面刷了一些机器学习的课，华盛顿大学开的，学了boosting啊，stacking啊那些东西。&lt;/p>
+&lt;p>然后不知不觉进入了9月份，开学的日子，开了学之后发现，卧槽老师一个比一个牛逼，讲课都好棒好棒的。等过了一段时间后，也就那么回事，可能是习惯了，就觉得还可以了。当时的机器学习和留学生一起上，还挺有意思的。周一到周五只要不上课，就在实验室呆着。上课的时候倒是还挺有意思，上人工智能的逻辑基础时，总是晚上上课，然后就困，虽说做第一排，但也会趴桌子睡着，最后考个第六，还可以。复杂网络的时候就一直玩手机了，复杂网络我们班同学选的还挺多，他们老在一起玩王者荣耀，挺有意思的，我现在还是挺羡慕他们上课一起玩游戏的，因为现在没课上了。。。复杂网络答辩前一个月，撸了好几篇论文，最后得了个第一，不过看的那几篇论文真是让我学到了很多东西，答辩时我说有一个算法只要调调参什么的，肯定最后效果很好，老师当时说不一定，当时我没有理解，后来我才理解了为什么不一定，后来随着看的论文多了，复现的多了，发现有些论文就是在扯淡，吹的挺好的，实际很渣。然后就是什么数学课啊，什么英语课，英语课最后也考了第一，主要是考研时英语打的底子有点深……感觉真的是终身受益，即便是读了研究生扇贝全家桶也一直在用。考的最渣的就是算法了，主要是后来都没怎么复习，觉得认真准备考试真的越来越没劲了，索性就看了看PPT，最后才考70多分，机器学习才80多。。。唉，就这样吧，毕竟考试分数代表不了任何东西，大家都在cramming，有什么意思呢。所以当时我就接着看论文，自己跑实验来着，那时候一直搞推荐系统来着，本科的时候就玩过，什么协同过滤啊那些玩意，当时机器学习老师给我们讲了矩阵分解的好几个算法，于是我就找了论文研读了一下，虽说都没有实现，但是确实懂了很多，在GitHub上还找到了一个开源实现的implicit feedback recommendation，那个代码真是牛逼，看都看不懂，cython的爆炸性能很强，自己写了很多爬虫，爬各种东西，抓取用户的行为数据，然后跑推荐。那个学期好像没什么印象深刻的事情，反正觉得实验室挺没劲的，项目很水，经常去清华科技园，给甲方运维去，找工作的时候都不好意思说这事。当时我们实验室有个很牛逼的师兄，推荐我去跟着李沐大神每周在斗鱼上的直播，学深度学习，然后我就去了，虽说没有每周都看直播，但还是经常看看录播的，学会了如何使用mxnet里面的gluon，然后就实现了一些网络，跑着玩来着。&lt;/p>
+&lt;p>寒假的时候，学校放假了，但我们实验室不放，就在实验室看论文来着，只不过老师让我看看群体个体出行轨迹什么的，反正就是研究用户出行规律的。当时我们学校交运学院的在nature communication上面发了论文，让我赶紧研究，我看了看，感觉和计算机研究的基本不相关，他们就是建模，然后用公式来做仿真那样的东西，也不是预测分类啊什么的。寒假在实验室水了水就过去了。然后放我们实验室的寒假了，17天，在家疯狂看cs231n。越看越爽，Justin讲的太好了，还有那个女博士，讲的很棒，学到了很多知识，为什么必须要均一化啊，常用的优化算法的参数啊，各种小trick，现在一看还真没什么大不了的，但那时候给我帮助很大。我就反复的跑mnist，发现accuracy一直在上升，每天都有成就感，寒假顺便还把我的博客搭建起来了，在GitHub上面。放完实验室的寒假，就回实验室接着干活了。忘了干什么，反正马上开学了。&lt;/p>
+&lt;p>开学之后还是，每周都往甲方跑，前几周好像还是运维，后面就做数据分析了。数据分析就更扯了……用pandas疯狂做各种数据的统计，各种指标全靠自己想，然后画图，写文档。异常坑爹加没劲，做完了也没有卵用，甲方看完连个反馈都tm没有。然后这个项目没弄完呢，又开辟新项目了，让我也参与那边的项目，那边要用的hbase我根本没怎么接触过，那整个4月份，是我最难受的一个月，有一次直接被气哭了，我来读研又不是来学这些的，当时直接不想念了，接着读也没有必要，觉得自己其实就是进错了实验室，天天干些low到不行的活儿，宝贵的时间就这么一分一秒的没了。后来老师也不让我接着去之前那个甲方出差了，那些low活也不让我干了，让我开始学习。4月份的时候看了不少论文，也复现了很多，两版ResNet，一版风格迁移，一版perceptual loss，当时就一直在看CV的论文，学到了不少东西，比如卷积核如何提取特征什么的，感觉那时看的几篇论文又一次拓宽了知识面，之后就是看了一些nlp方向的，机器翻译、NER一类的。5月份的时候还去北大听了MSRA周明博士的讲座，最后的感觉是：牛逼！知道了什么是深入浅出！那时候5月份的时候正好赶上院里面的活动，班级风采大赛，这是我研究生期间参加过的最有意思的活动，也是最难忘的。我们班同学都太给力了，真的很令人感动，演员们真是太用心了。记得当时想剧本，真是想破脑袋了，经常去开会，大家在一起讨论，经常就讨论不出来了，没有灵感了，不过最后总是能突然闪出一个想法，然后大家就在一起讨论。后来活动结束后，大家还一起出去玩，520那天，漂流的时候一个比一个惨哈哈哈哈，5月真的是我最快乐的一段时光，永生难忘。那之后，我就变了，我觉得过得快乐不快乐完全取决于自己是如何看待周围这些事情的，本科的时候没有那么多破事，或者说本科的时候能逃避的都逃避了，但是研究生期间，天天有破事，时间根本不是自己来把控，是boss，是周围的各种有的没的。之后我就把所有的事情都看淡了，快乐还是很重要的，如果自己不能让自己保持一个快乐的心情，那很有可能就是每天状态都非常不好，整天郁郁寡欢的。6月份过的很平静，每天写写作业，帮同学们解答问题，处理他们的虚拟机啊什么的。其他时间看看论文，逛逛GitHub，找一些有意思的工具，然后提提issue啥的。然后就是准备考试，因为一切都看淡了，所以考试成绩都挺惨的……高级D课直接挂了，挂了就挂了吧。平时专业课什么的不挂就行。考试周的时候，抽一部分时间看看考试，其他时间干自己的事情，复现复现论文什么的。&lt;/p>
+&lt;p>7月份，又迎来了暑假，暑假只有9天，我决定八月底放暑假，因为放的早就没盼头了。。。暑假项目也正式开工了，监督学妹做项目，我接着干自己的事情，搞研究。今天去KDD CUP 2018线下聚会，开拓了视野，我之前一直认为，搞什么数据挖掘，机器学习，没有牛逼的学历，没有牛逼的背景，还搞毛啊，今天发现，不是这样子的，我已经忘了我为什么当初会考计算机，当初考计算机的一个直接原因就是，这行不是靠实力吃饭的吗，但是读了研究生之后，看师兄们找工作的时候，说和北邮啊比不了什么的，潜意识中就逐渐变成了校名决定自己能去哪里，出身决定一切。读研这一年，总会把自己，拿去和那些特别牛逼的选手作比较，总会把自己，和清北那些学生作比较，总觉得平时干那些运维的活儿，就是浪费时间，时间一点一点的浪费着，和那些牛逼的选手越差越远，最后找了个普通工作，学习也变得越来越功利。今天的聚会里面，很多人都没有那么过硬的背景，有个大神，大学都没上，参加了自考，机器学习这些人家全都是自学的，现在马上就要被某银行破格录用，正在走程序。今天他的一个领导还去了那个活动，说想找那种觉得跑模型比打游戏有意思的同学去他们银行，那一刻我才真正的意识到，其实这世界上有很多人热爱计算机，热爱机器学习的，觉得跑模型比打游戏有意思的人多了去了，只不过我一直局限在自己的小圈子里，局限在自己的实验室里面，没有接触到这些人。我考试周之所以不怎么复习，这两次都是因为在跑模型，感觉跑模型上瘾啊，停不下来。&lt;/p>
+&lt;p>总的来说，读研一年了，实验室挺没意思的，当初是非常期望去实验室学习，早点进实验室，因为当时对实验室有着憧憬，进去之后一堆大神，像我这种跨专业的菜鸡可以学到很多东西。进了实验室后发现，实验室除了提供一个好的环境，有时候连氛围，都没有。打比赛连队友都找不到。。。后来看淡了这一切也就无所谓了，环境无法改变的话，那就不要让环境把自己改变，坚信自己认为对的事情就好了。暑假任务很明确，好好学习，好好看论文，今天主办方说以后好搞将论文，分享模型的活动，看看到时候能不能投投稿，赚赚稿费。然后想做些有意义的事情，争取明年找工作前能发一篇顶会，或者发个sci。然后找个比赛，认真打一下，多参加参加这种线下活动，和大神们多交流，学习，差不多这就是今年夏天到明年夏天的任务。&lt;/p>
+&lt;p>感觉这一年迷失了双眼。希望新的一年，目标更明确，能更努力的去提升自己，多做有意义的事情。&lt;/p></description></item><item><title>在GitHub上部署hexo博客</title><link>https://davidham3.github.io/blog/p/%E5%9C%A8github%E4%B8%8A%E9%83%A8%E7%BD%B2hexo%E5%8D%9A%E5%AE%A2/</link><pubDate>Tue, 20 Feb 2018 16:53:50 +0000</pubDate><guid>https://davidham3.github.io/blog/p/%E5%9C%A8github%E4%B8%8A%E9%83%A8%E7%BD%B2hexo%E5%8D%9A%E5%AE%A2/</guid><description>&lt;p>在GitHub Pages部署hexo博客&lt;/p>
+&lt;h1 id="需要的工具">需要的工具
+&lt;/h1>&lt;ol>
+&lt;li>node.js&lt;/li>
+&lt;li>git&lt;/li>
+&lt;/ol>
+&lt;h1 id="安装及部署">安装及部署
+&lt;/h1>&lt;ol>
+&lt;li>安装完node.js和git后安装hexo&lt;br>
+&lt;code>npm install hexo -g&lt;/code>
+安装后使用&lt;code>hexo -v&lt;/code>查看版本号，看是否安装成功&lt;/li>
+&lt;li>创建hexo项目
+找个文件夹作为博客的目录
+在这个目录下使用
+&lt;code>hexo init&lt;/code>
+初始化该目录&lt;/li>
+&lt;li>使用&lt;code>npm install&lt;/code>安装需要的组件&lt;/li>
+&lt;li>使用&lt;code>npm install hexo-deployer-git --save&lt;/code>安装插件&lt;/li>
+&lt;li>使用&lt;code>hexo generate&lt;/code>或&lt;code>hexo g&lt;/code>生成当前的博客&lt;/li>
+&lt;li>使用&lt;code>hexo server&lt;/code>或&lt;code>hexo s&lt;/code>启动服务器
+然后就可以打开浏览器访问localhost:4000在本地查看当前的博客&lt;/li>
+&lt;li>生成SSH密钥
+打开Git Bash，使用以下命令配置git
+&lt;code>git config --global user.name &amp;quot;你的github用户的名字&amp;quot;&lt;/code>
+&lt;code>git config --global user.email &amp;quot;你的github账户邮箱&amp;quot;&lt;/code>
+&lt;code>cd ~/.ssh&lt;/code>
+&lt;code>ssh-keygen -t rsa -C &amp;quot;你的github账户邮箱&amp;quot;&lt;/code>
+连续三个回车
+&lt;code>eval &amp;quot;$(ssh-agent -s)&amp;quot;&lt;/code>，添加密钥到ssh-agent
+&lt;code>ssh-add ~/.ssh/id_rsa&lt;/code>，添加生成的SSH key到ssh-agent
+&lt;code>cat ~/.ssh/id_rsa.pub&lt;/code>
+复制此时显示的内容，内容应该是以ssh-rsa开头&lt;/li>
+&lt;li>Ctrl+C退出后，在GitHub上新建一个新的仓库，仓库名随意，不过需要记录下来，我这里起名叫blog，最下面的Initialize this repository with a README要勾选上，然后保存即可。进入这个仓库后选择Settings，在左侧选项卡Options中翻到下面，GItHub Pages这项，Source选择master branch，选择save后，会在这部分的标题处写明这个仓库的url，这就是你博客的url了。还是页面的左侧的选项卡，Deploy 选择Add deploy key，添加密钥。
+Title随意，我设置为了blog
+Key粘贴我们刚才复制的那一段。
+最下面Allow write access要打勾.
+选择Add Key即可。
+然后在Git Bash中使用
+&lt;code>ssh -T git@github.com&lt;/code>测试，如果看到Hi后面是你的用户名，就说明成功了。&lt;/li>
+&lt;li>修改hexo配置文件
+打开本地博客的根目录，找到_config.yml文件，
+在文件的开头处，第二部分，URL这部分改成如下内容：&lt;/li>
+&lt;/ol>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;span class="lnt">6
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl"># URL
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">## If your site is put in a subdirectory, set url as &amp;#39;http://yoursite.com/child&amp;#39; and root as &amp;#39;/child/&amp;#39;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">url: http://yoursite.com/blog
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">root: /blog/
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">permalink: :year/:month/:day/:title/
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">permalink_defaults:
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>这里的url和root这两项都需要修改。url在后面要加仓库名，我的仓库叫blog，所以写成了&lt;code>http://yoursite.com/仓库名&lt;/code>，同理root要修改成&lt;code>/仓库名/&lt;/code>。
+在文件的结尾处，Deployment这部分改成如下内容：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;span class="lnt">6
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl"># Deployment
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">## Docs: https://hexo.io/docs/deployment.html
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">deploy:
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">type: git
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">repository: git@github.com:Davidham3/blog.git
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">branch: master
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>需要注意的是，这里的repository这项，应该去GitHub里面你新建的那个叫blog的仓库里面找。进入仓库主页后，点击右侧绿色的按钮Clone or download，在新弹出的窗口右上角选择Use SSH，然后将下面的文字复制粘贴到此处。
+修改完配置文件后保存退出即可。
+10. 使用&lt;code>hexo clean&lt;/code>清除缓存
+11. 使用&lt;code>hexo g&lt;/code>生成博客
+12. 使用&lt;code>hexo deploy&lt;/code>或&lt;code>hexo d&lt;/code>将博客部署至GitHub上，打开刚才GitHub Pages设置里面给出的url，就可以进入你的博客了。以上两步也可以连写为&lt;code>hexo d -g&lt;/code>。&lt;/p></description></item></channel></rss>

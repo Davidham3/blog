@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Multimodal on Davidham的博客</title><link>https://davidham3.github.io/blog/tags/multimodal/</link><description>Recent content in Multimodal on Davidham的博客</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Tue, 24 May 2022 15:10:01 +0000</lastBuildDate><atom:link href="https://davidham3.github.io/blog/tags/multimodal/index.xml" rel="self" type="application/rss+xml"/><item><title>MULTIBENCH: Multiscale Benchmarks for Multimodal Representation Learning</title><link>https://davidham3.github.io/blog/p/multibench-multiscale-benchmarks-for-multimodal-representation-learning/</link><pubDate>Tue, 24 May 2022 15:10:01 +0000</pubDate><guid>https://davidham3.github.io/blog/p/multibench-multiscale-benchmarks-for-multimodal-representation-learning/</guid><description>&lt;p>NIPS 2021, datasets and benchmarks track, &lt;a class="link" href="https://openreview.net/pdf?id=izzQAL8BciY" target="_blank" rel="noopener"
+>MULTIBENCH: Multiscale Benchmarks for Multimodal Representation Learning&lt;/a>。代码：&lt;a class="link" href="https://github.com/pliang279/MultiBench" target="_blank" rel="noopener"
+>MultiBench&lt;/a>。这是个benchmark，涵盖15个数据集，10个模态，20个预测任务，6个研究领域。&lt;/p>
+&lt;p>这是个benchmark，涵盖15个数据集，10个模态，20个预测任务，6个研究领域。&lt;/p>
+&lt;p>评估三项内容：&lt;/p>
+&lt;ol>
+&lt;li>generalization&lt;/li>
+&lt;li>time and space complexity&lt;/li>
+&lt;li>modality robustness&lt;/li>
+&lt;/ol>
+&lt;p>提供了20个关于融合、优化目标、训练方法的核心方法的标准实现。&lt;/p>
+&lt;h1 id="1-introduction">1 Introduction
+&lt;/h1>&lt;p>A modality refers to a way in which a signal exists or is experienced.模态是指数据的存在或表现形式。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/multibench-multiscale-benchmarks-for-multimodal-representation-learning/Fig1.jpg"
+loading="lazy"
+alt="Figure1"
+>&lt;/p>
+&lt;p>&lt;strong>Limitations of current multimodal datasets&lt;/strong>：现在的多模态主要研究图像和文本，其他模态太少了。此外，当前的benchmark过分关注效果，忽略了时间和空间复杂度，同时也忽略了一些不完美的模态带来的鲁棒性的下降。在实际应用中，以上三点都应该被考虑。&lt;/p></description></item></channel></rss>

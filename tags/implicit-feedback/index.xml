@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Implicit Feedback on Davidham的博客</title><link>https://davidham3.github.io/blog/tags/implicit-feedback/</link><description>Recent content in Implicit Feedback on Davidham的博客</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Thu, 18 Jan 2018 18:58:25 +0000</lastBuildDate><atom:link href="https://davidham3.github.io/blog/tags/implicit-feedback/index.xml" rel="self" type="application/rss+xml"/><item><title>Collaborative Filtering for Implicit Feedback Datasets</title><link>https://davidham3.github.io/blog/p/collaborative-filtering-for-implicit-feedback-datasets/</link><pubDate>Thu, 18 Jan 2018 18:58:25 +0000</pubDate><guid>https://davidham3.github.io/blog/p/collaborative-filtering-for-implicit-feedback-datasets/</guid><description>&lt;p>ICDM 2008. 推荐系统：协同过滤在隐反馈数据上的应用，这个算法在GitHub上有人实现了，性能很强。这是我的阅读笔记，把论文当中的主要部分抽出来了。原文链接：&lt;a class="link" href="https://ieeexplore.ieee.org/abstract/document/4781121/" target="_blank" rel="noopener"
+>Collaborative Filtering for Implicit Feedback Datasets&lt;/a>&lt;/p>
+&lt;h1 id="introduction">Introduction
+&lt;/h1>&lt;p>In this part, this paper introduce 4 important characteristics for implicit feedback:&lt;/p>
+&lt;h2 id="no-negative-feedback">No negative feedback
+&lt;/h2>&lt;p>For example, a user that did not watch a certain show might have done so because she dislikes the show or was not availale to watch it. So by observing the users behavior, we can infer which items they probably like and thus chose to consume. However, it&amp;rsquo;s hard to reliably infer which item a user did not like.&lt;/p>
+&lt;h2 id="implicit-feedback-is-inherently-noise">Implicit feedback is inherently noise
+&lt;/h2>&lt;p>For example, we may view purchases behavior for an individual, but this does not necessarily indicate a positive view of thhe product. The item may have been purchased as a gift. Or a television is on a particular channel and a particular time, but the viewer might be asleep.&lt;/p>
+&lt;h2 id="the-numerical-value-of-explicit-feedback-indicate-preference-whereas-the-numerical-value-of-implicit-feedback-indicates-confidence">The numerical value of explicit feedback indicate preference, whereas the numerical value of implicit feedback indicates confidence
+&lt;/h2>&lt;p>Numerical values of implicit feedback describe the frequency of actions, e.g., how much time the user watched a certain show, how frequently a user is buying a certain item, etc. A larger value is not indicating a higher preference.&lt;/p>
+&lt;h2 id="evaluation-of-implicit-feedback-recommender-requires-appropriate-measures">Evaluation of implicit-feedback recommender requires appropriate measures
+&lt;/h2>&lt;p>For example, if we gather data on television viewing, it&amp;rsquo;s unclear how to evaluate a show that has been watched more than once, or how to compare two shows that are on at the same time, and hence cannot both be watched by the user.&lt;/p>
+&lt;h1 id="preliminaries">preliminaries
+&lt;/h1>&lt;p>notions:
+users $u, v$
+items $i, j$
+observations $r_{ui}$, associate users and items. For explicit feedback datasets, those values would be ratings that indicate the preference by user $u$ and item $i$. For implicit datasets, $r_{ui}$ can indicate observations for user actions. For example, $r_{ui}$ can indicate the number of times $u$ purchased item $i$ or the time $u$ spent on webpage $i$.&lt;/p>
+&lt;h1 id="previous-work">previous work
+&lt;/h1>&lt;h2 id="neighborhood-models">Neighborhood models
+&lt;/h2>$$\hat{r}\_{ui} = \frac{\sum\_{j\in S^k(i;u)}s\_{ij}r\_{uj}}{\sum\_{j\in S^k(i;u)}s\_{ij}}$$&lt;p>
+Some enhancements of this scheme are well practiced for explicit feedback, such as correcting for biases caused by varying mean ratings of different users and items.
+All item-oriented models share a disadvantage in regards to implicit feedback - they do not provide the flexibility to make a distinction between user preferences and thhe confidence we might have in those preferences.&lt;/p>
+&lt;h2 id="latent-factor-models">Latent factor models
+&lt;/h2>$$\min \limits\_{x\_*,y\_*} \sum \limits\_{r\_{w,i}is known} (r\_{ui}-x^T\_uy\_i)^2+\lambda (\lVert x\_u\rVert^2+\lVert y\_i \rVert^2)$$&lt;p>
+Here, $\lambda$ is used for regularizing the model. Parameters are often learnt by stochastic gradient descent;&lt;/p>
+&lt;h1 id="our-model">Our model
+&lt;/h1>$$p\_{ui}=
+\begin{cases}
+1 &amp; r\_{ui}>0\\
+0 &amp; r\_{ui}=0
+\end{cases}$$$$c\_{ui} = 1 + \alpha r\_{ui}$$$$\min \limits\_{x\_*, y\_*}\sum \limits\_{u,i}c\_{ui}(p\_{ui}-x^T\_uy\_i)^2+\lambda(\sum\limits\_{u}\lVert x\_u\rVert^2+\sum\limits\_{i}\lVert y\_i\rVert^2)$$&lt;p>
+The $\lambda(\sum\limits_{u}\lVert x_u\rVert^2+\sum\limits_{i}\lVert y_i\rVert^2)$ term is necessary for regularizing the model such that it will not overfit the training data.&lt;/p>
+&lt;p>[1]. Herlocker J L, Konstan J A, Borchers A, et al. An algorithmic framework for performing collaborative filtering[C]. international acm sigir conference on research and development in information retrieval, 1999: 230-237.
+[2]. Linden G, Smith B, York J C, et al. Amazon.com recommendations: item-to-item collaborative filtering[J]. IEEE Internet Computing, 2003, 7(1): 76-80.
+[3]. Sarwar B M, Karypis G, Konstan J A, et al. Item-based collaborative filtering recommendation algorithms[J]. international world wide web conferences, 2001: 285-295.
+[4]. Hofmann T. Latent semantic models for collaborative filtering[J]. ACM Transactions on Information Systems, 2004, 22(1): 89-115.
+[5]. Salakhutdinov R, Mnih A, Hinton G E, et al. Restricted Boltzmann machines for collaborative filtering[C]. international conference on machine learning, 2007: 791-798.
+[6]. Blei D M, Ng A Y, Jordan M I, et al. Latent Dirichlet Allocation[C]. neural information processing systems, 2002, 3(0): 601-608.&lt;/p></description></item></channel></rss>

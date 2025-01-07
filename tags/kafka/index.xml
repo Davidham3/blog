@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Kafka on Davidham的博客</title><link>https://davidham3.github.io/blog/tags/kafka/</link><description>Recent content in Kafka on Davidham的博客</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Thu, 05 Jul 2018 20:54:26 +0000</lastBuildDate><atom:link href="https://davidham3.github.io/blog/tags/kafka/index.xml" rel="self" type="application/rss+xml"/><item><title>Kafka生产者与消费者</title><link>https://davidham3.github.io/blog/p/kafka%E7%94%9F%E4%BA%A7%E8%80%85%E4%B8%8E%E6%B6%88%E8%B4%B9%E8%80%85/</link><pubDate>Thu, 05 Jul 2018 20:54:26 +0000</pubDate><guid>https://davidham3.github.io/blog/p/kafka%E7%94%9F%E4%BA%A7%E8%80%85%E4%B8%8E%E6%B6%88%E8%B4%B9%E8%80%85/</guid><description>&lt;p>Kafka是一个分布式、流式消息平台，是一套发布订阅系统，通俗来说就是Kafka producer发布数据至Kafka brokers，然后由Kafka consumer从brokers拉取数据，进行消费。&lt;/p>
+&lt;p>最近上数据仓库的课，学习了Kafka的使用方式以及Kafka的原理。&lt;/p>
+&lt;p>Kafka官网：&lt;a class="link" href="http://kafka.apache.org/" target="_blank" rel="noopener"
+>Apache Kafka&lt;/a>&lt;/p>
+&lt;p>Kafka是一个分布式、流式消息平台，是一套发布订阅系统，通俗来说就是Kafka producer发布数据至Kafka brokers，然后由Kafka consumer从brokers拉取数据，进行消费。&lt;/p>
+&lt;p>&lt;strong>日志&lt;/strong>
+有意思的特性是Kafka内的数据都是以日志的形式存储，即便消费完也不会消失，配置文件中配置了过了多长时间日志会销毁掉。这样设计的好处有很多，consumer是有group的，每个组进行消费的时候，都会有个偏移量offset记录在zookeeper中，通过这个offset就知道下次从哪里开始消费了，不同组的offset不一样，这样每个组都可以按照自己的需要进行消费。&lt;/p>
+&lt;p>&lt;strong>主题&lt;/strong>
+Kafka的记录是有主题的，这样producer发送到broker的数据其实就是打上了标签，有了分类，消费的时候可以按主题消费，相当于一开始就用主题对数据进行了区分。&lt;/p>
+&lt;p>&lt;strong>效率&lt;/strong>
+Kafka集群同时也作为缓冲区，平衡producer和consumer两边的工作进度，不会因为一方过慢造成阻塞一类的问题。&lt;/p>
+&lt;p>&lt;strong>语言&lt;/strong>
+写起来的话，肯定是java和scala最好，因为Kafka就是由这两种语言编写的，当然，也有其他语言的接口，比如python。python的话比较有意思的是有两个Kafka框架，一个是&lt;a class="link" href="https://kafka-python.readthedocs.io/en/master/index.html" target="_blank" rel="noopener"
+>kafka-python&lt;/a>，另一个是&lt;a class="link" href="http://pykafka.readthedocs.io/en/latest/#" target="_blank" rel="noopener"
+>pykafka&lt;/a>。推荐使用后者，前者在创建consumer group的时候不是很方便，group内的每个consumer消费的内容都一样，没有实现去重与平衡，这些都需要自己实现，后者的balanced_consumer就挺好的。&lt;/p>
+&lt;p>&lt;a class="link" href="https://github.com/Davidham3/pykafka_examples" target="_blank" rel="noopener"
+>自己写的例子&lt;/a>&lt;/p></description></item></channel></rss>

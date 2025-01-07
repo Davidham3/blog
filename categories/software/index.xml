@@ -1,0 +1,496 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Software on Davidham的博客</title><link>https://davidham3.github.io/blog/categories/software/</link><description>Recent content in Software on Davidham的博客</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Thu, 14 May 2020 12:00:28 +0000</lastBuildDate><atom:link href="https://davidham3.github.io/blog/categories/software/index.xml" rel="self" type="application/rss+xml"/><item><title>博客重装...</title><link>https://davidham3.github.io/blog/p/%E5%8D%9A%E5%AE%A2%E9%87%8D%E8%A3%85.../</link><pubDate>Thu, 14 May 2020 12:00:28 +0000</pubDate><guid>https://davidham3.github.io/blog/p/%E5%8D%9A%E5%AE%A2%E9%87%8D%E8%A3%85.../</guid><description>&lt;p>最近又重装了一下系统，之前博客是在Windows下面的，最近我把那个Windows系统删了，先在OSX上面用一段时间。但是发现整个博客的程序近乎报废，图片加载不了，公式显示不了。。。然后开始一步一步修理。&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>重装 node&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>装 hexo&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>新建一个目录，在里面 &lt;code>hexo init&lt;/code>，删除 post 里面的 hello world&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>把原来博客的_config.yml, scaffolds, source, themes，这四个东西复制到新的 blog 里面&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>hexo clean &amp;amp;&amp;amp; hexo s -g&lt;/code> 本地启动一下博客，进入 blog 里面看看有什么错误提示，缺什么插件就装什么插件&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>卸载默认的 render: &lt;code>npm un hexo-renderer-marked -save&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>安装新的 render: &lt;code>npm install hexo-renderer-kramed --save&lt;/code>，然后修改 node_modules\kramed\lib\rules\inline.js&lt;/p>
+&lt;p>修改以下内容：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">//escape: /^\\([\\`*{}\[\]()#$+\-.!\_&amp;gt;])/,
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">escape: /^\\([`*\[\]()#$+\-.!_&amp;gt;])/,
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">//em: /^\b_((?:__|[\s\S])+?)_\b|^\*((?:\*\*|[\s\S])+?)\*(?!\*)/,
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">em: /^\*((?:\*\*|[\s\S])+?)\*(?!\*)/,
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;/li>
+&lt;li>
+&lt;p>&lt;code>npm install https://github.com/7ym0n/hexo-asset-image --sa&lt;/code>，装这个修正后的图片工具&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>然后要写一个程序，把所有文章里面的 &lt;code>![Figure2](Fig2.png)&lt;/code> 这个 markdown 插入图片的语法，换成 &lt;code>\{\% asset_img Fig2.png Figure2 \%\}&lt;/code>，这里需要把我自己加的这四个反斜杠&amp;quot;&amp;quot;去掉，我这里加上是因为如果不加的话，这里就变成图片了。。。&lt;/p>
+&lt;p>先备份好博客，然后运行下面的代码即可。&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;span class="lnt">25
+&lt;/span>&lt;span class="lnt">26
+&lt;/span>&lt;span class="lnt">27
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-python" data-lang="python">&lt;span class="line">&lt;span class="cl">&lt;span class="kn">import&lt;/span> &lt;span class="nn">re&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kn">import&lt;/span> &lt;span class="nn">os&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">folder&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;source/_posts/&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">pattern&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">re&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">compile&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s1">&amp;#39;!\[(.*?)\]\((.*?)\)&amp;#39;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="k">for&lt;/span> &lt;span class="n">fname&lt;/span> &lt;span class="ow">in&lt;/span> &lt;span class="n">os&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">listdir&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">folder&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">if&lt;/span> &lt;span class="ow">not&lt;/span> &lt;span class="n">fname&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">endswith&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s1">&amp;#39;.md&amp;#39;&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">continue&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">path&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">os&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">path&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">join&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">folder&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">fname&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">with&lt;/span> &lt;span class="nb">open&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">path&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s1">&amp;#39;r&amp;#39;&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="k">as&lt;/span> &lt;span class="n">f&lt;/span>&lt;span class="p">:&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">content&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">f&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">read&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">markdown_pics&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">re&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">findall&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">pattern&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">content&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">for&lt;/span> &lt;span class="n">desc&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">pic_name&lt;/span> &lt;span class="ow">in&lt;/span> &lt;span class="n">markdown_pics&lt;/span>&lt;span class="p">:&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">original_str&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;![&lt;/span>&lt;span class="si">{}&lt;/span>&lt;span class="s1">](&lt;/span>&lt;span class="si">{}&lt;/span>&lt;span class="s1">)&amp;#39;&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">format&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">desc&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">pic_name&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">if&lt;/span> &lt;span class="s1">&amp;#39; &amp;#39;&lt;/span> &lt;span class="ow">in&lt;/span> &lt;span class="n">desc&lt;/span>&lt;span class="p">:&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">desc&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;&amp;#34;&amp;#39;&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">desc&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="s1">&amp;#39;&amp;#34;&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">if&lt;/span> &lt;span class="s1">&amp;#39; &amp;#39;&lt;/span> &lt;span class="ow">in&lt;/span> &lt;span class="n">pic_name&lt;/span>&lt;span class="p">:&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">pic_name&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;&amp;#34;&amp;#39;&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">pic_name&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="s1">&amp;#39;&amp;#34;&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">target_str&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;{![&lt;/span>&lt;span class="si">{}&lt;/span>&lt;span class="s1">](/blog/images/博客重装/&lt;/span>&lt;span class="si">{}&lt;/span>&lt;span class="s1">)}&amp;#39;&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">format&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">pic_name&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">desc&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">content&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">content&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">replace&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">original_str&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">target_str&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nb">print&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">fname&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">original_str&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">target_str&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">with&lt;/span> &lt;span class="nb">open&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">path&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s1">&amp;#39;w&amp;#39;&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="k">as&lt;/span> &lt;span class="n">f&lt;/span>&lt;span class="p">:&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">f&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">write&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">content&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;/li>
+&lt;/ol>
+&lt;p>然后就OK了，心情舒畅~&lt;/p></description></item><item><title>github大文件上传</title><link>https://davidham3.github.io/blog/p/github%E5%A4%A7%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0/</link><pubDate>Fri, 20 Dec 2019 11:18:36 +0000</pubDate><guid>https://davidham3.github.io/blog/p/github%E5%A4%A7%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0/</guid><description>&lt;p>刚才开源了我们组在AAAI 2020上一篇论文的代码和数据，上传数据的时候超了GitHub的100M大小限制，GitHub说让我用lfs解决，研究了一下怎么传，记录一下，以后说不定还会用到。&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">git lfs install
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">git lfs track &amp;#34;data.tar.gz&amp;#34;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">git add .gitattributes
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">git commit -m &amp;#34;Updated attributes&amp;#34;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">git push
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">git add data.tar.gz
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">git lfs ls-files
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">git commit -m &amp;#34;Add file&amp;#34;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">git push
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>原理还不太懂，这几天太忙了，过几天看看。&lt;/p>
+&lt;p>2020.1.2 更新一下：&lt;/p>
+&lt;p>最近收到了GitHub的邮件，说这个LFS是有限额的。。。然后我的已经超额了。。。&lt;/p>
+&lt;p>这个东西是分storage和bandwidth两个额度，两个额度都是1个月1G。存储的话，如果你存储一次，就会占一次的容量，如果你修改了里面的内容，再push一次，就会再占一次这么大的空间，比如有一个100M的文件，我push上去，占100M，我改了一下，再push，那我就使用了200M空间。。。这个空间是这么计算的。。。&lt;/p>
+&lt;p>带宽的计算是，你上传文件不算流量。但是只要有人下载，那就走这个流量，一个月1G免费流量。。。我这个数据集，一天就超了。。。&lt;/p>
+&lt;p>解决方法是什么呢？进入GitHub的help page里面，可以找到删除文件的方法。&lt;/p>
+&lt;p>但是，即便你想办法删了，如果你的仓库之前被别人fork过了，那他们那边的下载，也会占用你的bandwidth，得知这点后我真的好无语。。。主要另一个坑爹的事情是，这个storage和bandwidth是按账户记得，不是按仓库，即一个账户1月1G。。。&lt;/p>
+&lt;p>最后我把仓库删了，想着去联系那几个fork过的人，让他们删除他们的仓库，但是他们竟然没有留下邮箱。。。所以我根本联系不上他们。。。简直了。。。&lt;/p></description></item><item><title>MXNet 与 cuda 版本兼容的问题</title><link>https://davidham3.github.io/blog/p/mxnet-%E4%B8%8E-cuda-%E7%89%88%E6%9C%AC%E5%85%BC%E5%AE%B9%E7%9A%84%E9%97%AE%E9%A2%98/</link><pubDate>Fri, 02 Aug 2019 20:22:10 +0000</pubDate><guid>https://davidham3.github.io/blog/p/mxnet-%E4%B8%8E-cuda-%E7%89%88%E6%9C%AC%E5%85%BC%E5%AE%B9%E7%9A%84%E9%97%AE%E9%A2%98/</guid><description>&lt;p>最近在做实验的时候发现了一个非常神奇的问题，搞得我一度很郁闷。我在 kaggle 上面写了个 mxnet symbolic 的程序，在测试集上效果不错，论文都写完了，结果拿回实验室的 GPU 上一跑，发现结果复现不了了，差了两个点。但我所有的实验都做了 10 次，如果说 1 次实验效果好还可以说是巧合，但这是 10 次实验啊。&lt;/p>
+&lt;p>尝试找了一下问题在哪里，首先是 GPU 型号，kaggle 上面提供的是 Tesla P100，非常强劲的 GPU，16G 的显存，而且好像还支持半精度浮点运算。我在实验室使用了 RTX 2080 跑实验。在 4 台 RTX 2080 上面搭建了 OpenPAI，微软的一个开源深度学习资源调度平台。&lt;/p>
+&lt;p>我在 kaggle 上跑 10 次，测试集指标是 18.039，做了 10 次实验取的平均值，方差是 0.075，非常稳定，也就是对于随机性不敏感，所以不需要指定随机种子什么的，我也不爱指定随机种子，因为我觉得好的模型就应该对随机性不敏感。&lt;/p>
+&lt;p>为了验证是哪里出了问题，我打印了 kaggle 的环境配置，kaggle 使用的 mxnet_cu100 1.5.0，numpy 1.16.4。&lt;/p>
+&lt;p>我用 Docker 构建了 4 个镜像：&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>softwares&lt;/th>
+&lt;th>cuda 100&lt;/th>
+&lt;th>cuda 101&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>&lt;strong>mxnet 1.41&lt;/strong>&lt;/td>
+&lt;td>mx1.41_cu100&lt;/td>
+&lt;td>mx1.41_cu101&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;strong>mxnet 1.50&lt;/strong>&lt;/td>
+&lt;td>mx1.50_cu100&lt;/td>
+&lt;td>mx1.50_cu101&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>在安装的时候没有安装mkl。&lt;/p>
+&lt;p>每个镜像跑同一个实验 3 次吧，最近没什么时间跑 10 次，结果等我跑完了再更新。&lt;/p>
+&lt;p>2019年8月9日更新：&lt;/p>
+&lt;p>跑完了，发现结果全都一样，和显卡，cuda，mxnet 版本都无关。。。&lt;/p>
+&lt;p>后来找了一下问题，问题出在 training set 的 dataloader，忘了给 training set shuffle 了，所以效果变差了。。。&lt;/p></description></item><item><title>ubuntu /boot 满了怎么办</title><link>https://davidham3.github.io/blog/p/ubuntu-/boot-%E6%BB%A1%E4%BA%86%E6%80%8E%E4%B9%88%E5%8A%9E/</link><pubDate>Fri, 19 Apr 2019 15:02:46 +0000</pubDate><guid>https://davidham3.github.io/blog/p/ubuntu-/boot-%E6%BB%A1%E4%BA%86%E6%80%8E%E4%B9%88%E5%8A%9E/</guid><description>&lt;p>ubuntu /boot 满了怎么办，&lt;a class="link" href="https://askubuntu.com/questions/171209/my-boot-partition-hit-100-and-now-i-cant-upgrade-cant-remove-old-kernels-to" target="_blank" rel="noopener"
+>解决方案&lt;/a>&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">uname -a
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>看一下现在用的是什么内核&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">cd /boot
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>把老的内核挪走，挪的时候按版本号挪，从老的开始挪，具有同一个版本号的文件同时挪走，挪几个老的就行。&lt;/p>
+&lt;p>然后&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">apt-get install -f
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">dpkg --get-selections |grep linux-
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>把老的内核都卸载掉：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">apt-get purge linux-headers-4.4.0-137-generic linux-image-4.4.0-137-generic linux-image-extra-4.4.0-137-generic
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>然后把刚才挪走的文件再挪回去，再用上面的命令卸载掉。&lt;/p></description></item><item><title>MXNet: Optimizing Memory Consumption in Deep Learning</title><link>https://davidham3.github.io/blog/p/mxnet-optimizing-memory-consumption-in-deep-learning/</link><pubDate>Sun, 07 Apr 2019 13:02:17 +0000</pubDate><guid>https://davidham3.github.io/blog/p/mxnet-optimizing-memory-consumption-in-deep-learning/</guid><description>&lt;p>&lt;a class="link" href="https://mxnet.incubator.apache.org/versions/master/architecture/note_memory.html" target="_blank" rel="noopener"
+>MXNet: Optimizing Memory Consumption in Deep Learning&lt;/a>&lt;/p>
+&lt;p>过去的十年，深度学习模型趋向于更深更大的网络。尽管硬件性能的快速发展，前沿的深度学习模型还是继续将 GPU 显存的限制推向极限。所以即便在今天，人们仍在寻找办法消耗更少的内存，训练更大的模型。这样可以让我们训练的更快、使用更大的批量、获得更高的 GPU 利用率。&lt;/p>
+&lt;p>在这篇文档中，我们讨论集中优化内存分配的技术。尽管我们的讨论不彻底，但这些方案具有指导意义，使我们能够介绍主要的设计问题。&lt;/p>
+&lt;h1 id="computation-graph">Computation Graph
+&lt;/h1>&lt;p>计算图描述了操作间的依赖。图中的操作要么是细粒度的，要么是粗粒度的。下图展示了两个计算图的例子。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/mxnet-optimizing-memory-consumption-in-deep-learning/Fig1.png"
+loading="lazy"
+alt="Figure1"
+>&lt;/p>
+&lt;p>计算图的概念被明确地编码进了库中，如 Theano 和 CGT。其他库中，计算图隐式地作为网络的配置文件。主要区别是如何计算梯度。主要有两种方法：在同一个图上做反向传播或明确地表示出一个回溯的路径来计算需要的梯度。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/mxnet-optimizing-memory-consumption-in-deep-learning/Fig2.png"
+loading="lazy"
+alt="Figure2"
+>&lt;/p>
+&lt;p>像 Caffe，CXXNet，Torch这样的框架使用前者，在原图上做反向传播。Theano 和 CGT 使用后者，显示地表示反向路径。我们讨论显示地反向路径方法，因为它对于优化有几个优势。&lt;/p>
+&lt;p>然而，我们应该强调一下选择显示反向路径方法并不会限制我们使用符号式的库，如 Theano 和 CGT。我们也可以用显示反向路径对基于层（将前向和反向绑起来）的库进行梯度计算。下面的图表示了这个过程。基本上来说，我们引入反向结点，连接图中的前向节点，在反向操作的时候调用 &lt;code>layer.backward&lt;/code>。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/mxnet-optimizing-memory-consumption-in-deep-learning/Fig3.png"
+loading="lazy"
+alt="Figure3"
+>&lt;/p>
+&lt;p>这个讨论可以应用在几乎所有现存的深度学习框架上。&lt;/p>
+&lt;p>为什么显示反向路径更好？我们可以看两个例子。第一个原因是显示反向路径清晰地描述了计算间的依赖关系。考虑一种情况，我们想获得 A 和 B 的梯度。我们可以从图中清楚地看到，&lt;code>d(C)&lt;/code> 梯度的计算不依赖于 F。这意味着我们可以在前向传播完成后释放 &lt;code>F&lt;/code> 的内存。类似的，&lt;code>C&lt;/code> 的内存也可以被回收。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/mxnet-optimizing-memory-consumption-in-deep-learning/Fig4.png"
+loading="lazy"
+alt="Figure4"
+>&lt;/p>
+&lt;p>拥有不同的反向路径而不是前向传播的镜像的能力是其另一个优点。一个常见的例子是分离连接的情况，如下图：&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/mxnet-optimizing-memory-consumption-in-deep-learning/Fig5.png"
+loading="lazy"
+alt="Figure5"
+>&lt;/p>
+&lt;p>在这个例子中，B 的输出由两个操作引用。如果我们想在同一个网络中计算梯度，我们需要引入一个显示的分割层。这意味着我们需要对前向也做一次分离。如图，前向不包含一个分割层，但是图会自动地在将梯度传回 B 之前插入一个梯度聚合结点。这有助于我们节省分配分割输出的内存成本，以及在前向传递中复制数据的操作成本。&lt;/p>
+&lt;p>如果我们应用显示反向方法，在前向和反向的时候就没有区别。我们简单地按时间顺序进入计算图，开始计算。这使得显示反向路径容易去分析。我们仅需要回答一个问题：我们如何对计算图每个输出结点分配内存？&lt;/p>
+&lt;h1 id="what-can-be-optimized">What Can Be Optimized?
+&lt;/h1>&lt;p>计算图是一种讨论内存分配优化技术有用的方式。我们已经想你展示了如何通过显示反向图节省内存。现在我们讨论些进一步的优化，看看如何确定基准测试的合理基线。&lt;/p>
+&lt;p>假设我们想构建 &lt;code>n&lt;/code> 层神经网络。一般来说，在我们实现神经网络的时候，我们需要同时为每层的输出和反向传播时的梯度分配空间。这意味着我们需要差不多 &lt;code>2n&lt;/code> 的内存。在显示反向图方法中我们面对的是同样的需求因为反向传播时结点数与前向传播差不多。&lt;/p>
+&lt;h2 id="in-place-operations">In-place Operations
+&lt;/h2>&lt;p>我们可以使用的一个最简单的技术就是跨操作的原地内存共享。对于神经网络，我们通常将这个技术应用在对应操作的激活函数上。考虑下面的情况，我们想计算三个链式 sigmoid 函数的值：&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/mxnet-optimizing-memory-consumption-in-deep-learning/Fig6.png"
+loading="lazy"
+alt="Figure6"
+>&lt;/p>
+&lt;p>因为我们可以原地计算 sigmoid，使用同样的内存给输入和输出，我们可以使用固定的内存大小计算任意长度的链式 sigmoid 函数。&lt;/p>
+&lt;p>注意：在实现原地优化时很容易犯错误。考虑下面的情况，B 的值不仅用于 C，还用于 F。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/mxnet-optimizing-memory-consumption-in-deep-learning/Fig7.png"
+loading="lazy"
+alt="Figure7"
+>&lt;/p>
+&lt;p>我们不能使用原地优化因为 B 的值在 &lt;code>C = sigmoid(B)&lt;/code> 计算之后仍然需要。如果一个算法简单地对所有 sigmoid 函数都做这个原地优化就会掉进这个陷阱，所以在使用的时候，我们需要注意这个问题。&lt;/p>
+&lt;h2 id="standard-memory-sharing">Standard Memory Sharing
+&lt;/h2>&lt;p>除了原地操作还有其他地方可以共享内存。下面的例子中，因为 B 的值在计算 E 之后不再需要，我们可以重新使用 B 的内存来存储 E。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/mxnet-optimizing-memory-consumption-in-deep-learning/Fig8.png"
+loading="lazy"
+alt="Figure8"
+>&lt;/p>
+&lt;p>内存共享不需要相同大小的数据。注意再上面的例子中，B 和 E 的 shape 可以不一样。为了处理这样的情况，我们可以分配一个等价于 B 和 E 中大的那个元素的大小，然后让他们共享这个区域。&lt;/p></description></item><item><title>MXNet: Dependency Engine for Deep Learning</title><link>https://davidham3.github.io/blog/p/mxnet-dependency-engine-for-deep-learning/</link><pubDate>Sun, 07 Apr 2019 12:18:41 +0000</pubDate><guid>https://davidham3.github.io/blog/p/mxnet-dependency-engine-for-deep-learning/</guid><description>&lt;p>&lt;a class="link" href="https://mxnet.incubator.apache.org/versions/master/architecture/note_engine.html" target="_blank" rel="noopener"
+>MXNet: Dependency Engine for Deep Learning&lt;/a>&lt;/p>
+&lt;p>我们总是想让深度学习框架跑的更快，能适应更大的数据集。一个自然的想法是我们能否通过堆更多的硬件解决问题，也就是同时使用多个 GPU。&lt;/p>
+&lt;p>框架设计者就会问：我们怎么才能让计算在设备间并行？而且，当我们引入多线程的时候，如何同步计算？一个运行环境依赖引擎是这些问题的解决方案。&lt;/p>
+&lt;p>在这篇文档中，我们检验了使用运行环境依赖调度装置来加速深度学习的方法，解释了运行环境依赖调度器如何同时加速和简化多设备深度学习。我们还探索了框架独立或操作独立的通用依赖引擎可能的设计方案。&lt;/p>
+&lt;p>这里的很多讨论都是源于 MXNet 依赖引擎。我们讨论的依赖追踪算法主要由 &lt;a class="link" href="https://github.com/hotpxl" target="_blank" rel="noopener"
+>Yutian Li&lt;/a> 和 &lt;a class="link" href="https://github.com/jermainewang" target="_blank" rel="noopener"
+>Mingjie Wang&lt;/a> 设计。&lt;/p>
+&lt;h1 id="dependency-scheduling">Dependency Scheduling
+&lt;/h1>&lt;p>尽管大多数用户想利用并行计算，但大部分人更熟悉串行编程。所以一个问题是：我们如何能写串行程序，构建一个库，自动地并行我们的程序？&lt;/p>
+&lt;p>举个例子，下面的代码，我们可以以任意顺序运行 &lt;code>B = A + 1&lt;/code> 和 &lt;code>C = A + 2&lt;/code> 这两个命令，或是并行运行：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">A = 2
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">B = A + 1
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">C = A + 2
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">D = B * C
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>但是由于最后一个操作 &lt;code>D = B * C&lt;/code>，导致手动编码序列很麻烦，最后一个操作需要等待前面的操作完成才能继续。下面的依赖图/数据流图展示了这个过程。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/mxnet-dependency-engine-for-deep-learning/Fig1.png"
+loading="lazy"
+alt="Figure1"
+>&lt;/p>
+&lt;p>一个依赖引擎可以获取一个操作序列并且根据依赖关系调度他们，更可能以并行的方式。所以在这个例子中，一个依赖库可以并行运算 &lt;code>B = A + 1&lt;/code> 和 &lt;code>C = A + 2&lt;/code>，然后在这两个操作完成后运行 &lt;code>D = B * C&lt;/code>。&lt;/p>
+&lt;h1 id="problems-in-dependency-scheduling">Problems in Dependency Scheduling
+&lt;/h1>&lt;p>一个依赖引擎减轻了编写并发程序的负担。但是，由于操作可以并行化，新的依赖追踪问题产生了，这节我们讨论这些问题。&lt;/p>
+&lt;h2 id="data-flow-dependency">Data Flow Dependency
+&lt;/h2>&lt;p>数据流依赖表述了一个计算的输出如何用于其他的计算。每个依赖引擎必须解决数据流依赖问题。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/mxnet-dependency-engine-for-deep-learning/Fig2.png"
+loading="lazy"
+alt="Figure2"
+>&lt;/p>
+&lt;p>因为我们在前面的部分讨论过这个问题，我们这里使用同一张图。包含数据流追踪引擎的框架包括 Minerva 和 Purine2。&lt;/p>
+&lt;h2 id="memory-recycling">Memory Recycling
+&lt;/h2>&lt;p>我们什么时候回收分配给 array 的内存？在串行程序中这个问题很简单。我们在变量在作用域中消失后回收即可。但是，下面的图展示了并行程序中这有多麻烦。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/mxnet-dependency-engine-for-deep-learning/Fig3.png"
+loading="lazy"
+alt="Figure3"
+>&lt;/p>
+&lt;p>在这个例子中，两个操作都需要 &lt;code>A&lt;/code> 的值，我们需要等两个操作都完成才能回收。引擎必须根据依赖来调度回收器，确保在 &lt;code>B = A + 1&lt;/code> 和 &lt;code>C = A + 2&lt;/code> 都完成后再执行。&lt;/p>
+&lt;h2 id="random-number-generation">Random Number Generation
+&lt;/h2>&lt;p>随机数生成器是机器学习中常用的，给依赖引擎提出了有趣的挑战。考虑下面的问题：&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/mxnet-dependency-engine-for-deep-learning/Fig4.png"
+loading="lazy"
+alt="Figure4"
+>&lt;/p>
+&lt;p>再这个例子中，我们以序列形式生成了随机数。尽管看起来两个随机数生成过程是并行的，但实际上不是。一个伪随机数生成器 (PRNG) 不是线程安全的，因为在生成新的随机数时，可能会导致一些内部状态的变化。即使 PRNG 是线程安全的，我们也希望数字的生成是串行的，因为我们可以得到可重现的随机数序列。&lt;/p></description></item><item><title>hexo markdown mathjax 冲突问题</title><link>https://davidham3.github.io/blog/p/hexo-markdown-mathjax-%E5%86%B2%E7%AA%81%E9%97%AE%E9%A2%98/</link><pubDate>Sat, 14 Jul 2018 20:35:43 +0000</pubDate><guid>https://davidham3.github.io/blog/p/hexo-markdown-mathjax-%E5%86%B2%E7%AA%81%E9%97%AE%E9%A2%98/</guid><description>&lt;p>写完公式渲染不出来，比如\vec{i}_j就会出错&lt;/p>
+&lt;p>markdown中的下划线_表示斜体，在latex中，是下标。
+\在latex中是换行，在markdown中会转义成\。
+所以导致如果写公式\vec{i}_j，本来应该是向量i的j下标，就会渲染不出来。
+解决方案：
+修改默认的渲染器：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">npm uninstall hexo-renderer-marked –save
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>安装 hexo-renderer-markdown-it 和 markdown-it-katex&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">npm install hexo-renderer-markdown-it --save
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">npm install markdown-it-katex --save
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>然后在 _config.yml 里面加入下面的代码：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl"># Markdown-it config
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">## Docs: https://github.com/celsomiranda/hexo-renderer-markdown-it/wiki/
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">markdown:
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> render:
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> html: true
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> xhtmlOut: false
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> breaks: true
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> linkify: true
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> typographer: true
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> quotes: &amp;#39;“”‘’&amp;#39;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> plugins:
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> anchors:
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> level: 2
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> collisionSuffix: &amp;#39;&amp;#39;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">math:
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> engine: &amp;#39;katex&amp;#39;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> katex:
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> css: https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> js: https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.js
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> config:
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> # KaTeX config
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> throwOnError: false
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> errorColor: &amp;#34;#cc0000&amp;#34;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>然后在主题的 _config.yml 里面打开 katex 支持即可。&lt;/p></description></item><item><title>vscode-remote-workspace</title><link>https://davidham3.github.io/blog/p/vscode-remote-workspace/</link><pubDate>Fri, 15 Jun 2018 09:46:40 +0000</pubDate><guid>https://davidham3.github.io/blog/p/vscode-remote-workspace/</guid><description>&lt;p>使用vscode管理远程服务器上的文件与项目。&lt;/p>
+&lt;p>&lt;a class="link" href="https://github.com/mkloubert/vscode-remote-workspace" target="_blank" rel="noopener"
+>vscode-remote-workspace&lt;/a>是一个vscode中的插件，可以管理远程存储上的文件、项目，还可以执行命令。
+支持的系统很多：&lt;/p>
+&lt;ol>
+&lt;li>Auzre&lt;/li>
+&lt;li>Dropbox&lt;/li>
+&lt;li>FTP&lt;/li>
+&lt;li>FTPs&lt;/li>
+&lt;li>S3 Buckets&lt;/li>
+&lt;li>SFTP&lt;/li>
+&lt;li>Slack&lt;/li>
+&lt;li>WebDAV&lt;/li>
+&lt;/ol>
+&lt;p>以SFTP为例，只要写这么一个配置文件即可&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;span class="lnt">6
+&lt;/span>&lt;span class="lnt">7
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">{
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &amp;#34;folders&amp;#34;: [{
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &amp;#34;uri&amp;#34;: &amp;#34;sftp://my-user:my-password@sftp.example.com/&amp;#34;,
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &amp;#34;name&amp;#34;: &amp;#34;My SFTP folder&amp;#34;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> }],
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &amp;#34;settings&amp;#34;: {}
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>举个例子：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;span class="lnt">6
+&lt;/span>&lt;span class="lnt">7
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">{
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &amp;#34;folders&amp;#34;: [{
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &amp;#34;uri&amp;#34;: &amp;#34;sftp://Davidham3:my-password@my-linux-server-ip/data/Davidham3&amp;#34;,
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &amp;#34;name&amp;#34;: &amp;#34;My SFTP folder&amp;#34;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> }],
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &amp;#34;settings&amp;#34;: {}
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>保存成名为my-linux-server.code-workspace的文件后，右键点击这个文件，使用vscode打开即可。或是打开vscode后，点击“文件”，选择“打开工作区”，然后选择这个文件即可。
+&lt;img src="https://davidham3.github.io/blog/blog/images/vscode-remote-workspace/demo1.gif"
+loading="lazy"
+>
+使用F1，然后输入&lt;code>execute remote command&lt;/code>，然后就可以输入命令，直接在远程机器上运行。
+&lt;img src="https://davidham3.github.io/blog/blog/images/vscode-remote-workspace/demo2.PNG"
+loading="lazy"
+>&lt;/p>
+&lt;h1 id="安装方法">安装方法
+&lt;/h1>&lt;p>打开vscode后，选择左侧第五个按钮，进入商店，然后查找vscode-remote-workspace，点击绿色的安装按钮安装即可，安装后点蓝色的“重新加载”按钮即可。
+&lt;img src="https://davidham3.github.io/blog/blog/images/vscode-remote-workspace/demo3.PNG"
+loading="lazy"
+>&lt;/p>
+&lt;h1 id="问题">问题
+&lt;/h1>&lt;p>不过使用execute remote command的时候，如果程序可以正常运行，不报错，那这个工具是可以显示内容的，但是一旦程序出错了，就不会有任何错误信息显示。这点这个工具没法处理。所以解决方案就是，直接用下面的终端，ssh进去。最新版本的Windows10已经内置了OpenSSH，所以直接用&lt;code>ssh 用户名@hostname&lt;/code>就可以连接到服务器，然后执行命令跑程序。&lt;/p></description></item></channel></rss>

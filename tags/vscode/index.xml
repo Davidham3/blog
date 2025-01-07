@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Vscode on Davidham的博客</title><link>https://davidham3.github.io/blog/tags/vscode/</link><description>Recent content in Vscode on Davidham的博客</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Fri, 15 Jun 2018 09:46:40 +0000</lastBuildDate><atom:link href="https://davidham3.github.io/blog/tags/vscode/index.xml" rel="self" type="application/rss+xml"/><item><title>vscode-remote-workspace</title><link>https://davidham3.github.io/blog/p/vscode-remote-workspace/</link><pubDate>Fri, 15 Jun 2018 09:46:40 +0000</pubDate><guid>https://davidham3.github.io/blog/p/vscode-remote-workspace/</guid><description>&lt;p>使用vscode管理远程服务器上的文件与项目。&lt;/p>
+&lt;p>&lt;a class="link" href="https://github.com/mkloubert/vscode-remote-workspace" target="_blank" rel="noopener"
+>vscode-remote-workspace&lt;/a>是一个vscode中的插件，可以管理远程存储上的文件、项目，还可以执行命令。
+支持的系统很多：&lt;/p>
+&lt;ol>
+&lt;li>Auzre&lt;/li>
+&lt;li>Dropbox&lt;/li>
+&lt;li>FTP&lt;/li>
+&lt;li>FTPs&lt;/li>
+&lt;li>S3 Buckets&lt;/li>
+&lt;li>SFTP&lt;/li>
+&lt;li>Slack&lt;/li>
+&lt;li>WebDAV&lt;/li>
+&lt;/ol>
+&lt;p>以SFTP为例，只要写这么一个配置文件即可&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;span class="lnt">6
+&lt;/span>&lt;span class="lnt">7
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">{
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &amp;#34;folders&amp;#34;: [{
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &amp;#34;uri&amp;#34;: &amp;#34;sftp://my-user:my-password@sftp.example.com/&amp;#34;,
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &amp;#34;name&amp;#34;: &amp;#34;My SFTP folder&amp;#34;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> }],
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &amp;#34;settings&amp;#34;: {}
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>举个例子：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;span class="lnt">6
+&lt;/span>&lt;span class="lnt">7
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">{
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &amp;#34;folders&amp;#34;: [{
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &amp;#34;uri&amp;#34;: &amp;#34;sftp://Davidham3:my-password@my-linux-server-ip/data/Davidham3&amp;#34;,
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &amp;#34;name&amp;#34;: &amp;#34;My SFTP folder&amp;#34;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> }],
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &amp;#34;settings&amp;#34;: {}
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>保存成名为my-linux-server.code-workspace的文件后，右键点击这个文件，使用vscode打开即可。或是打开vscode后，点击“文件”，选择“打开工作区”，然后选择这个文件即可。
+&lt;img src="https://davidham3.github.io/blog/blog/images/vscode-remote-workspace/demo1.gif"
+loading="lazy"
+>
+使用F1，然后输入&lt;code>execute remote command&lt;/code>，然后就可以输入命令，直接在远程机器上运行。
+&lt;img src="https://davidham3.github.io/blog/blog/images/vscode-remote-workspace/demo2.PNG"
+loading="lazy"
+>&lt;/p>
+&lt;h1 id="安装方法">安装方法
+&lt;/h1>&lt;p>打开vscode后，选择左侧第五个按钮，进入商店，然后查找vscode-remote-workspace，点击绿色的安装按钮安装即可，安装后点蓝色的“重新加载”按钮即可。
+&lt;img src="https://davidham3.github.io/blog/blog/images/vscode-remote-workspace/demo3.PNG"
+loading="lazy"
+>&lt;/p>
+&lt;h1 id="问题">问题
+&lt;/h1>&lt;p>不过使用execute remote command的时候，如果程序可以正常运行，不报错，那这个工具是可以显示内容的，但是一旦程序出错了，就不会有任何错误信息显示。这点这个工具没法处理。所以解决方案就是，直接用下面的终端，ssh进去。最新版本的Windows10已经内置了OpenSSH，所以直接用&lt;code>ssh 用户名@hostname&lt;/code>就可以连接到服务器，然后执行命令跑程序。&lt;/p></description></item></channel></rss>

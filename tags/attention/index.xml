@@ -1,0 +1,428 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Attention on Davidham的博客</title><link>https://davidham3.github.io/blog/tags/attention/</link><description>Recent content in Attention on Davidham的博客</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Fri, 03 Jan 2020 20:18:29 +0000</lastBuildDate><atom:link href="https://davidham3.github.io/blog/tags/attention/index.xml" rel="self" type="application/rss+xml"/><item><title>Multi-Range Attentive Bicomponent Graph Convolutional Network for Traffic Forecasting</title><link>https://davidham3.github.io/blog/p/multi-range-attentive-bicomponent-graph-convolutional-network-for-traffic-forecasting/</link><pubDate>Fri, 03 Jan 2020 20:18:29 +0000</pubDate><guid>https://davidham3.github.io/blog/p/multi-range-attentive-bicomponent-graph-convolutional-network-for-traffic-forecasting/</guid><description>&lt;p>AAAI 2020，原文链接：&lt;a class="link" href="https://arxiv.org/abs/1911.12093" target="_blank" rel="noopener"
+>https://arxiv.org/abs/1911.12093&lt;/a>。&lt;/p>
+&lt;h1 id="abstract">Abstract
+&lt;/h1>&lt;p>交通预测在运输和公共安全中扮演重要角色，由于复杂的时空依赖和路网和交通状况带来的不确定性使这个问题很有挑战。最新的研究专注于使用图卷积网络 GCNs 对一个固定权重的图进行建模，即对空间依赖建模。然而，边，即两个结点之间的关系更加复杂且两者相互影响。我们提出了 Multi-Range Attentive Bicomponent GCN (MRA-BGCN)，一种新的用于交通预测的深度学习框架。我们先根据路网上结点的距离构建结点图，在根据不同的边的交互模式构造边图。然后，我们使用 bicomponent 图卷积实现结点和边的交互。这个多范围注意力机制用来聚合不同邻居范围的信息，自动地学习不同范围的重要性。大量的实验在两个真实数据集，METR-LA 和 PEMS-BAY 上开展，显示出我们的模型效果很好。&lt;/p>
+&lt;h1 id="introduction">Introduction
+&lt;/h1>&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/multi-range-attentive-bicomponent-graph-convolutional-network-for-traffic-forecasting/Fig1.png"
+loading="lazy"
+alt="Figure1"
+>&lt;/p>
+&lt;p>讲了好多历史。。。然后是论点部分：&lt;/p>
+&lt;p>我们认为 DCRNN 和 STGCN 虽说集成了 GCN，但是有两个点忽略了：&lt;/p>
+&lt;p>首先，这些方法主要关注通过在一个固定权重的图上部署 GCN 对空间依赖建模。然而，边更复杂。图 1a 中，传感器 1 和 3，还有 2 和 3，通过路网连接。显然，这些关联随当前的交通状况改变，他们之间也互相交互。图 1b 所示，现存的方法根据路网距离构建一个固定的带权图，使用 GCN 实现这些结点的交互，但是结点间的关联性在邻接矩阵中通过固定的值表示，这就忽略了边的复杂性和交互性。&lt;/p>
+&lt;p>其次，这些方法经常使用一个给定范围内聚合的信息，比如 $k$ 阶邻居，忽略多个范围的信息。然而，不同范围的信息表现出不同的交通属性。小的范围表现出局部依赖，大范围倾向于表现全局的交通模式。此外，不同范围的信息也不是永远都具有相同的分量。举个例子，一次交通事故，一个结点主要受它最近的邻居的影响，这样模型就应该更关注它，而不是给其他的 $k$ 阶邻居相同的关注。&lt;/p>
+&lt;p>为了解决上述两点问题，我们提出了 MRA-BGCN，不仅考虑结点关联，也把边作为实体，考虑他们之间的关系，如图 1c，我们还利用了不同的范围信息。我们的贡献：&lt;/p>
+&lt;ul>
+&lt;li>提出 MRA-BGCN，引入 bicomponent 图卷积，对结点和边直接建模。结点图根据路网距离构建，边图根据边的交互模式、stream connectivity 和 竞争关系构建。&lt;/li>
+&lt;li>我们针对 bicomponent 图卷积提出多范围注意力机制，可以聚合不同范围邻居的信息，学习不同范围的重要性。&lt;/li>
+&lt;li>我们开展了大量的实验，实验效果很好。&lt;/li>
+&lt;/ul>
+&lt;h1 id="preliminaries">Preliminaries
+&lt;/h1>&lt;h2 id="problem-definition">Problem Definition
+&lt;/h2>&lt;p>给定历史的数据，预测未来的数据。$N$ 个结点组成的图 $G = (V, E, \bm{A})$。时间 $t$ 路网上的交通数据表示为图信号 $\bm{X}^{(t)} \in \mathbb{R}^{N \times P}$，$P$ 是特征数。交通预测是过去的数据预测未来：&lt;/p>
+$$
+[\bm{X}^{(t-T'+1):t},G] \xrightarrow{f} [\bm{X}^{(t+1)}:(t+T)],
+$$&lt;p>$\bm{X}^{(t-T&amp;rsquo;+1):t} \in \mathbb{R}^{N \times P \times T&amp;rsquo;}$，$\bm{X}^{(t+1):(t+T)} \in \mathbb{R}^{N \times P \times T}$。&lt;/p>
+&lt;h2 id="graph-convolution">Graph Convolution
+&lt;/h2>&lt;p>不介绍了。&lt;/p>
+&lt;h1 id="methodology">Methodology
+&lt;/h1>&lt;h2 id="model-overview">Model Overview
+&lt;/h2>&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/multi-range-attentive-bicomponent-graph-convolutional-network-for-traffic-forecasting/Fig2.png"
+loading="lazy"
+alt="Figure2"
+>&lt;/p>
+&lt;p>图 2 展示了 MRA-BGCN 的架构，包含两个部分：（1）双组件图卷积模块；（2）多范围注意力层。双组件图卷积模块包含多个结点图卷积层和边图卷积层，直接对结点和边的交互建模。多范围注意力层聚合不同范围的邻居信息，学习不同范围的重要性。此外，我们融合 MRA-BGCN 和 RNN 对时间依赖建模完成交通预测。&lt;/p>
+&lt;h2 id="bicomponent-graph-convolution">Bicomponent Graph Convolution
+&lt;/h2>&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/multi-range-attentive-bicomponent-graph-convolutional-network-for-traffic-forecasting/Fig3.png"
+loading="lazy"
+alt="Figure3"
+>&lt;/p>
+&lt;p>图卷积可以有效聚合结点之间的交互关系，然而，交通预测中边更复杂（这句话说三遍了）。因此我们提出双组件图卷积，直接对结点和边的交互建模。&lt;/p>
+&lt;p>Chen 等人提出边的邻近的 line graph 来建模边的关系。$G = (V, E, \bm{A})$ 表示结点有向图，$G_L = (V_L, E_L, \bm{A}_L)$ 是对应的 line graph，$G_L$ 的结点 $V_L$ 是 $E$ 中有序的边。$\bm{A}_L$ 是无权的邻接矩阵，编码了结点图中的边邻接关系，有关系就等于1。&lt;/p>
+&lt;p>尽管 line graph 可以考虑边的邻接，它仍然是一个无权图且只认为两条边中的一条边的汇点和另一条边的源点相同时，这两条才相关。然而，对于刻画交通预测中各种各样边的交互关系来说这不够高效。如图 3 所示，我们定义两类边的交互模式来构建边图 $G_e = (V_e, E_e, \bm{A}_e)$。$V_e$ 中的每个节点表示 $E$ 中的边。&lt;/p>
+&lt;p>&lt;strong>Stream connectivity&lt;/strong> 在交通网络中，路网可能受它上下游的路段影响。如图 3a 所示，$(i \rightarrow j)$ 是 $(j \rightarrow k)$ 的上游的边，因此他们是相互关联的。直观上来看，如果结点 $j$ 有很多数量的邻居，那么 $(i \rightarrow j)$ 和 $(j \rightarrow k)$ 之间的关系是弱的，因为它还要受其他邻居的影响。我们使用高斯核计算边的权重用来表示 $\bm{A}_e$ 中的 stream connectivity：&lt;/p>
+$$\tag{2}
+\bm{A}\_{e, (i \rightarrow j), (j \rightarrow k)} = \bm{A}\_{e, (j \rightarrow k), (i \rightarrow j)} = \text{exp}(- \frac{(\text{deg}^-(j) + \text{deg}^+(j) - 2)^2}{\sigma^2})
+$$&lt;p>$\text{deg}^-(j)$ 和 $\text{deg}^+(j)$ 分别表示结点 $j$ 的入度和出度，$\sigma$ 是结点度的标准差。&lt;/p>
+&lt;p>&lt;strong>Competitive relationship&lt;/strong> 路网&lt;/p></description></item><item><title>GMAN: A Graph Multi-Attention Network for Traffic Prediction</title><link>https://davidham3.github.io/blog/p/gman-a-graph-multi-attention-network-for-traffic-prediction/</link><pubDate>Thu, 02 Jan 2020 17:03:30 +0000</pubDate><guid>https://davidham3.github.io/blog/p/gman-a-graph-multi-attention-network-for-traffic-prediction/</guid><description>&lt;p>AAAI 2020，使用编码解码+att的架构，只不过编码和解码都使用 attention 组成。主要的论点是空间和时间的关联性是动态的，所以设计这么一个纯注意力的框架。值得注意的点是：由于注意力分数的个数是平方级别的，在计算空间注意力的时候，一旦结点数很大，这里会有超大的计算量和内存消耗，这篇文章是将结点分组后，计算组内注意力和组间注意力。原文链接：&lt;a class="link" href="https://arxiv.org/abs/1911.08415" target="_blank" rel="noopener"
+>https://arxiv.org/abs/1911.08415&lt;/a>。&lt;/p>
+&lt;h1 id="abstract">Abstract
+&lt;/h1>&lt;p>长时间范围的交通流预测是个挑战，两方面原因：交通系统的复杂性，很多影响因素的持续变化性。我们在这篇论文中，专注于时空因素，提出了一个图多注意力机智网络（GMAN），预测路网上不同区域的交通状况。GMAN 使用一个编码解码结构，编码解码器都由多个时空注意力块组成，时空注意力块对交通状况上的时空因素的影响建模。编码器将输入的交通特征编码，解码器输出预测序列。编码解码器之间，有一个变换注意力层，用来把编码器编码后的交通特征生成成未来时间步的序列表示，然后把这个表示输入到解码器里面。变换注意力机制对历史和未来时间步的关系建模，可以减轻多步预测中的错误积累。两个真实数据集上的交通预测任务（一个是流量预测，一个是速度预测）显示 GMAN 的效果优越。在1小时的预测上，GMAN 在 MAE 比 state-of-the-art 好4%。源码在：&lt;a class="link" href="https://github.com/zhengchuanpan/GMAN" target="_blank" rel="noopener"
+>https://github.com/zhengchuanpan/GMAN&lt;/a>&lt;/p>
+&lt;h1 id="introduction">Introduction
+&lt;/h1>&lt;p>交通预测的目标是基于历史观测预测未来的交通状况。在很多应用中扮演着重要的角色。举个例子，精确的交通预测可以帮助交管部门更好的控制交通，减少拥堵。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/gman-a-graph-multi-attention-network-for-traffic-prediction/Fig1.png"
+loading="lazy"
+alt="Figure1"
+>&lt;/p>
+&lt;p>邻近区域的交通状况会互相影响。大家使用 CNN 捕获这样的空间依赖。同时，一个地方的交通状况和它的历史记录有关。RNN 广泛地用于这样时间相关性的建模。最近的研究将交通预测变为图挖掘问题，因为交通问题受限于路网。使用 GCN 的这些研究在短期预测（5 到 15 分钟）内表现出不错的效果。然而，长期预测（几个小时）仍缺乏令人满意的效果，主要受限于以下几点：&lt;/p>
+&lt;ol>
+&lt;li>复杂的时空关联：&lt;/li>
+&lt;/ol>
+&lt;ul>
+&lt;li>动态的空间关联。如图 1 所示，路网中的传感器之间的关联随时间剧烈地变化，比如高峰时段的前后。如何动态地选择相关的检测器数据来预测一个检测器在未来长时间范围的交通状况是一个挑战。&lt;/li>
+&lt;li>非线性的时间关联。图 1，一个检测器的交通状况可能变化得非常剧烈，且可能由于事故等因素，突然影响不同时间步之间的关联性。如何自适应地随时间的推移对这种非线性时间关联建模，也是一个挑战。&lt;/li>
+&lt;/ul>
+&lt;ol start="2">
+&lt;li>对误差传递的敏感。长期预测上，每个时间步上小的错误都会被放大。这样的误差传递对于远期时间预测来说仍具有挑战性。&lt;/li>
+&lt;/ol>
+&lt;p>为了解决上述挑战，我们提出了一个图多注意力网络（GMAN）来预测未来的交通状况。这里指的交通状况是一个交通系统中可以记录为数值的观测值。为了描述，我们这里专注于流量和速度预测，但是我们的模型是可以应用到其他数值型的交通数据上的。&lt;/p>
+&lt;p>GMAN 使用编码解码架构，编码器编码交通特征，解码器生成预测序列。变换注意力层用来把编码历史特征转换为未来表示。编解码器都由一组时空注意力块 &lt;em>ST-Attention blocks&lt;/em> 组成。每个时空注意力块由一个空间注意力、一个时间注意力和一个门控融合机制组成。空间注意力建模动态空间关联，时间注意力建模非线性时间关联，门控融合机制自适应地融合空间和时间表示。变换注意力机制建模历史和未来的关系，减轻错误传播。两个真实世界数据集证明 GMAN 获得了最好的效果。&lt;/p>
+&lt;p>我们的贡献&lt;/p>
+&lt;ul>
+&lt;li>提出空间注意力和时间注意力对动态空间和非线性时间关联分别建模。此外，我们设计了一个门控融合机制，自适应地融合空间注意力和时间注意力机制的的信息。&lt;/li>
+&lt;li>提出一个变换注意力机制将历史交通特征转换为未来的表示。这个注意力机制对历史和未来的关系直接建模，减轻错误传播的问题。&lt;/li>
+&lt;li>我们在两个数据集上评估了我们的图多注意力网络，在 1 小时预测问题上比 state-of-the-art 提高了 4%。&lt;/li>
+&lt;/ul>
+&lt;h1 id="preliminaries">Preliminaries
+&lt;/h1>&lt;p>路网表示为一个带全有向图 $\mathcal{G} = (\mathcal{V}, \mathcal{E}, \mathcal{A})$。$\mathcal{V}$ 是 $N$ 个结点的集合；$\mathcal{E}$ 是边集；$\mathcal{A} \in \mathbb{R}^{N \times N}$ 是邻接矩阵，表示结点间的相似性，这个相似性是结点在路网上的距离。&lt;/p>
+&lt;p>时间步 $t$ 的路网状况表示为图信号 $X_t \in \mathbb{R}^{N \times C}$，$C$ 是特征数。&lt;/p>
+&lt;p>研究的问题：给定 $N$ 个结点历史 $P$ 个时间步的观测值 $\mathcal{X} = (X_{t_1}, X_{t_2}, \dots. X_{t_P}) \in \mathbb{R}^{P \times N \times C}$，我们的目标是预测未来 $Q$ 个时间步所有结点的交通状况，表示为 $\hat{Y} = (\hat{X}_{t_{P+1}}, \hat{X}_{t_{P+2}}, \dots, \hat{X}_{t_{P+Q}}) \in \mathbb{R}^{Q \times N \times C}$。&lt;/p>
+&lt;h1 id="graph-multi-attention-network">Graph Multi-Attention Network
+&lt;/h1>&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/gman-a-graph-multi-attention-network-for-traffic-prediction/Fig2.png"
+loading="lazy"
+alt="Figure2"
+>&lt;/p>
+&lt;p>图 2 描述了我们模型的架构。编码和解码器都有 STAtt Block 和残差连接。每个 ST-Attention block 由空间注意力机制、时间注意力机制和一个门控融合组成。编码器和解码器之间有个变换注意力层。我们还通过一个时空嵌入 spatial-temporal embedding (STE) 继承了图结构和时间信息到多注意力机制中。此外，为了辅助残差连接，所有层的输出都是 D 维。&lt;/p>
+&lt;h2 id="spatio-temporal-embedding">Spatio-Temporal Embedding
+&lt;/h2>&lt;p>因为交通状况的变化受限于路网，集成路网信息到模型中很重要。为此，我们提出一个空间嵌入，把结点嵌入到向量中以此保存图结构信息。我们利用 node2vec 学习结点表示。此外，为了协同训练模型和预学习的向量，这些向量会放入一个两层全连接神经网络中。然后就可以拿到空间表示 $e^S_{v_i} \in \mathbb{R}^D$。&lt;/p>
+&lt;p>空间嵌入只提供了固定的表示，不能表示路网中的传感器的动态关联性。我们提出了一个时间嵌入来把每个时间步编码到向量中。假设一天是 T 个时间步。我们使用 one-hot 编码星期、时间到 $\mathbb{R}^7$ 和 $\mathbb{R}^T$ 里面，然后拼接，得到 $\mathbb{R}^{T + 7}$。接下来，使用两层全连接映射到 $\mathbb{R}^D$。在我们的模型里面，给历史的 $P$ 个时间步和未来的 $Q$ 个时间步嵌入时间特征，表示为 $e^T_{t_j} \in \mathbb{R}^D$，$t_j = t_1, \dots, t_P, \dots, t_{P+Q}$。&lt;/p>
+&lt;p>为了获得随时间变化的顶点表示，我们融合了上述的空间嵌入和时间嵌入，得到时空嵌入（STE），如图 2b 所示。结点 $v_i$ 在时间步 $t_j$，STE 定义为 $e_{v_i,t_j} = e^S_{v_i} + e^T_{t_j}$。因此，$N$ 个结点在 $P + Q$ 的时间步里的 STE 表示为 $E \in \mathbb{R}^{(P + Q) \times N \times D}$。STE 包含图结构和时间信息。它会用在空间、时间、变换注意力机制里面。&lt;/p>
+&lt;h2 id="st-attention-block">ST-Attention Block
+&lt;/h2>&lt;p>我们将第 $l$ 个块的输入表示为 $H^{(l-1)}$，结点 $v_i$ 在时间步 $t_j$ 的隐藏状态表示为 $h^{(l-1)}_{v_i,t_j}$。第 $l$ 块中的空间和时间注意力机制的输出表示为 $H^{(l)}_S$ 和 $H^{(l)}_T$，隐藏状态表示为 $hs^{(l)}_{v_i,t_j}$ 和 $ht^{(l)}_{v_i,t_j}$。门控融合后，第 $l$ 层的输出表示为 $H^{(l)}$。&lt;/p>
+&lt;p>我们将非线性变换表示为：&lt;/p>
+$$\tag{1}
+f(x) = \text{ReLU}(x\mathbf{W} + \mathbf{b}).
+$$&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/gman-a-graph-multi-attention-network-for-traffic-prediction/Fig3.png"
+loading="lazy"
+alt="Figure3"
+>&lt;/p>
+&lt;p>&lt;strong>Spatial Attention&lt;/strong> 一条路的交通状况受其他路的影响，且影响不同。这样的影响是高度动态的，随时间变化。为了建模这些属性，我们设计了一个空间注意力机制动态地捕获路网中传感器间的关联性。核心点是在不同的时间步动态地给不同的结点分配权重，如图 3 所示。对于时间步 $t_j$ 的结点 $v_i$，我们计算所有结点的带权和：&lt;/p>
+$$\tag{2}
+hs^{(l)}\_{v\_i,t\_j} = \sum\_{v \in \mathcal{V}} \alpha\_{v\_i, v} \cdot h^{(l-1)}\_{v,t\_j},
+$$&lt;p>$\alpha_{v_i, v}$ 是结点 $v$ 对 $v_i$ 的注意力分数，注意力分数之和为1：$\sum_{v \in \mathcal{V}} \alpha_{v_i, v} = 1$。&lt;/p>
+&lt;p>在一个确定的时间步，当前交通状况和路网结构能够影响传感器之间的关联性。举个例子，路上的拥挤可能极大地影响它临近路段的交通状况。受这个直觉的启发，我们考虑使用交通特征和图结构两方面来学习注意力分数。我们把隐藏状态和时空嵌入拼接起来，使用 scaled dot-product approach (Vaswani et al. 2017) 来计算结点 $v_i$ 和 $v$ 之间的相关性：&lt;/p>
+$$\tag{3}
+s\_{v\_i, v} = \frac{&lt; h^{(l-1)}\_{v\_i,t\_j} \Vert\ e\_{v\_i,t\_j}, h^{(l-1)}+{v,t\_j}, \Vert e\_{v,t\_j} >}{\sqrt{2D}}
+$$&lt;p>其中，$\Vert$ 表示拼接操作，$&amp;lt; \bullet, \bullet &amp;gt;$ 表示内积，$2D$ 表示 $h^{(l-1)}_{v_i,t_j} \Vert e_{v_i,t_j}$ 的维度。$s_{v_i,v}$ 通过 softmax 归一化：&lt;/p>
+$$\tag{4}
+\alpha\_{v\_i,v} = \frac{\text{exp}(s\_{v\_i,v})}{\sum\_{v\_r \in \mathcal{V}} \text{exp}(s\_{v\_i,v\_r})}.
+$$&lt;p>得到注意力分数 $\alpha_{v_i,v}$ 之后，隐藏状态通过公式 2 更新。&lt;/p>
+&lt;p>为了稳定学习过程，我们把空间注意力机制扩展为多头注意力机制。我们拼接 $K$ 个并行的注意力机制，使用不同的全连接映射：&lt;/p>
+$$\tag{5}
+s^{(k)}\_{v\_i,v} = \frac{&lt; f^{(k)}\_{s,1} (h^{(l-1)}\_{v\_i,t\_j} \Vert e\_{v\_i,t\_j}), f^{(k)}\_{s,2} (h^{(l-1)}\_{v,t\_j} \Vert e\_{v,t\_j}) >}{\sqrt{d}},
+$$$$\tag{6}
+\alpha^{(k)}\_{v\_i,v} = \frac{\text{exp}(s^{(k)}\_{v\_i,v})}{\sum\_{v\_r \in \mathcal{V}} \text{exp}(s^{(k)}\_{v\_i,v\_r})},
+$$$$\tag{7}
+hs^{(l)}\_{v\_i,t\_j} = \Vert^K\_{k=1} \lbrace \sum\_{v \in \mathcal{V}} \alpha^{(k)}\_{v\_i,v} \cdot f^{(k)}\_{s,3}(h^{(l-1)}\_{v,t\_j}) \rbrace,
+$$&lt;p>其中 $f^{(k)}_{s,1}(\bullet), f^{(k)}_{s,2}(\bullet), f^{(k)}_{s,3}(\bullet)$ 表示第 $k$ 注意力头的三个不同的非线性映射，即公式 1 ，产生 $d = D / K$ 维的输出。&lt;/p>
+&lt;p>当结点数 $N$ 很大的时候，时间和内存消耗都会很大，达到 $N^2$ 的数量级。为了解决这个限制，我们提出了组空间注意力，包含了组内注意力分数和组间注意力分数，如图 4 所示。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/gman-a-graph-multi-attention-network-for-traffic-prediction/Fig4.png"
+loading="lazy"
+alt="Figure4"
+>&lt;/p>
+&lt;p>我们把 $N$ 个结点随机划分为 $G$ 个组，每个组包含 $M = N / G$ 个结点，如果必要的话可以加 padding。每个组，我们使用公式 5，6，7 计算组内的注意力，对局部空间关系建模，参数是对所有的组共享的。然后，我们在每个组使用最大池化得到每个组的表示。接下来计算组间空间注意力，对组间关系建模，给每个组生成一个全局特征。局部特征和全局特征相加得到最后的输出。&lt;/p>
+&lt;p>组空间注意力中，我们每个时间步需要计算 $GM^2 + G^2 = NM + (N / M)^2$ 个注意力分数。通过使梯度为0，我们知道 $M = \sqrt[3]{2N}$ 时，注意力分数的个数达到最大值 $2^{-1/3} N^{4/3} \ll N^2$。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/gman-a-graph-multi-attention-network-for-traffic-prediction/Fig5.png"
+loading="lazy"
+alt="Figure5"
+>&lt;/p>
+&lt;p>&lt;strong>Temporal Attention&lt;/strong> 一个地点的交通状况和它之前的观测值有关，这个关联是非线性的。为了建模这些性质，我们设计了一个时间注意力机制，自适应地对不同时间步的非线性关系建模，如图 5 所示。可以注意到时间关联受到交通状况和对应的时间环境两者的影响。举个例子，早高峰的拥堵可能会影响交通好几个小时。因此，我们考虑交通特征和时间两者来衡量不同时间步的相关性。我们把隐藏状态和时空嵌入拼接起来，使用多头注意力计算注意力分数。对于结点 $v_i$，时间步 $t_j$ 与 $t$ 的相关性定义为：&lt;/p>
+$$\tag{8}
+u^{(k)}\_{t\_j,t} = \frac{&lt; f^{(k)}\_{t,1}(h^{(l-1)}\_{v\_i,t\_j} \Vert e\_{v\_i,t\_j}), f^{(k)}\_{t,2}(h^{(l-1)}\_{v\_i,t} \Vert e\_{v\_i,t}) >}{\sqrt{d}},
+$$$$\tag{9}
+\beta^{(k)}\_{t\_j,t} = \frac{\text{exp}(u^{(k)}\_{t\_j,t})}{\sum\_{t\_r \in \mathcal{N}\_{t\_j}}} \text{exp}(u^{(k)}\_{t\_j,t\_r}),
+$$&lt;p>$u^{(k)}_{t_j,t}$ 表示时间步 $t_j$ 和 $t$ 之间的相关性，$\beta^{(k)}_{t_j,t}$ 是第 $k$ 个头的注意力分数，表示时间步 $t$ 对时间步 $t_j$ 的重要性，两个 $f$ 是非线性变换，$\mathcal{N}_{t_j}$ 表示 $t_j$ 前的时间步的集合，即只考虑目标时间步以前的时间步，这样才有因果。一旦获得了注意力分数，时间步 $t_j$ 的结点 $v_i$ 的隐藏状态可以通过下面的公式更新：&lt;/p>
+$$\tag{10}
+ht^{(l)}\_{v\_i,t\_j} = \Vert^K\_{k=1} \lbrace \sum\_{t \in \mathcal{N}\_{t\_j}} \beta^{(k)}\_{t\_j,t} \cdot f^{(k)}\_{t,3}(h^{(l-1)}\_{v\_i,t}) \rbrace
+$$&lt;p>$f$ 是非线性映射。公式 8，9，10 学习到的参数对所有结点和所有时间步共享，且并行计算。&lt;/p>
+&lt;p>&lt;strong>Gated Fusion&lt;/strong> 一个时间步一条路上的交通状况与它自身之前的值和相邻道路上的交通状况相关。如图 2c 所示，我们设计了一个门控融合机制自适应地融合空间和时间表示。在第 $l$ 个块，空间和时间注意力的输出表示为 $H^{(l)}_S$ 和 $H^{(l)}_T$，两者的维度在编码器中是 $\mathbb{R}^{P \times N \times D}$，解码器中是 $\mathbb{R}^{Q \times N \times D}$。通过下式融合：&lt;/p>
+$$\tag{11}
+H^{(l)} = z \odot H^{(l)}\_S + (1 - z) \odot H^{(l)}\_T,
+$$$$\tag{12}
+z = \sigma(H^{(l)}\_S \mathbf{W}\_{z,1} + H^{(l)}\_T \mathbf{W}\_{z,2} + \mathbf{b}\_z),
+$$&lt;p>门控融合机制自适应地控制每个时间步和结点上空间和时间依赖的流动。&lt;/p>
+&lt;h2 id="transform-attention">Transform Attention
+&lt;/h2>&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/gman-a-graph-multi-attention-network-for-traffic-prediction/Fig6.png"
+loading="lazy"
+alt="Figure6"
+>&lt;/p>
+&lt;p>为了减轻错误传播的问题，我们在编码器和解码器之间加入了一个变换注意力层。它能直接地对历史时间步和未来时间步的关系建模，将交通特征编码为未来的表示，作为解码器的输入。如图 6 所示，对于结点 $v_i$ 来说，预测的时间步 $t_j \ (t_j = t_{P+1}, \dots, t_{P+Q})$ 和历史的时间步 $t \ (t_1, \dots, t_P)$ 通过时空嵌入来衡量：&lt;/p>
+$$\tag{13}
+\lambda^{(k)}\_{t\_j,t} = \frac{&lt; f^{(k)}\_{tr,1}(e\_{v\_i,t\_j}), f^{(k)}\_{tr,2}(e\_{v\_i,t}) >}{\sqrt{d}},
+$$$$\tag{14}
+\gamma^{(k)}\_{t\_j,t} = \frac{\text{exp}(\lambda^{(k)}\_{t\_j,t})}{\sum^{t\_P}\_{t\_r=t\_1} \text{exp}(\lambda^{(k)}\_{t\_j,t\_r})}.
+$$&lt;p>编码的交通特征通过注意力分数 $\gamma^{(k)}_{t_j,t}$ 自适应地在历史 $P$ 个时间步选择相关的特征，变换到解码器的输入：&lt;/p>
+$$\tag{15}
+h^{(l)}\_{v\_i,t\_j} = \Vert^K\_{k=1} \lbrace \sum^{t\_P}\_{t=t\_1} \gamma^{(k)}\_{t\_j,t} \cdot f^{(k)}\_{tr,3}(h^{(l-1)}\_{v\_i,t}) \rbrace.
+$$&lt;h2 id="encoder-decoder">Encoder-Decoder
+&lt;/h2>&lt;p>如图 2a 所示，GMAN 是编码解码架构。在进入编码器前，历史记录 $\mathcal{X} \in \mathbb{R}^{P \times N \times C}$ 通过全连接变换到 $H^{(0)} \in \mathbb{R}^{P \times N \times D}$。然后 $H^{(0)}$ 输入到 $L$ 个时空注意力块组成的编码器中，产生输出 $H^{(L)} \in \mathbb{R}^{P \times N \times D}$。然后变换注意力层把编码特征从 $H^{(L)}$ 转换为 $H^{(L+1)} \in \mathbb{R}^{Q \times N \times D}$。然后 $L$ 个时空注意力块的解码器产生输出 $H^{(2L + 1)} \in \mathbb{R}^{Q \times N \times D}$。最后，全连接层输出 $Q$ 个时间步的预测 $\hat{Y} \in \mathbb{R}^{Q \times N \times C}$。&lt;/p>
+&lt;p>GMAN 可以通过最小化 MAE 来优化：&lt;/p>
+$$\tag{16}
+\mathcal{L}(\Theta) = \frac{1}{Q} \sum^{t\_{P + Q}}\_{t = t\_P + 1} \vert Y\_t - \hat{Y}\_t \vert,
+$$&lt;p>$\Theta$ 表示可学习的参数。&lt;/p>
+&lt;h1 id="experiments">Experiments
+&lt;/h1>&lt;h2 id="datasets">Datasets
+&lt;/h2>&lt;p>我们在两个不同规模的交通预测数据集上衡量了模型的效果：（1）厦门数据集，流量预测，包含 95 个传感器从 2015 年 8 月 1 日到 12 月 31 日 5 个月的数据；（2）PeMS 数据集上速度预测，包含 325 个传感器 6 个月的数据。检测器的分布如图 7.&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/gman-a-graph-multi-attention-network-for-traffic-prediction/Fig7.png"
+loading="lazy"
+alt="Figure7"
+>&lt;/p>
+&lt;h2 id="data-preprocessing">Data Preprocessing
+&lt;/h2>&lt;p>一个时间步表示 5 min，使用 Z-Score 归一化，70% 用于训练，10% 验证，20% 测试。我们计算路网上传感器之间的距离，使用如下的路网构建方法：&lt;/p>
+$$\tag{17}
+\mathcal{A}\_{v\_i,v\_j} = \begin{cases}
+\text{exp}(- \frac{d^2\_{v\_i,v\_j}}{\sigma^2}), &amp; \text{if} \ \text{exp}(-\frac{d^2\_{v\_i,v\_j}}{\sigma^2}) \geq \epsilon\\
+0, &amp; \text{otherwise}
+\end{cases}
+$$&lt;p>$\epsilon$ 设定为 0.1。&lt;/p>
+&lt;h2 id="experimental-settings">Experimental Settings
+&lt;/h2>&lt;p>指标：MAE, RMSE, MAPE。&lt;/p>
+&lt;p>超参数就不描述了。&lt;/p>
+&lt;p>Baselines都是近几年的方法。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/gman-a-graph-multi-attention-network-for-traffic-prediction/Table1.png"
+loading="lazy"
+alt="Table1"
+>&lt;/p>
+&lt;p>这里值得一提的是，最后一个训练和预测时间的比较，我个人认为脱离了框架或软件，单单比较每轮训练时长是毫无意义的，因为有些静态图框架它就是很快，动态图的就是慢，而且代码质量也有区别，有的代码质量高，自然就很快，代码质量低的就很慢。拿 Graph WaveNet 举例，他们公开的代码是 pytorch 的，而且他们在 inference 的时候要对 ground truth 进行反归一化，有的代码人家就不反归一化，这也会造成 inference 的时候有差别，且有的模型是随着结点数 $N$ 的增加模型有显著的耗时增加的现象，没有考虑这些就写 computation time 的比较我觉得没有什么用，何况以 AAAI 7 页的限制来说，完全说清楚这些也毫无意义。&lt;/p></description></item><item><title>Session-based Social Recommendation via Dynamic Graph Attention Networks</title><link>https://davidham3.github.io/blog/p/session-based-social-recommendation-via-dynamic-graph-attention-networks/</link><pubDate>Wed, 29 May 2019 13:37:55 +0000</pubDate><guid>https://davidham3.github.io/blog/p/session-based-social-recommendation-via-dynamic-graph-attention-networks/</guid><description>&lt;p>WSDM 2019，原文链接：&lt;a class="link" href="https://arxiv.org/abs/1902.09362" target="_blank" rel="noopener"
+>Session-based Social Recommendation via Dynamic Graph Attention Networks&lt;/a>&lt;/p>
+&lt;h1 id="abstract">Abstract
+&lt;/h1>&lt;p>像 Facebook 和 Twitter 这样的在线社区很流行，已经成为很多用户生活中的重要部分。通过这些平台，用户可以发掘并创建信息，其他人会消费这些信息。在这种环境下，给用户推荐相关信息变得很重要。然而，在线社区的推荐是一个难题：1. 用户兴趣是动态的，2. 用户会受其朋友的影响。此外，影响者与环境相依。不同的朋友可能关注不同的话题。对两者建模对推荐来说是重要的。&lt;/p>
+&lt;p>我们提出了一个基于动态图注意力机制的在线社区推荐系统。我们用一个 RNN 对动态的用户行为建模，用图卷积对依赖环境的社交影响建模，可以动态地根据用户当前的兴趣推测影响者。整个模型可以高效地用于大规模的数据。几个真实数据集上的实验结果显示我们的方法很好，源码在：&lt;a class="link" href="https://github.com/DeepGraphLearning/RecommenderSystems" target="_blank" rel="noopener"
+>https://github.com/DeepGraphLearning/RecommenderSystems&lt;/a>&lt;/p>
+&lt;h1 id="1-introduction">1 Introduction
+&lt;/h1>&lt;p>在线社区已经成为今天在线体验的重要组成部分。Facebook, Twitter, 豆瓣可以让用户创建、分享、消费信息。因此这些平台的推荐系统对平台上的表层信息和维持用户活跃度来说很重要。然而，在线社区对推荐系统提出了一些挑战。&lt;/p>
+&lt;p>首先，用户兴趣本质上来说是动态的。一个用户可能一段时间对体育感兴趣，之后呢对音乐感兴趣。其次，因为在线社区里面的用户经常给朋友分享信息，用户也会被他们的朋友影响。举个例子，一个找电影的用户可能会被她的朋友喜欢的电影影响。此外，施加影响的一方组成的集合是动态的，因为这和环境有关。举个例子，一个用户在找一个搞笑电影的时候会听取一群喜欢喜剧的朋友的意见，在找动作电影的时候，会受到另一组朋友的影响。&lt;/p>
+&lt;p>&lt;strong>Motivating Example.&lt;/strong> 图 1 展示了 Alice 和 她的朋友在一个在线社区的行为。行为通过一个动作（比如点击操作）序列描述。为了捕获用户的动态兴趣，她们的行为被分成了不同的子序列，表示 &lt;em>sessions&lt;/em>。我们感兴趣的是基于 &lt;em>session&lt;/em> 的推荐：我们根据当前情境下 Alice 已经消费过的东西给她推荐下一个她可能消费的东西。图 1 展示出两个情景，a 和 b。此外，Alice 朋友们的消费信息也是可获得的。我们会利用这些信息生成更好的推荐。因此我们在一个基于 session 的社交推荐情景下。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/session-based-social-recommendation-via-dynamic-graph-attention-networks/Fig1.JPG"
+loading="lazy"
+alt="Figure1"
+>&lt;/p>
+&lt;p>在 session a 中，Alice 浏览了体育的物品。她的两个朋友：Bob 和 Eva，是出了名的体育粉丝（长期兴趣），他们最近正好浏览了体育相关的物品（短期兴趣）。考虑到这个情况，Alice 可能被他们两个影响，比如说接下来她可能会学习乒乓球。在 session b 中，Alice 对文学艺术物品感兴趣。这个环境和刚才不一样了因为她没有最近正在消费这样物品的朋友。但是 David 一直对这个话题感兴趣（长期兴趣）。在这种情况下，对 Alice 来说可能会被 David 影响，可能会被推荐一本 David 喜欢的书。这些例子表明了一个用户当前的兴趣是如何与他不同的朋友的兴趣相融合来提供基于情景的推荐的。我们提出了一个推荐模型来处理这两种情况。&lt;/p>
+&lt;p>当前的推荐系统要么对用户的动态兴趣建模，要么对他们的社交影响建模，但是，据我们所知，现存的方法还没有融合过他们。最近的一个研究对 session 级别的用户行为使用 RNN 建模，忽略了社交影响。其他的研究仅考虑社交影响。举个例子，Ma et al. 探索了朋友的长期兴趣产生的社交影响。但是，不同用户的影响是静态的，没有描绘出每个用户当前的兴趣。&lt;/p>
+&lt;p>我们提出了一个方法对用户基于 session 的兴趣和动态社交影响同时建模。也就是说，考虑了基于当前用户的 session，他的朋友的哪个子集影响了他。我们的推荐模型基于动态注意力网络。我们的方法先用一个 RNN 对一个 session 内的用户行为建模。根据用户当前兴趣——通过 RNN 的隐藏表示捕获到的——我们使用 GAT 捕获了他的朋友的影响。为了提供 session 级别的推荐，我们区分了短期兴趣和长期兴趣。在给定用户当前兴趣的基础上，每个朋友的影响通过注意力机制自动地决定。&lt;/p>
+&lt;p>我们做了大量实验，效果比很多方法好。贡献如下：&lt;/p>
+&lt;ul>
+&lt;li>提出了同时对动态用户兴趣和依赖环境的社交影响学习后对在线社区进行推荐的方法。&lt;/li>
+&lt;li>提出了基于动态图注意力网络的推荐方法。在大数据集上也有效。&lt;/li>
+&lt;li>实验结果比 state-of-the-art 好很多。&lt;/li>
+&lt;/ul>
+&lt;h1 id="2-related-work">2 Related Work
+&lt;/h1>&lt;p>讨论三条路线：1. 对动态用户行为建模的推荐系统，2. 考虑社交影响的推荐系统，3. 图卷积网络。&lt;/p>
+&lt;h2 id="21-dynamic-recommendation">2.1 Dynamic Recommendation
+&lt;/h2>&lt;h2 id="22-social-recommendation">2.2 Social Recommendation
+&lt;/h2>&lt;h2 id="23-graph-convolutional-networks">2.3 Graph Convolutional Networks
+&lt;/h2>&lt;h1 id="3-problem-definition">3 Problem Definition
+&lt;/h1>&lt;p>推荐系统根据历史行为推荐相关的物品。传统的推荐模型，如矩阵分解，忽略了用户的消费顺序。在线社区中，用户兴趣是快速变化的，必须要考虑用户偏好顺序，以便对用户的动态兴趣建模。实际上，因为用户全部的历史记录可以很长（有些社区存在好多年了），用户兴趣切换的很快，一个常用的方法是将用户的偏好分成不同的 session，（使用时间戳，以一个星期为时间段考虑每个用户的行为）并以 session 为级别提供推荐。定义如下：&lt;/p>
+&lt;p>DEFINITION 1. (&lt;strong>Session-based Recommendation&lt;/strong>)，$U$ 表示用户的集合，$I$ 表示物品集。每个用户 $u$ 和一组带有时间步 $T$ 的 session 相关，$I^u_T = \lbrace \vec{S}^u_1, \vec{S}^u_2, \dots \vec{S}^u_T \rbrace$，其中 $\vec{S}^u_t$ 是用户 $u$ 的第 $t$ 个 session。在每个 session 内，$\vec{S}^u_t$ 由一个用户行为的序列 $\lbrace i^u_{t,1}, i^u_{t,2}, \dots, i^u_{t,N_{u,t}} \rbrace$ 组成，其中 $i^u_{t,p}$ 是在第 $t$ 个 session 中用户消费的第 $p$ 个物品，$N_{u,t}$ 是 session 中物品的总数。对于每个用户 $u$，给定一个 session $\vec{S}^u_{T+1} = \lbrace i^u_{T+1,1}, \dots i^u_{T+1,n} \rbrace$，基于 session 的推荐系统的目标是从 $I$ 中推荐一组用户可能在下来的 $n+1$ 步时感兴趣的物品，即 $i^u_{T+1, n+1}$。&lt;/p>
+&lt;p>在在线社区中，用户的兴趣不仅与他们的历史行为相关，也受他们的朋友的影响。举个例子，一个朋友看电影，我也可能会感兴趣。这就叫社交影响。此外，从朋友那里来的影响是跟环境有关的。换句话说，从朋友那里来的影响是不一样的。如果一个用户想买个笔记本电脑，她可能更倾向于问问她喜欢高科技产品的朋友；如果她要买相机，她可能会被她的摄影师朋友影响。就像图 1，一个用户可能被她朋友的长期兴趣和短期兴趣影响。&lt;/p>
+&lt;p>为了提供一个有效的推荐结果，我们提出对动态的用户兴趣和依赖于环境的社交影响建模。我们定义了如下的问题：&lt;/p>
+&lt;p>DEFINITION 2. (&lt;strong>Session-based Social Recommendation&lt;/strong>) $U$ 表示用户集，$I$ 表示物品集合，$G=(U, E)$ 是社交网络，$E$ 是社交网络的边。给定用户 $u$ 的一个 session $\vec{S}^u_{T+1} = \lbrace i^u_{T+1,1}, \dots i^u_{T+1,n} \rbrace$，目标是利用她的动态兴趣（$\cup^{T+1}_{t=1} \vec{S}^u_t$）和社交影响（$\cup^{N(u)}_{k=1} \cup^T_{t=1} \vec{S}^k_t$，其中 $N(u)$ 是用户 $u$ 的邻居），从 $I$ 中推荐一组用户 $u$ 可能在下来的 $n+1$ 步时感兴趣的物品，即 $i^u_{T+1, n+1}$。&lt;/p>
+&lt;h1 id="4-dynamic-social-recommender-systems">4 Dynamic Social Recommender Systems
+&lt;/h1>&lt;p>我们提出的模型 Dynamic Graph Recommendation (DGREC) 是个动态图注意力模型，可以对用户近期的偏好和他的朋友的偏好建模。&lt;/p>
+&lt;p>DGREC 有 4 个模块（图 2）。首先，一个 RNN 对用户当前 session 中的物品序列建模。她朋友的偏好使用长期偏好和短期偏好融合来建模。短期偏好，或是最近一次 session 中的物品也使用 RNN 来编码。朋友的长期偏好通过一个独立的嵌入层编码。模型使用 GAT 融合当前用户的表示和她朋友的表示。这是我们模型的关键：我们提出了基于用户当前的兴趣学习每个朋友的权重的机制。最后一步，模型通过融合用户当前偏好和她的社交影响得到推荐结果。&lt;/p></description></item><item><title>Graph Attention Networks</title><link>https://davidham3.github.io/blog/p/graph-attention-networks/</link><pubDate>Fri, 13 Jul 2018 16:54:31 +0000</pubDate><guid>https://davidham3.github.io/blog/p/graph-attention-networks/</guid><description>&lt;p>ICLR 2018。图注意力网络，使用 self-attention 来构建 graph attentional layer，attention 会考虑当前顶点所有的邻居对它的重要性，基于谱图理论的模型不能应用到其他不同结构的图上，而这个基于attention的方法能有效的解决这个问题。原文链接：&lt;a class="link" href="https://arxiv.org/abs/1710.10903" target="_blank" rel="noopener"
+>Graph Attention Networks&lt;/a>&lt;/p>
+&lt;h1 id="摘要">摘要
+&lt;/h1>&lt;p>我们提出了图注意力网络(GAT)，新型图神经网络，利用自注意力层解决基于图卷积及其相似方法的缺点。通过堆叠这种层（层中的顶点会注意邻居的特征），我们可以给邻居中的顶点指定不同的权重，不需要任何一种耗时的矩阵操作（比如求逆）或依赖图结构的先验知识。我们同时解决了基于谱的图神经网络的几个关键挑战，并且使我们的模型很轻松的应用在 inductive 或 transductive 问题上。我们的 GAT 模型在4个 transductive 和 inductive 图数据集上达到且匹敌当前最先进的算法：&lt;em>Cora&lt;/em>, &lt;em>Citeseer&lt;/em>, &lt;em>Pubmed citation networks&lt;/em>，&lt;em>protein-protin interaction&lt;/em>。&lt;/p>
+&lt;h1 id="1-introduction">1 INTRODUCTION
+&lt;/h1>&lt;p>CNN 结构可以有效的重复使用卷积核，在网格型的数据上应用。然而很多问题都是基于图结构的。&lt;/p>
+&lt;p>早期的工作使用RNN来处理图结构中数据的表示。2005 年和 2009 年提出了 GNN（Graph Neural Networks）的概念，作为 RNN 的泛化，可以直接处理更一般的图结构，比如带环图、有向、无向图。GCN 包含了迭代的过程，迭代时顶点状态向前传播，后面使用一个神经网络来产生输出。Li et al., 2016使用了Cho et al., 2014提出的门控循环单元进行改进。&lt;/p>
+&lt;p>进一步的研究分为谱方法和非谱方法。&lt;/p>
+&lt;p>一方面，谱方法使用图的谱表示，成功应用到了顶点分类的问题上。Bruna et al., 2014在傅里叶域中定义了卷积操作，通过计算拉普拉斯矩阵的特征值分解，由于潜在的大量的计算，引出了后续的非谱方法。Henaff et al., 2015引入了带有 smooth coefficients 的谱滤波器，可以使他们在空间局部化。后来 Defferrard et al., 2016 提出了通过拉普拉斯矩阵的切比雪夫多项式展开的近似表达。最后，Kipf &amp;amp; Welling 2017 通过限制滤波器只考虑 1 阶邻居从而简化了之前的方法。然而，前面提到的所有的谱方法，学习到的卷积核参数都依赖于拉普拉斯特征值分解后的特征向量，也就是说依赖于图结构。因此，训练在一个指定图结构的模型不能应用到不同结构的图上。&lt;/p>
+&lt;p>另一方面，还有一些非谱方法 (Duvenaud et al., 2015; Atwood &amp;amp; Towsley, 2016; Hamilton et al., 2017)，这些方法直接在图上定义卷积操作，直接在空间上相近的邻居上应用卷积操作。这些方法的一个挑战是需要定义一个能处理不同数量邻居的卷积操作，并且保证 CNN 权重共享的性质。在某些情况下，这需要学习为每个 node degree 学习一个权重矩阵 (Duvenaud et al., 2015)，在对每个 input channel 和 neighborhood degree 训练权重时，使用转移矩阵的幂定义邻居 (Atwood &amp;amp; Towsley, 2016)，或是对有着固定数量顶点的邻居进行提取和归一化(Niepert et al., 2016)。Monti et al., 2016提出了混合模型 CNN，(MoNet)，这个空间方法提供了一个 CNN 在图上泛化的统一的模型。最近，Hamilton et al., 2017提出了 GraphSAGE，对每个顶点采样采出一个固定数量的邻居，然后使用一个指定的聚合操作聚集他们（比如取所有采样邻居的均值，或是将他们放进RNN后产生的结果）。这个方法在几个大规模的 inductive 数据集上获得了很惊人的效果。&lt;/p>
+&lt;p>注意力机制在很多基于序列的任务中已经成为了一个标准 (Bahdanau et al., 2015; Gehring et al., 2016)。注意力机制的一个好处是可以处理变长输入，专注于输入中最相关的部分来做决策。使用注意力机制计算一个序列的表示时，一般提到的是 &lt;em>self-attention&lt;/em> 或 &lt;em>intra-attention&lt;/em>。与 RNN 或卷积一起使用时，self-attention 在机器阅读(Cheng et al., 2016)和学习句子表示(Lin et al., 2017)这些任务上很有用。然而，Vaswani et al., 2017的研究表明，self-attention 不仅可以提升 RNN 和卷积的模型，在机器翻译任务上也是可以构建出性能最强的模型的。&lt;/p>
+&lt;p>受最近工作的启发，我们提出了基于 attention 的架构对图结构的顶点进行分类。思路是通过对顶点邻居的注意，计算图中每个顶点的表示，然后使用一个 self-attention 机制。注意力架构有几个有趣的性质：(1) 操作高效，因为它可以“顶点-邻居”对上并行计算；(2) 通过指定对邻居任意的权重，它可以在有着不同度的顶点上使用；(3) 模型可以直接应用在 inductive learning 任务上，包括模型必须要生成完整的未见过的图等任务。我们在4个 benchmark 上验证了我们的方法：&lt;em>Cora&lt;/em>，&lt;em>Citeseer&lt;/em>，&lt;em>Pubmed citation networks&lt;/em>，&lt;em>protein-protein interaction&lt;/em>，获得了比肩 state-of-the-art 的结果，展现了基于 attention 的模型在处理任意结构的图的可能性。&lt;/p>
+&lt;p>值得注意的是，如 Kipf &amp;amp; Welling 2017和Atwood &amp;amp; Towsley 2016，我们的工作可以重写为 MoNet(Monti et al., 2016)的一种特殊形式。除此以外，我们的分享神经网络跨边计算时是对关系网络公式的联想(Santoro et al., 2017)和VAIN(Hoshen, 2017)，在这两篇文章中，object 和 agent 间的关系被聚合成对，通过使用一种共享机制。相似地，我们的注意力模型可以与 Duan et al., 2017 和 Denil et al., 2017 的工作相连，他们使用一个邻居注意力操作来计算环境中不同 object 的注意力系数。其他相关的方法包括局部线性嵌入(LLE)(Roweis &amp;amp; Saul, 2000)和记忆网络(Weston et al., 2014)。LLE 在每个数据点选择了固定数量的邻居，为每个邻居学习了权重系数，以此将每个数据点重构为邻居的加权之和。之后的优化提取了顶点嵌入的特征。记忆网络与我们的工作也有关系，如果我们将一个顶点的邻居解释为记忆，通过注意它的值可以计算顶点特征，之后通过在同样的位置存储新特征进行更新。&lt;/p>
+&lt;h1 id="2-gat-architecture">2 GAT ARCHITECTURE
+&lt;/h1>&lt;p>我们会在这部分描述如何创建 block layer 来构造任意的 graph attention networks，并且指明理论和实际上的优点以及相比于之前在神经图处理上的工作的缺点。&lt;/p>
+&lt;h2 id="21-graph-attentional-layer">2.1 Graph Attentional Layer
+&lt;/h2>&lt;p>首先描述单个 graph attentional layer，因为这种层会在整个 GAT 架构中使用。我们使用的 attention 和 Bahdanau et al., 2015 的工作相似。&lt;/p>
+&lt;p>输入是一组顶点特征，${\mathbf{h}} = \lbrace \vec{h}_1, \vec{h}_2, &amp;hellip;, \vec{h}_N \rbrace , \vec{h}_i \in \mathbb{R}^F$，其中 $N$ 是顶点数，$F$ 是每个顶点的特征数。这个层会生成一组新的顶点特征，${\mathbf{h}&amp;rsquo;} = \lbrace \vec{h}&amp;rsquo;_1, \vec{h}&amp;rsquo;_2, &amp;hellip;, \vec{h}&amp;rsquo;_N\rbrace , \vec{h}&amp;rsquo;_i \in \mathbb{R}^{F&amp;rsquo;}$，作为输出。&lt;/p>
+&lt;p>为了在将输入特征变换到高维特征时获得充足的表现力，至少需要一个可学习的线性变换。为了到达这个目的，每个顶点都会使用一个共享参数的线性变换，参数为 ${\mathbf{W}} \in \mathbb{R}^{F&amp;rsquo; \times F}$。然后在每个顶点上做一个 self-attention ——一个共享的attention机制 $a : \mathbb{R}^{F&amp;rsquo;} \times \mathbb{R}^{F&amp;rsquo;} \rightarrow \mathbb{R}$ 来计算注意力分数 &lt;em>attention coefficients&lt;/em>：&lt;/p>
+$$\tag{1}
+e\_{ij} = a(\mathbf{W} \vec{h}\_i, \mathbf{W} \vec{h}\_j)
+$$&lt;p>表示顶点 $j$ 的特征对顶点 $i$ 的重要性(&lt;em>importance&lt;/em>)。在一般的公式中，模型可以使每个顶点都注意其他的每个顶点，扔掉所有的结构信息。我们使用 &lt;em>mask attention&lt;/em> 使得图结构可以注入到注意力机制中——我们只对顶点 $j \in \mathcal{N_i}$ 计算$e_{ij}$，其中$\mathcal{N_i}$ 是顶点 $i$ 在图中的一些邻居。在我们所有的实验中，这些是 $i$ 的一阶邻居（包括 $i$ ）。为了让系数在不同的顶点都可比，我们对所有的 $j$ 使用 softmax 进行了归一化：&lt;/p>
+$$\tag{2}
+\alpha\_{ij} = \mathrm{softmax}\_j (e\_{ij}) = \frac{\exp{e\_{ij}}}{\sum\_{k \in \mathcal{N}\_i} \exp{e\_{ik}}}
+$$&lt;div align="center">![Figure1](/blog/images/graph-attention-networks/Fig1.JPG)&lt;/div>
+&lt;p>在我们的实验中，注意力机制 $a$ 是一个单层的前向传播网络，参数为权重向量 $\vec{\text{a}} \in \mathbb{R}^{2F&amp;rsquo;}$，使用LeakyReLU作为非线性层（斜率$\alpha = 0.2$）。整个合并起来，注意力机制计算出的分数（如图1左侧所示）表示为：&lt;/p>
+$$\tag{3}
+\alpha\_{ij} = \frac{ \exp{ ( \mathrm{LeakyReLU} ( \vec{\text{a}}^T [\mathbf{W} \vec{h}\_i \Vert \mathbf{W} \vec{h}\_j ] ))}}{\sum\_{k \in \mathcal{N\_i}} \exp{(\mathrm{LeakyReLU}(\vec{\text{a}}^T [\mathbf{W} \vec{h}\_i \Vert \mathbf{W} \vec{h}\_k]))}}
+$$&lt;p>其中 $·^T$ 表示转置，$\Vert$ 表示concatenation操作。&lt;/p>
+&lt;p>得到归一化的分数后，使用归一化的分数计算对应特征的线性组合，作为每个顶点最后的输出特征（最后可以加一个非线性层，$\sigma$）：&lt;/p>
+$$\tag{4}
+\vec{h}'\_i = \sigma(\sum\_{j \in \mathcal{N}\_i} \alpha\_{ij} \mathbf{W} \vec{h}\_j)
+$$&lt;p>为了稳定 self-attention 的学习过程，我们发现使用 &lt;em>multi-head attention&lt;/em> 来扩展我们的注意力机制是很有效的，就像 Vaswani et al., 2017。特别地，$K$ 个独立的 attention 机制执行 式4 这样的变换，然后他们的特征连(concatednated)在一起，就可以得到如下的输出：&lt;/p>
+$$\tag{5}
+\vec{h}'\_i = \Vert^{K}\_{k=1} \sigma(\sum\_{j \in \mathcal{N}\_i} \alpha^k\_{ij} \mathbf{W}^k \vec{h}\_j)
+$$&lt;p>其中 $\Vert$ 表示concatenation，$\alpha^k_{ij}$ 是通过第 $k$ 个注意力机制 $(a^k)$ 计算出的归一化的注意力分数，$\mathbf{W}^k$ 是对应的输入线性变换的权重矩阵。注意，在这里，最后的返回输出 $\mathbf{h}&amp;rsquo;$，每个顶点都会有 $KF&amp;rsquo;$ 个特征（不是 $F&amp;rsquo;$ ）。
+特别地，如果我们在网络的最后一层使用 multi-head attention，concatenation 就不再可行了，我们会使用 &lt;em>averaging&lt;/em>，并且延迟使用最后的非线性层（分类问题通常是 softmax 或 sigmoid ）：&lt;/p>
+$$
+\vec{h}'\_i = \sigma(\frac{1}{K} \sum^K\_{k=1} \sum\_{j \in \mathcal{N}\_i} \alpha^k\_{ij} \mathbf{W}^k \vec{h}\_j)
+$$&lt;p>multi-head 图注意力层的聚合过程如图1右侧所示。&lt;/p>
+&lt;h2 id="22-comparisons-to-related-work">2.2 Comparisons to related work
+&lt;/h2>&lt;p>2.1节描述的图注意力层直接解决了之前在图结构上使用神经网络建模的方法的几个问题：
+· 计算高效：self-attention层的操作可以在所有的边上并行，输出特征的计算可以在所有顶点上并行。没有耗时的特征值分解。单个的GAT计算$F&amp;rsquo;$个特征的时间复杂度可以压缩至$O(\vert V \vert F F&amp;rsquo; + \vert E \vert F&amp;rsquo;)$，$F$是输入的特征数，$\vert V \vert$和$\vert E \vert$是图中顶点数和边数。复杂度与Kipf &amp;amp; Welling, 2017的GCN差不多。尽管使用multi-head attention可以并行计算，但也使得参数和空间复杂度变成了$K$倍。
+· 对比GCN，我们的模型允许对顶点的同一个邻居分配不同的重要度，使得模型能力上有一个飞跃。不仅如此，对学习到的attentional权重进行分析可以得到更好的解释性，就像机器翻译领域一样（比如Bahdanau et al., 2015的定性分析）。
+· 注意力机制以一种共享的策略应用在图的所有的边上，因此它并不需要在之前就需要得到整个图结构或是所有的顶点的特征（很多之前的方法的缺陷）。因此这个方法有几个影响：&lt;/p>
+&lt;ul>
+&lt;li>图不需要是无向的（如果边$j \rightarrow i$没有出现，我们可以直接抛弃掉$\alpha_{ij}$的计算）&lt;/li>
+&lt;li>这个方法可以直接应用到&lt;em>inductive learning&lt;/em>——包括在训练过程中在完全未见过的图上评估模型的任务上。最近发表的Hamilton et al., 2017的inductive方法为了保持计算过程的一致性，对每个顶点采样采了一个固定数量的邻居；这就使得这个方法在推断的时候不能考虑所有的邻居。此外，在使用一个基于LSTM的邻居聚合方式时（Hochreiter &amp;amp; Schmidhuber, 1997），这个方法在某些时候能达到最好的效果。这意味着存在邻居间存在一个一致的顶点序列顺序，作者通过将随机顺序的序列输入至LSTM来验证它的一致性。我们的方法不会受到这些问题中任意一个的影响——它在所有的邻居上运算（虽说会有计算上的开销，但扔能和GCN这样的速度差不多），并且假设任意顺序都可以。
+· 如第一节提到的，GAT可以重写成MoNet(Monti et al., 2016)的一种特殊形式。更具体的来说，设pseudo-coordinate function为$u(x, y) = f(x) \Vert f(y)$，$f(x)$表示$x$的特征（可能是MLP变换后的结果），$\Vert$表示concatenation；权重函数为$w_j(u) = \mathrm{softmax}(\mathrm{MLP}(u))$（softmax在一个顶点所有的邻居上计算）会使MoNet的patch operator和我们的很相似。尽管如此，需要注意到的是，对比之前MoNet的实例，我们的模型使用顶点特征计算相似性，而不是顶点的结构性质（这需要之前就已经直到图结构）。&lt;/li>
+&lt;/ul>
+&lt;p>我们可以做出一种使用稀疏矩阵操作的GAT层，将空间复杂度降低到顶点和边数的线性级别，使得GAT模型可以在更大的图数据集上运行。然而，我们使用的tensor操作框架只支持二阶tensor的稀疏矩阵乘法，限制了当前实现的版本的模型能力（尤其在有多个图的数据集上）。解决这个问题是未来的一个重要研究方向。在这些使用稀疏矩阵的场景下，在某些图结构下GPU的运算并不能比CPU快多少。另一个需要注意的地方是我们的模型的感受野的大小的上届取决于网络的深度（与GCN和其他模型相似）。像skip connections(He et al., 2016)这样的技术可以来近似的扩展模型的深度。最后，在所有边上的并行计算，尤其是分布式的计算可以设计很多冗余的计算，因为图中的邻居往往高度重叠。&lt;/p>
+&lt;h1 id="3-evaluation">3 Evaluation
+&lt;/h1>&lt;p>我们与很多强力的模型进行了对比，在四个基于图的数据集上，达到了state-of-the-art的效果。这部分将总结一下我们的实验过程与结果，并对GAT提取特征表示做一个定性分析。
+&lt;img src="https://davidham3.github.io/blog/blog/images/graph-attention-networks/Table1.JPG"
+loading="lazy"
+alt="Table1"
+>&lt;/p>
+&lt;h2 id="31-datasets">3.1 Datasets
+&lt;/h2>&lt;p>&lt;strong>Transductive learning&lt;/strong> 我们使用了三个标准的citation network benchmark数据集——Cora, Citeseer和Pubmed(Sen et al., 2008)——并按Yang et al., 2016做的transductive实验。这些数据集中，顶点表示文章，边（无向）表示引用。顶点特征表示文章的BOW特征。每个顶点有一个类标签。我们使用每类20个顶点用来训练，训练算法使用所有的顶点特征。模型的预测性能是在1000个测试顶点上进行评估的，我们使用了500个额外的顶点来验证意图（像Kipf &amp;amp; Welling 2017）。Cora数据集包含了2708个顶点，5429条边，7个类别，每个顶点1433个特征。Citeseer包含3327个顶点，4732条边，6类，每个顶点3703个特征。Pubmed数据集包含19717个顶点，44338条边，3类，每个顶点500个特征。&lt;/p>
+&lt;p>&lt;strong>Inductive learning&lt;/strong> 我们充分利用protein-protein interaction(PPI)数据集，这个数据集包含了不同的人体组织（Zitnik &amp;amp; Leskovec, 2017）。数据集包含了20个图来训练，2个验证，2个测试。关键的是，测试的图包含了训练时完全未见过的图。为了构建图，我们使用Hamilton et al., 2017预处理后的数据。平均每个图的顶点数为2372个。每个顶点有50个特征，组成了positional gene sets，motif gene sets and immunological signatures。从基因本体获得的每个顶点集有121个标签，由Molecular Signatures Database(Subramanian et al., 2005)收集，一个顶点可以同时拥有多个标签。&lt;/p>
+&lt;p>这些数据集的概貌在表1中给出。&lt;/p>
+&lt;h2 id="32-state-of-the-art-methods">3.2 State-of-the-art methods
+&lt;/h2>&lt;p>&lt;strong>Transductive learning&lt;/strong> 对于transductive learning任务，我们对比了Kipf &amp;amp; Welling 2017的工作，以及其他的baseline。包括了label propagation(LP)(Zhu et al., 2003)，半监督嵌入(SemiEmb)(Weston et al., 2012)，manifold regulariization(ManiReg)(Belkin et al., 2006)，skip-gram based graph embeddings(DeepWalk)(Perozzi et al., 2014)，the iterative classification algorithm(ICA)(Lu &amp;amp; Getoor, 2003)和Planetoid(Yang et al., 2016)。我们也直接对比了GCN(Kipf &amp;amp; Welling 2017)，还有利用了高阶切比雪夫的图卷积模型(Defferrard et al., 2016)，还有Monti et al., 2016提出的MoNet。&lt;/p>
+&lt;p>&lt;strong>Inductive learning&lt;/strong> 对于inductive learning任务，我们对比了Hamilton et al., 2017提出的四个不同的监督的GraphSAGE 这些方法提供了大量的聚合特征：GraphSAGE-GCN（对图卷积操作扩展inductive setting），GraphSAGE-mean（对特征向量的值取element-wise均值），GraphSAGE-LSTM（通过将邻居特征输入到LSTM进行聚合），GraphSAGE-pool（用一个共享的多层感知机对特征向量进行变换，然后使用element-wise取最大值）。其他的transductive方法要么在inductive中完全不合适，要么就认为顶点是逐渐加入到一个图中，使得他们不能在完全未见过的图上使用（如PPI数据集）。&lt;/p>
+&lt;p>此外，对于两种任务，我们提供了每个顶点共享的MLP分类器（完全没有整合图结构信息）的performance。&lt;/p>
+&lt;h2 id="33-experimental-setup">3.3 Experimental Setup
+&lt;/h2>&lt;p>&lt;strong>Transductive learning&lt;/strong> 我们使用一个两层的GAT模型。超参数在Cora上优化过后在Citeseer上复用。第一层包含$K = 8$个attention head，计算得到$F&amp;rsquo; = 8$个特征（总共64个特征），之后接一个指数线性单元（ELU）（Clevert et al., 2016）作为非线性单元。第二层用作分类：一个单个的attention head计算$C$个特征（其中$C$是类别的数量），之后用softmax激活。处理小训练集时，在模型上加正则化。在训练时，我们使用$L_2$正则化，$\lambda = 0.0005$。除此以外，两个层的输入都使用了$p = 0.6$的dropout(Srivastava et al., 2014)，在&lt;em>normalized attention coefficients&lt;/em>上也使用了（也就是在每轮训练时，每个顶点都被随机采样邻居）。如Monti et al., 2016观察到的一样，我们发现Pubmed的训练集大小(60个样本)需要微调：我们使用$K = 8$个attention head，加强了$L_2$正则，$\lambda = 0.001$。除此以外，我们的结构都和Cora和Citeseer的一样。&lt;/p>
+&lt;p>&lt;strong>Inductive learning&lt;/strong>
+我们使用一个三层的GAT模型。前两层$K = 4$，计算$F&amp;rsquo; = 256$个特征（总共1024个特征），然后使用ELU。最后一层用于多类别分类：$K = 6$，每个计算121个特征，取平均后使用logistic sigmoid激活。训练集充分大所以不需要使用$L_2$正则或dropout——但是我们使用了skip connections(He et al., 2016)在attentional layer间。训练时batch size设置为2个图。为了严格的衡量出使用注意力机制的效果（与GCN相比），我们也提供了&lt;em>constant attention mechanism&lt;/em>，$a(x, y) = 1$，使用同样的架构——也就是每个邻居上都有相同的权重。&lt;/p>
+&lt;p>两个模型都使用了Glorot初始化(Glorot &amp;amp; Bengio, 2010)，使用Adam SGD(Kingma &amp;amp; Ba, 2014)优化cross-entropy，Pubmed上初始学习率是0.01，其他数据集是0.005。我们在cross-entropy loss和accuracy(transductive)或micro-F1(inductive)上都使用了early stopping策略，迭代次数为100轮。
+代码：https://github.com/PetarV-/GAT&lt;/p>
+&lt;h2 id="34-results">3.4 Results
+&lt;/h2>&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/graph-attention-networks/Table2.JPG"
+loading="lazy"
+alt="Table2"
+>
+对于transductive任务，我们提交了我们的方法100次的平均分类精度（还有标准差），也用了Kipf &amp;amp; Welling., 2017和Monti et al., 2016的metrics。特别地，对于基于切比雪夫方法(Defferrard et al., 2016)，我们提供了二阶和三阶最好的结果。为了公平的评估注意力机制的性能，我们还评估了一个计算出64个隐含特征的GCN模型，并且尝试了ReLU和ELU激活，记录了100轮后更好的那个结果（GCN-64*）（结果显示ReLU更好）。
+&lt;img src="https://davidham3.github.io/blog/blog/images/graph-attention-networks/Table3.JPG"
+loading="lazy"
+alt="Table3"
+>
+对于inductive任务，我们计算了micro-averaged F1 score在两个从未见过的测试图上，平均了10次结果，也使用了Hamilton et al., 2017的metrics。特别地，因为我们的方法是监督的，我们对比了GraphSAGE。为了评估聚合所有的邻居的优点，我们还提供了我们通过修改架构（三层GraphSAGE-LSTM分别计算[512, 512, 726]个特征，128个特征用来聚合邻居）所能达到的GraphSAGE最好的结果（GraphSAGE*）。最后，为了公平的评估注意力机制对比GCN这样的聚合方法，我们记录了我们的constant attention GAT模型的10轮结果（Const-GAT）。
+结果展示出我们的方法在四个数据集上都很好，和预期一致，如2.2节讨论的那样。具体来说，在Cora和Citeseer上我们的模型上升了1.5%和1.6%，推测应该是给邻居分配不同的权重起到了效果。值得注意的是在PPI数据集上：我们的GAT模型对于最好的GraphSAGE结果提升了20.5%，这意味着我们的模型可以应用到inductive上，通过观测所有的邻居，模型会有更强的预测能力。此外，针对Const-GAT也提升3.9%，再一次展现出给不同的邻居分配不同的权重的巨大提升。&lt;/p>
+&lt;p>学习到的特征表示的有效性可以定性分析——我们提供了t-SNE(Maaten &amp;amp; Hinton, 2008)的可视化——我们对在Cora上面预训练的GAT模型中第一层的输出做了变换（图2）。representation在二维空间中展示出了可辩别的簇。注意，这些簇对应了数据集的七个类别，验证了模型在Cora上对七类的判别能力。此外，我们可视化了归一化的attention系数（对所有的8个attention head取平均）的相对强度。像Bahdanau et al., 2015那样适当的解释这些系数需要更多的领域知识，我们会在未来的工作中研究。
+&lt;img src="https://davidham3.github.io/blog/blog/images/graph-attention-networks/Fig2.JPG"
+loading="lazy"
+alt="Figure2"
+>&lt;/p>
+&lt;h1 id="4-conclusions">4 Conclusions
+&lt;/h1>&lt;p>我们展示了图注意力网络(GAT)，新的卷积风格神经网络，利用masked self-attentional层。图注意力网络计算高效（不需要耗时的矩阵操作，在图中的顶点上并行计算），处理不同数量的邻居时对邻居中的不同顶点赋予不同的重要度，不需要依赖整个图的结构信息——因此解决了之前提出的基于谱的方法的问题。我们的这个利用attention的模型在4个数据集针对transductive和inductive（特别是对完全未见过的图），对顶点分类成功地达到了state-of-the-art的performance。&lt;/p>
+&lt;p>未来在图注意力网络上有几点可能的改进与扩展，比如解决2.2节描述的处理大批数据时的实际问题。还有一个有趣的研究方向是利用attention机制对我们的模型进行一个深入的解释。此外，扩展我们的模型从顶点分类到图分类也是一个更具应用性的方向。最后，扩展我们的模型到整合边的信息（可能制视了顶点关系）可以处理更多的问题。&lt;/p></description></item><item><title>GeoMAN: Multi-level Attention Networks for Geo-sensory Time Series Prediction</title><link>https://davidham3.github.io/blog/p/geoman-multi-level-attention-networks-for-geo-sensory-time-series-prediction/</link><pubDate>Mon, 09 Jul 2018 17:03:00 +0000</pubDate><guid>https://davidham3.github.io/blog/p/geoman-multi-level-attention-networks-for-geo-sensory-time-series-prediction/</guid><description>&lt;p>IJCAI 2018，看了一部分，还没看完。原文链接：&lt;a class="link" href="https://www.ijcai.org/proceedings/2018/476" target="_blank" rel="noopener"
+>GeoMAN: Multi-level Attention Networks for Geo-sensory Time Series Prediction&lt;/a>&lt;/p>
+&lt;h1 id="abstract">Abstract
+&lt;/h1>&lt;p>大量的监测器被部署在各个地方，连续协同地监测周围的环境，如空气质量。这些检测器生成很多时空序列数据，之间有着空间相关性。预测这些时空数据很有挑战，因为预测受很多因素影响，比如动态的时空关联和其他因素。我们在这篇论文中使用多级基于注意力机制的 RNN 模型，结合空间、气象和检测器数据来预测未来的监测数值。我们的模型由两部分组成：&lt;/p>
+&lt;ol>
+&lt;li>多级注意力机制对时空依赖关系建模&lt;/li>
+&lt;li>一个通用的融合模块对多领域的外部信息进行融合&lt;/li>
+&lt;/ol>
+&lt;p>实验用了两个真实的数据集，空气质量数据和水质监测数据，结果显示我们的模型比9个baselines都要好。&lt;/p>
+&lt;h1 id="1-introduction">1 Introduction
+&lt;/h1>&lt;p>现实世界中有大量的检测器，如空气监测站。每个监测站都有一个地理位置，不断地生成时间序列数据。一组检测器不断的监测一个区域的环境，数据间有空间依赖关系。我们成这样的监测数据为 &lt;em>geosensory time series&lt;/em>。此外，一个检测器生成多种 geo-sensory 时间序列是很常见的，因为这个检测器同时监测不同的目标。举个例子，图1a，路上的循环检测器实时记录车辆通行情况，也记录他们的速度。图1b 展示了检测器每五分钟生成的关于水质的三个不同的气候指标。除了监测，对于 geo-sensory 时间序列预测还有一个重要的需求就是交通预测。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/geoman-multi-level-attention-networks-for-geo-sensory-time-series-prediction/Fig1.PNG"
+loading="lazy"
+alt="Fig1"
+>&lt;/p>
+&lt;p>然而，预测 geo-sensory 时间序列很有挑战性，主要受两个因素影响：&lt;/p>
+&lt;ol>
+&lt;li>动态时空关系
+·检测器间复杂的关系。图1c展示了不同检测器的时间序列间的空间关系是高度动态的，随着时间不断改变。除此以外，geo-sensory时间序列根据地区有非线性的变化。当对动态关系建模时，传统方法（如概率图模型）的计算量会很大，因为他们有很多参数。
+·检测器内部的动态关系。首先，一个geo-sensory时间序列通常由一种周期模式（如，图1c中的$S_1$），这种模式一直变化，并且地理上也有改变。其次，检测器记录经常有很大的振动，很快地减少前一个数值的影响。因此，如何选择一个时间间隔来预测也是一个问题。&lt;/li>
+&lt;li>外部因素。
+检测器数据也被周围的环境影响，比如气象（例如强风），几点（比如早晚高峰）还有土地使用情况等。&lt;/li>
+&lt;/ol>
+&lt;p>为了解决这些挑战，我们提出了一个多级注意力网络（GeoMAN）来预测一个检测器未来几个小时的数值。我们的贡献有三点：&lt;/p>
+&lt;ol>
+&lt;li>&lt;em>多级注意力机制&lt;/em>。我们研发了一个多级注意力机制对动态时空关系建模。具体来说，第一级，我们提出了一个新的注意力机制，由局部空间注意力和全局空间注意力组成，用来捕获不同检测器时间序列间的复杂空间关系。第二级，时间注意力对一个时间序列中的动态时间关系进行建模。&lt;/li>
+&lt;li>&lt;em>外部因素融合模型&lt;/em>。我们设计了一个通用融合模型融合不同领域的外部因素。学习到的隐含表示会输入至多级注意力网络中来提升这些外部因素的重要性。&lt;/li>
+&lt;li>&lt;em>真实的评价&lt;/em>。我们基于两个真实的数据集评估我们的方法。大量的实验证明了我们的方法相比于baseline的优越性。&lt;/li>
+&lt;/ol>
+&lt;h1 id="2-preliminary">2 Preliminary
+&lt;/h1>&lt;h2 id="21-notations">2.1 Notations
+&lt;/h2>&lt;p>假设，有 $N_g$ 个检测器，每个都生成 $N_l$ 种时间序列。我们指定其中的一个为 &lt;em>target series&lt;/em> 来预测，其它序列作为特征。时间窗为 $T$，我们使用 $\mathbf{Y} = (\mathbf{y}^1, \mathbf{y}^2, &amp;hellip;, \mathbf{y}^{N_g}) \in \mathbb{R}^{N_g \times T}$ 来表示所有目标序列在过去 $T$ 个小时的监测值，其中 $\mathbf{y}^i \in \mathbb{R}^T$ 属于监测器 $i$。我们使用 $\mathbf{X}^i = (\mathbf{x}^{i, 1}, \mathbf{x}^{i, 2}, &amp;hellip;, \mathbf{x}^{i, N_l})^{\rm T} = (\mathbf{x}^i_1, \mathbf{x}^i_2, &amp;hellip;, \mathbf{x}^i_T) \in \mathbb{R}^{N_l \times T}$ 作为检测器 $i$ 的局部特征，其中 $\mathbf{x}^{i,k} \in \mathbb{R}^T$ 是这个检测器的第 $k$ 个时间序列，$\mathbf{x}^i_t = (x^{i,1}_t, x^{i,2}_t, &amp;hellip;, x^{i,N_l}_t)^{\rm T} \in \mathbb{R}^{N_l}$ 表示检测器 $i$ 在时间 $t$ 的所有时间序列的值。除了检测器 $i$ 的局部特征，由于不同检测器间的空间关系，其他的检测器会共享大量对于预测有用的信息。为了这个目的，我们将每个检测器的局部特征融合到集合 $\mathcal{X}^i = \lbrace \mathbf{X}^1, \mathbf{X}^2, &amp;hellip;, \mathbf{X}^{N_g}\rbrace$ 中作为检测器 $i$ 的全局特征。&lt;/p>
+&lt;h2 id="22-problem-statement">2.2 Problem Statement
+&lt;/h2>&lt;p>给定每个检测器之前的值和外部因素，预测检测器 $i$ 在未来 $\tau$ 个小时的值，表示为 $\hat{\mathbf{y}}^i = (\hat{y}^i_{T+1}, \hat{y}^i_{T+2}, &amp;hellip;, \hat{y}^i_{T+\tau})^{\rm T} \in \mathbb{R}^{\tau}$.&lt;/p>
+&lt;h1 id="3-multi-level-attention-networks">3 Multi-level Attention Networks
+&lt;/h1>&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/geoman-multi-level-attention-networks-for-geo-sensory-time-series-prediction/Fig2.PNG"
+loading="lazy"
+alt="Fig2"
+>&lt;/p>
+&lt;p>图 2 展示了我们方法的框架。基于编码解码架构[Cho et al., 2014b]，我们用两个分开的 LSTM，一个对输入序列编码，也就是对历史的 geo-sensory 时间序列，另一个来预测输出的序列 $\hat{y}^i$。更具体的讲，我们的模型 GeoMAN 有两个主要部分：&lt;/p>
+&lt;ol>
+&lt;li>多级注意力机制。包含一个带有两类空间注意力机制的编码器和一个带有时间注意力的解码器。在编码器，我们开发了两种不同的注意力机制，局部空间注意力和全局空间注意力，如图 2 所示，这两种注意力机制通过前几步编码器的隐藏状态、前几步检测器的值和空间信息（检测器网络），可以在每个时间步上捕获检测器间的复杂关系。在解码器，我们使用了一个时间注意力机制来自适应地选择之前的时间段来做预测。&lt;/li>
+&lt;li>外部因素融合。这个模块用来处理外部因素的影响，输出会作为解码器的一部分输入。这里，我们使用 $h_t \in \mathbb{R}^m$ 和 $s_t \in \mathbb{R}^m$ 来表示编码器在时间 $t$ 的隐藏状态和细胞状态。$d_t \in \mathbb{R}^n$ 和 $s&amp;rsquo; \in \mathbb{R}^n$ 表示解码器的隐藏状态和细胞状态。&lt;/li>
+&lt;/ol>
+&lt;h2 id="31-spatial-attention">3.1 Spatial Attention
+&lt;/h2>&lt;h3 id="local-spatial-attention">Local Spatial Attention
+&lt;/h3>&lt;p>我们先介绍空间局部注意力机制。对应一个监测器，在它的局部时间序列上有复杂的关联性。举个例子，一个空气质量检测站会记录不同的时间序列如 PM2.5，NO 和 SO2。事实上，PM2.5 的浓度通常被其他时间序列影响，包括其他的空气污染物和局部空气质量 [Wang et al., 2005]。为了解决这个问题，给定第 $i$ 个检测器第 $k$ 个局部特征向量 $\mathbf{x}^{i,k}$，我们使用注意力机制自适应地捕获目标序列和每个局部特征间的动态关系：&lt;/p>
+$$\tag{1}
+e^k\_t = \mathbf{v}^T\_l \text{tanh} (\mathbf{W}\_l [\mathbf{h}\_{t-1};\mathbf{s}\_{t-1}] + \mathbf{U}\_l \mathbf{x}^{i,k} + \mathbf{b}\_l)
+$$$$\tag{2}
+\alpha^k\_t = \frac{\text{exp}(e^k\_t)}{\sum^{N\_l}\_{j=1}\text{exp}(e^j\_t)}.
+$$&lt;p>其中 $[\cdot;\cdot]$ 是拼接操作（论文这里写的是 concentration，我怎么觉得是concatenation呢。。。）。$\mathbf{v}_l, \mathbf{b}_l \in \mathbb{R}^T, \mathbf{W}_l \in \mathbb{R}^{T \times 2m}, \mathbf{U}_l \in \mathbb{R}^{T \times T}$ 是参数。局部特征的注意力权重通过编码器中输入的局部特征和历史状态共同决定。这个注意力分数语义上表示每个局部特征的重要性，局部空间注意力在时间步 $t$ 的输出向量通过下式计算：&lt;/p>
+$$\tag{3}
+\tilde{\mathbf{x}}^{local}\_t = (\alpha^1\_t x^{i,1}\_t, \alpha^2\_t x^{i,2}\_t, \dots, \alpha^{N\_l}\_t x^{i,N\_l}\_t)^{\rm T}.
+$$&lt;h3 id="global-spatial-attention">Global Spatial Attention
+&lt;/h3>&lt;p>对于一个监测器记录的目标时间序列，其他监测器是时间序列对其有直接影响。然而，影响权重是高度动态地，随时间变化。因为可能有很多不相关的序列，直接使用各种时间序列作为编码器的输入来捕获不同监测器之间的关系会导致很高的计算开销并且降低模型的能力。而且这样的影响权重受其他监测器的局部条件影响。举个例子，当强风从一个遥远地地方吹过来，这个区域的空气质量回比之前受影响的多。受这个现象的启发，我们开发了一个新的注意力机制捕获不同监测器间的动态关系。给定第 $i$ 个监测器作为我们的预测目标，另一个监测器 $l$，我们计算他们之间的注意力分数如下：&lt;/p>
+$$
+g^l\_t = \mathbf{v}^{\rm T}\_g \text{tanh} (\mathbf{W}\_g [\mathbf{h}\_{t-1}; \mathbf{s}\_{t-1}] + \mathbf{U}\_g \mathbf{y}^l + \mathbf{W}'\_g \mathbf{X}^l \mathbf{u}\_g + \mathbf{b}\_g),
+$$&lt;p>其中 $\mathbf{v}_g, \mathbf{u}_g, \mathbf{b}_g \in \mathbb{R}^T, \mathbf{W}_g \in \mathbb{R}^{T \times 2m}, \mathbf{U}_g \in \mathbb{R}^{T \times T}, \mathbf{W}&amp;rsquo;_g \in \mathbb{R}^{T \times N_l}$ 是参数。通过考虑目标序列和其他检测器的局部特征，这个注意力机制可以自适应地选择相关的监测器来做预测。同时，通过考虑编码器内前一隐藏状态和细胞状态，历史信息会跨时间流动。&lt;/p>
+&lt;p>注意，空间因素也会对不同监测器之间的关系做出贡献。一般来说，geo-sensors 通过一个明确的或隐含的网络连接起来。这里，我们使用一个矩阵 $\mathbf{P} \in \mathbb{R}^{N_g \times N_g}$ 来衡量地理空间相似度（如地理距离的倒数），$P_{i,j}$ 表示监测器 $i$ 和 $j$ 之间的相似度。不同于注意力权重，地理相似度可以看作是先验知识。特别的说，如果 $N_g$ 很大，一个方法是使用最近邻或最相近的一组而不是所有的监测器。之后，我们使用一个 softmax 函数，确定所有的注意力权重之和为1，两个方法共同考虑地理相似度如下：&lt;/p>
+$$\tag{4}
+\beta^l\_t = \frac{\text{exp}((1-\lambda)g^l\_t + \lambda P\_{i,l})}{\sum^{N\_g}\_{j=1} \text{exp}((1-\lambda)g^j\_t + \lambda P\_{i,j})},
+$$&lt;p>其中，$\lambda$ 是一个可调的超惨。如果 $\lambda$ 大，这项会强制注意力权重等于地理相似度。全局注意力的输出向量计算如下：&lt;/p>
+$$\tag{5}
+\tilde{\mathbf{x}}^{global}\_t = (\beta^1\_t y^1\_t, \beta^2\_t y^2\_t, \dots, \beta^{N\_g}\_t y^{N\_g}\_t)^{\rm T}.
+$$&lt;h2 id="32-temporal-attention">3.2 Temporal Attention
+&lt;/h2>&lt;p>因为编码解码结构会随着长度增长会很快的降低性能，一个重要的扩展是增加时间注意力机制，可以自适应地选择编码器相关的隐藏状态来生成输出序列，即模型对目标序列中不同时间间隔的动态时间关系建模。特别来说，为了计算每个输出时间 $t&amp;rsquo;$ 对编码器每个隐藏状态的的注意力向量，我们定义：&lt;/p>
+$$\tag{6}
+u^o\_{t'} = \mathbf{v}^{\rm T}\_d \text{tanh} (\mathbf{W}'\_d [\mathbf{d}\_{t'-1}; \mathbf{s}'\_{t'-1}] + \mathbf{W}\_d \mathbf{h}\_o + \mathbf{b}\_d),
+$$$$\tag{7}
+\gamma^o\_{t'} = \frac{\text{exp} (u^o\_{t'})}{\sum^T\_{o=1} \gamma^o\_{t'} \mathbf{h}\_o},
+$$$$\tag{8}
+\mathbf{c}\_{t'} = \sum^T\_{o=1} \gamma^o\_{t'} \mathbf{h}\_o,
+$$&lt;h2 id="33-external-factor-fusion">3.3 External Factor Fusion
+&lt;/h2>&lt;p>Geo-sensory 时间序列和空间因素有强烈的相关性，如 POI 和监测器网络。这些因素一起表示一个区域的功能。而且还有很多时间因素影响监测器的数值，如气象或时间。受之前工作的启发 [Liang et al., 2017; Wang et al., 2018] 专注时空应用中的外部因素的影响，我们设计了一个简单有效的组件来处理这些因素。&lt;/p>
+&lt;p>如图 2 所示，我们先将包含时间、气象特征的时间因素和表示目标监测器的监测器ID融合。因为未来的天气条件未知，我们使用天气预报来提升性能。这些因素的大部分都是离散特征，不能直接放到神经网络里面，我们通过将离散特征分开放入不同的嵌入层，将离散特征转换为低维向量。根据空间因素，我们使用不同 POI 类型的密度作为特征。因为监测器的属性依赖实际情况，我们只使用网络的结构特征，如邻居数和交集等。最后，我们将获得的嵌入向量和空间特征拼接作为这个模块的输出，表示为 $\mathbf{ex}_{t&amp;rsquo;} \in \mathbb{R}^{N_e}$，其中 $t&amp;rsquo;$ 是解码器中未来的时间步。&lt;/p>
+&lt;h2 id="34-encoder-decoder--model-training">3.4 Encoder-decoder &amp;amp; Model Training
+&lt;/h2>&lt;p>编码器中，我们简单地从局部空间注意力和全局空间注意力聚合输出：&lt;/p>
+$$\tag{9}
+\tilde{\mathbf{x}}\_t = [\tilde{\mathbf{x}}^{local}\_t; \tilde{\mathbf{x}}^{global}\_t],
+$$&lt;p>其中 $\tilde{\mathbf{x}}_t \in \mathbb{R}^{N_l + N_g}$。我们将拼接 $\tilde{\mathbf{x}}_t$ 作为编码器的新输入，使用 $\mathbf{h}_t = f_e(\mathbf{h}_{t-1}, \tilde{\mathbf{x}}_t)$ 更新时间 $t$ 的隐藏状态，$f_e$ 是一个 LSTM 单元。&lt;/p>
+&lt;p>解码器中，一旦我们获得了时间 $t&amp;rsquo;$ 的上下文向量 $\mathbf{c}_{t&amp;rsquo;}$ 的带权和，我们将他与外部因素融合模块的输出 $\mathbf{ex}_{t&amp;rsquo;}$ 还有解码器的最后一个输出 $\hat{y}^i_{t&amp;rsquo;-1}$ 融合，用 $\mathbf{d}_{t&amp;rsquo;} = f_d (\mathbf{d}_{t&amp;rsquo;-1}, [\hat{y}^i_{t&amp;rsquo;-1}; \mathbf{ex}_{t&amp;rsquo;}; \mathbf{c}_{t&amp;rsquo;}])$ 更新解码器的隐藏状态，$f_d$ 是解码器中使用的 LSTM 单元。然后，我们讲上下文向量 $\mathbf{c}_{t&amp;rsquo;}$ 和隐藏状态 $\mathbf{d}_{t&amp;rsquo;}$ 拼接，得到新的隐藏状态，然后做最后的预测：&lt;/p>
+$$\tag{10}
+\hat{y}^i\_{t'} = \mathbf{v}^{\rm T}\_y (\mathbf{W}\_m [\mathbf{c}\_{t'}; \mathbf{b}\_{t'}] + \mathbf{b}\_m) + b\_y,
+$$&lt;p>其中，$\mathbf{W}_m \in \mathbb{R}^{n \times (m + n))}$ 和 $\mathbf{b}_m \in \mathbb{R}^n$ 将 $[\mathbf{c}_{t&amp;rsquo;}; \mathbf{d}_{t&amp;rsquo;}] \in \mathbb{R}^{m + n}$ 映射到解码器隐藏状态的空间。最后，我们用一个线性变换生成最终结果。&lt;/p>
+&lt;p>因为我们的方法是平滑且可微的，可以通过反向传播训练。在训练时，我们使用 Adam，最小化 MSE。&lt;/p>
+$$\tag{11}
+\mathcal{L}(\theta) = \Vert \hat{\mathbf{y}}^i - \mathbf{y}^i \Vert^2\_2,
+$$&lt;h1 id="4-experiments">4 Experiments
+&lt;/h1>&lt;h2 id="41-settings">4.1 Settings
+&lt;/h2>&lt;h3 id="datasets">Datasets
+&lt;/h3>&lt;p>我们在两个数据集中开展了实验，每个数据集包含三个子集：气象数据、POI、监测器网络数据。&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>水质数据集：中国东南的一个城市的供水系统中的监测器提供了长达三年的每5分钟一个记录的数据，包含了残余氯(RC)、浑浊度和PH值等。我们将 RC 作为目标时间序列，因为它在环境科学中作为常用的水质指标。一共有 14 个监测器，监测 10 个指标，它们之间通过管道网络相连。我们使用 Liu et al., 2016a 提出的指标作为这个数据集的相似度矩阵。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>空气质量：从一个公开数据集抓取的，这个数据集包含不同污染物的浓度，还有气象数据，北京地区一共 35 个监测器。主要污染物是 PM2.5，因此我们将它作为目标。我们只使用空间距离的倒数表示两个监测器之间的相似度。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/geoman-multi-level-attention-networks-for-geo-sensory-time-series-prediction/Table1.JPG"
+loading="lazy"
+alt="Table1"
+>&lt;/p>
+&lt;p>对于水质数据集，我们将数据分成了不重叠的训练集、验证集和测试集，去年的前一半作为验证机，去年的后半段作为测试集。可惜的是，我们在第二个数据集上没能获得很多的数据，因此我们使用了8：1：1的比例划分。&lt;/p>
+&lt;h3 id="evaluation-metrics">Evaluation Metrics
+&lt;/h3>&lt;p>我们使用多个标准评价模型，RMSE 和 MAE。&lt;/p>
+&lt;h3 id="hyperparameters">Hyperparameters
+&lt;/h3>&lt;p>我们令 $\tau = 6$，做短期预测。在训练阶段，batch size 256，学习率 0.001。外部因素融合模块，我使用 $\mathbb{R}^6$ 嵌入监测器 ID，时间特征 $\mathbb{R}^10$。我们的模型一共 4 个超参数，$\lambda$ 根据经验设置，从 0.1 到 0.5。对于窗口长度 $T$，我们设为 $T \in \lbrace 6, 12, 24, 36, 48 \rbrace$。为了简单，我们将编码器和解码器采用同样的隐藏维数，网格搜索 $\lbrace 32, 64, 128, 256\rbrace$。我们堆叠 LSTM 来提高性能，层数记为 $q$。验证集上得到的最好参数是 $q = 2, m = n = 64, \lambda = 2$。&lt;/p>
+&lt;h2 id="42-baselines">4.2 Baselines
+&lt;/h2>&lt;p>ARIMA, VAR, GBRT, FFA, stMTMVL, stDNN, LSTM, Seq2seq, DA-RNN。&lt;/p>
+&lt;p>对于 ARIMA，我们用前六个小时的数据作为输入。stMTMVL 和 FFA，我们使用和作者一样的设置。和 GeoMAN 类似，我们使用前 $T \in \lbrace 6, 12, 24, 36, 48\rbrace$ 个小时的数据作为其他模型的输入。最后，我们测试了不同的超参数，得到了每个模型的最好效果。&lt;/p>
+&lt;h2 id="43-model-comparsion">4.3 Model Comparsion
+&lt;/h2>&lt;p>我们在两个数据集上比较了模型和 baselines。为了公平，我们在表 2 展示了每个方法的最好性能。&lt;/p>
+&lt;p>我们的方法在水质预测上得到了最好的性能。比 state-of-the-art 的 DA-RNN 在两个指标上分别提升了 14.2% 和 13.5%。因为 RC 浓度有一个确定的周期模式，stDNN 和 基于 RNN 的模型比 stMTMVL 和 FFA 获得了更好的效果，因为他们能捕获更长的时间依赖。对比 LSTM 智能预测一个未来的时间步，GeoMAN 和 Seq2seq 由于解码器的存在有很大的提升。GBRT 比大部分方法也要好，体现了集成学习的优势。&lt;/p>
+&lt;p>对比数据相对稳定的水质数据集，PM2.5 的浓度有些时候震荡得很厉害，使得很难预测。表 2 展示了北京的空气质量数据集上一个全面的对比。可以看到我们的模型有最好的效果。我们主要讨论下 MAE。我们的方法比这些方法的 MAE 相对低 7.2% 和 63.5%，展示出了比其他方法更好的泛化效果。另一个有趣的现象是 stMTMVL 在水质预测上表现很好，在空气质量上&lt;/p></description></item></channel></rss>

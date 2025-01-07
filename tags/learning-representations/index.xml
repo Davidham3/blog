@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Learning Representations on Davidham的博客</title><link>https://davidham3.github.io/blog/tags/learning-representations/</link><description>Recent content in Learning Representations on Davidham的博客</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Thu, 19 May 2022 14:54:43 +0000</lastBuildDate><atom:link href="https://davidham3.github.io/blog/tags/learning-representations/index.xml" rel="self" type="application/rss+xml"/><item><title>Unsupervised Scalable Representation Learning for Multivariate Time Series</title><link>https://davidham3.github.io/blog/p/unsupervised-scalable-representation-learning-for-multivariate-time-series/</link><pubDate>Thu, 19 May 2022 14:54:43 +0000</pubDate><guid>https://davidham3.github.io/blog/p/unsupervised-scalable-representation-learning-for-multivariate-time-series/</guid><description>&lt;p>NIPS 2019, &lt;a class="link" href="https://arxiv.org/abs/1901.10738" target="_blank" rel="noopener"
+>Unsupervised Scalable Representation Learning for Multivariate Time Series&lt;/a>。T-loss。无监督多元时间序列表示模型。利用word2vec的负样本采样的思想学习时间序列的嵌入表示。代码：&lt;a class="link" href="https://github.com/White-Link/UnsupervisedScalableRepresentationLearningTimeSeries" target="_blank" rel="noopener"
+>UnsupervisedScalableRepresentationLearningTimeSeries&lt;/a>&lt;/p>
+&lt;h1 id="3-unsupervised-training">3 Unsupervised Training
+&lt;/h1>&lt;p>只想训练编码器，不想搞编码解码结构，因为计算量太大了。因此引入了一个针对时间序列的triplet loss。&lt;/p>
+&lt;p>目标是无监督的情况下相似的时间序列具有相似的表示。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/unsupervised-scalable-representation-learning-for-multivariate-time-series/Fig1.jpg"
+loading="lazy"
+alt="Figure1"
+>&lt;/p>
+&lt;p>图1，给定时间序列$y_i$，一个随机子序列$x^{\text{ref}}$。$x^{\text{ref}}$的表示要与$x^{\text{pos}}$相似，与另一个随机采样的子序列$x^{\text{neg}}$不相似。类比word2vec，$x^{\text{pos}}$是word，$x^{\text{ref}}$是context，$x^{\text{neg}}$是一个随机的词。&lt;/p>
+&lt;p>损失函数：&lt;/p>
+$$
+\tag{1} -\log{( \sigma(f(x^{\text{ref}}, \theta)^\top f(x^{\text{pos}}, \theta)) )} - \sum^K\_{k=1} \log{( \sigma( -f(x^{\text{ref}}, \theta)^\top f(x^{\text{neg}}, \theta) ) )},
+$$&lt;p>$f(\cdot, \theta)$是一个神经网络，参数是$\theta$，$\sigma$是sigmoid激活函数。$K$是负样本的个数&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/unsupervised-scalable-representation-learning-for-multivariate-time-series/Alg1.jpg"
+loading="lazy"
+alt="Algorithm_1"
+>&lt;/p>
+&lt;h1 id="4-encoder-architecture">4 Encoder Architecture
+&lt;/h1>&lt;ol>
+&lt;li>必须从时间序列中提取相关信息&lt;/li>
+&lt;li>训练和推断的时候时间和空间都要高效&lt;/li>
+&lt;li>必须能接受变长的输入&lt;/li>
+&lt;/ol>
+&lt;p>使用exponentially dilated causal convolutions处理。相比RNN，这类网络可以在GPU上高效地并行计算。对比fully convolutions，可以捕获更长范围的信息。&lt;/p>
+&lt;p>即便LSTM解决了梯度消失和爆炸的问题，在这个梯度问题上仍然比不过卷积网络。&lt;/p>
+&lt;p>我们的模型堆叠了多个dilated causal convolutions，如图2a。每个数都是通过前面的数计算出来的，因此称为因果。图2a红色部分展示了输出值的计算路径。&lt;/p>
+&lt;p>卷积网络的输出会放入一个max pooling层，把所有时间信息聚合到一个固定大小的向量中。&lt;/p></description></item><item><title>Time-dependent representation for neural event sequence prediction</title><link>https://davidham3.github.io/blog/p/time-dependent-representation-for-neural-event-sequence-prediction/</link><pubDate>Wed, 27 Apr 2022 15:37:58 +0000</pubDate><guid>https://davidham3.github.io/blog/p/time-dependent-representation-for-neural-event-sequence-prediction/</guid><description>&lt;p>ICLR 2018 workshop, &lt;a class="link" href="https://arxiv.org/abs/1708.00065" target="_blank" rel="noopener"
+>Time-dependent representation for neural event sequence prediction&lt;/a>。事件序列的表示学习模型。主要是对事件的嵌入表示有了一些创新，加入了对事件duration的考虑。模型整体还是RNN架构。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/time-dependent-representation-for-neural-event-sequence-prediction/Fig1.jpg"
+loading="lazy"
+alt="Figure1"
+>&lt;/p>
+&lt;p>在事件序列中，有两个时间段(time span)，一个是duration，事件的持续时长，另一个是interval，事件与事件之间的间隔。为了统一这两个时间段，作者将interval看作是一个空闲事件(idle event)。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/time-dependent-representation-for-neural-event-sequence-prediction/Fig2.jpg"
+loading="lazy"
+alt="Figure2"
+>&lt;/p>
+&lt;p>图2是模型架构，就是把事件做嵌入表示，然后把duration考虑进去，得到事件序列里面每个时间步的嵌入表示，然后丢到RNN里面，最后是要预测下一个event是什么，同时可以把下一个event的duration拿进来计算损失，起到一个正则的作用。&lt;/p>
+&lt;h2 id="31-contextualizing-event-embedding-with-time-mask">3.1 Contextualizing Event Embedding With Time Mask
+&lt;/h2>&lt;p>这里有一个观点，就是在机器翻译中，RNN会花一定的capacity去区分不同context下一个词的意思。为了解决这个问题，Choi et al., 2016 提出了一个mask计算。本文借助这个思想，提出了一个时间依赖的嵌入表示。&lt;/p>
+$$
+\tag{1} c^d = \phi (\log(d\_t);\theta)
+$$&lt;p>上式是一个FNN，$\phi$是非线性变换，参数是$\theta$。加对数是为了降低$d_t$的范围。然后用一个单层sigmoid的非线性变换把$c^d$映射到$m^d \in \mathbb{R}^E$上，这个就是mask。&lt;/p>
+$$
+\tag{2} m\_d = \sigma(c^d W\_d + b\_d)
+$$&lt;p>然后&lt;/p>
+$$
+\tag{3} x\_t \leftarrow x\_t \odot m\_d
+$$&lt;p>把mask和一个事件的embedding相乘，element-wise production，这个东西放入RNN。&lt;/p>
+&lt;h2 id="32-event-time-joint-embedding">3.2 Event-Time Joint Embedding
+&lt;/h2>&lt;p>这里有个观点，我们平时只会说“和谁简单地聊了一会儿”，不会说具体聊了多少分钟。我们对于事件时长的感受依赖事件的类型。基于这个直觉，我们用了一个sort one-hot嵌入表示，做了一个事件的联合表示。&lt;/p>
+&lt;p>首先把事件时长映射到一个向量上去&lt;/p>
+$$
+\tag{4} p^d = d\_t W\_d + b\_d \in \mathbb{R}^P
+$$&lt;p>然后在这个向量上面做一个softmax运算&lt;/p>
+$$
+\tag{5} s^d\_i = \frac{\exp(p^d\_i)}{\sum^P\_{k=1} \exp(p^d\_k)}
+$$&lt;p>然后做一个线性变换&lt;/p>
+$$
+\tag{6} g\_d = s^d E^s \in \mathbb{R}^E
+$$&lt;p>然后把事件嵌入和这个时间嵌入求平均，得到事件嵌入表示：&lt;/p>
+$$
+\tag{7} x\_t \leftarrow \frac{x\_t + g\_d}{2} \in \mathbb{R}^E
+$$&lt;h1 id="4-next-event-duration-as-a-regularizer">4 Next Event Duration as A Regularizer
+&lt;/h1>&lt;p>这里讨论的是通过让模型去预测下一事件的时长来增强模型。这个时长是通过对RNN循环层做线性变换得到的。对于时间步$t$，来说，需要预测的duration是$d’_{t+1}$。它的损失回传后会起到一个正则的作用。而且可以对事件预测输出层路径上的多个层进行正则。&lt;/p>
+&lt;h2 id="41-negative-log-lieklihood-of-time-prediction-error">4.1 Negative Log Lieklihood of Time Prediction Error
+&lt;/h2>&lt;p>这里说，对于连续值的预测，一般用MSE，但是MSE这个指标需要和事件预测的损失在同一个数量级上。而事件损失，一般是一个log形式的损失，也就是说这个数会比较小。Hinton &amp;amp; van Camp, 1993研究证明最小化平方损失可以写成最大化0均值高斯分布的概率密度，而且不需要duration服从高斯分布，但是预测误差需要。因此正则项要做一个标准化，&lt;/p>
+$$
+\tag{8} R^N\_t = \frac{(d'\_{t+1} - d\_{t+1})^2}{2\sigma^2\_i}
+$$&lt;p>$\sigma_i$是通过训练集的duration算出来的，然后在训练的过程中，通过时长预测误差的分布来更新。&lt;/p>
+&lt;h2 id="42-cross-entropy-loss-on-time-projection">4.2 Cross Entropy Loss on Time Projection
+&lt;/h2>&lt;p>这里说，对于时长的损失计算还可以用softmax。&lt;/p>
+&lt;p>因为3.2节提到了一个把连续值映射到向量空间的办法，使用同样的办法可以计算另一种损失：&lt;/p>
+$$
+\tag{9} R^X\_t = - \sum^P\_{k=1} Proj\_k (d\_{t+1}) \log{Proj\_k (d'\_{t+1})}
+$$&lt;p>$Proj$就是公式4和5定义的投影函数，$Proj_k$是投影向量中的第$k$项。当3.2节的事件与时间的联合嵌入表示和这个损失都使用的时候，可以把投影函数的权重共享。&lt;/p>
+&lt;h1 id="5-experiments">5 Experiments
+&lt;/h1>&lt;p>用了5个数据集。&lt;/p>
+&lt;h2 id="51-数据预处理">5.1 数据预处理
+&lt;/h2>&lt;p>做了一些特别稀有的事件的过滤。有些事件少于5次的用OOV代替了。使用MAP@K和Precision@K来评估。&lt;/p>
+&lt;p>训练、验证、测试的比例是8:1:1&lt;/p>
+&lt;h2 id="52-模型配置">5.2 模型配置
+&lt;/h2>&lt;ul>
+&lt;li>NoTime: 就用一个简单的LSTM&lt;/li>
+&lt;li>TimeConcat: 把duration做log变换，与事件嵌入表示拼接，输入RNN&lt;/li>
+&lt;li>TimeMask: 3.1节的方法&lt;/li>
+&lt;li>TimeJoint: 3.2节的方法&lt;/li>
+&lt;li>RMTPP: &lt;a class="link" href="https://www.kdd.org/kdd2016/papers/files/rpp1081-duA.pdf" target="_blank" rel="noopener"
+>RMTPP&lt;/a>&lt;/li>
+&lt;/ul>
+&lt;h2 id="54-实验结果">5.4 实验结果
+&lt;/h2>&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/time-dependent-representation-for-neural-event-sequence-prediction/Fig3.jpg"
+loading="lazy"
+alt="Figure3"
+>&lt;/p>
+&lt;p>Effectiveness of Temporal Representation: 图3展示出了TimeMask和TimeJoint的有效性。MIMIC II数据集上面没效果，可能是加时间本来就没啥用。结论就是，用这两个东西肯定比只加时间的值到RNN里面要有效。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/time-dependent-representation-for-neural-event-sequence-prediction/Table1_2.jpg"
+loading="lazy"
+alt="Table 1 &amp; 2"
+>&lt;/p>
+&lt;p>表1和表2也证明了加入时间的有效性。而且有些时候直接加时间可能会伤害模型的效果。&lt;/p>
+&lt;p>Effectiveness of Event Duration Regularization: 表1和表2证明了正则的有效性。&lt;/p>
+&lt;p>Learned Time Representation: 这段说的不明所以，论文里面还有错误，图画的也不清晰，没懂。&lt;/p>
+&lt;p>&lt;img src="https://davidham3.github.io/blog/blog/images/time-dependent-representation-for-neural-event-sequence-prediction/Fig4.jpg"
+loading="lazy"
+alt="Figure4"
+>&lt;/p></description></item></channel></rss>
