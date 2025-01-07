@@ -52,7 +52,7 @@ $$
 \end{cases}
 $$
 
-![Figure1](/images/multistep-speed-prediction-on-traffic-networks-a-graph-convolutional-sequence-to-sequence-learning-approach-with-attention-mechanism/Fig1.jpg)
+![Figure1](/blog/images/multistep-speed-prediction-on-traffic-networks-a-graph-convolutional-sequence-to-sequence-learning-approach-with-attention-mechanism/Fig1.jpg)
 
 *(2) Traffic speed*
 
@@ -106,7 +106,7 @@ $$
 
 $\boldsymbol{W}\_{GC}[i]$ 和 $\boldsymbol{A}^K\_{GC}[i]$ 分别是 $\boldsymbol{W}\_{GC}$ 和 $\boldsymbol{A}^K\_{GC}$ 的第 $i$ 行。图2是路网上 $\boldsymbol{A}^K\_{GC}[i]$ 的一个例子，路段 $i$ 在红线，邻居是蓝线。
 
-![Figure2](/images/multistep-speed-prediction-on-traffic-networks-a-graph-convolutional-sequence-to-sequence-learning-approach-with-attention-mechanism/Fig2.jpg)
+![Figure2](/blog/images/multistep-speed-prediction-on-traffic-networks-a-graph-convolutional-sequence-to-sequence-learning-approach-with-attention-mechanism/Fig2.jpg)
 
 ## 3.3 Attention Graph Convolutional Sequence-to-Sequence Model (AGC-Seq2Seq)
 
@@ -128,7 +128,7 @@ $$
 
 其中 $N\_{t-j}$ 和 $p\_{t-j}$ 如3.1节定义，$[·;·]$ 操作是将两个张量拼接。
 
-![Figure3](/images/multistep-speed-prediction-on-traffic-networks-a-graph-convolutional-sequence-to-sequence-learning-approach-with-attention-mechanism/Fig3.jpg)
+![Figure3](/blog/images/multistep-speed-prediction-on-traffic-networks-a-graph-convolutional-sequence-to-sequence-learning-approach-with-attention-mechanism/Fig3.jpg)
 
 编码部分如式8-9，在时间步 $t-j, j\in \lbrace 0, \dots, m \rbrace$，前一个隐藏状态 $\boldsymbol{h}\_{t-j-1}$ 传入到当前时间戳和 $\boldsymbol{X}\_{t-j}$ 计算得到 $\boldsymbol{h}\_{t-j}$。因此，背景向量 $\boldsymbol{C}$ 存储了包括隐藏状态 $(\boldsymbol{h}\_{t-m}, \boldsymbol{h}\_{t-m+1}, \boldsymbol{h}\_{t-1})$ 和输入向量 $(\boldsymbol{X}\_{t-m}, \boldsymbol{X}\_{t-m+1}, \boldsymbol{X}\_t)$ 的信息。
 
@@ -192,7 +192,7 @@ $$
 
 在上式中，$z\_t$ 和 $r\_t$ 分别是更新门和重置门。$c\_t$ 是候选输出，$\sigma(\cdot)$ 和 $\text{tanh}(\cdot)$ 是两个激活函数。$W\_z$，$W\_r$ 和 $W\_c$ 是权重矩阵，$b\_z$，$b\_r$ 和 $b\_c$ 是偏置。
 
-![Figure4](/images/multistep-speed-prediction-on-traffic-networks-a-graph-convolutional-sequence-to-sequence-learning-approach-with-attention-mechanism/Fig4.jpg)
+![Figure4](/blog/images/multistep-speed-prediction-on-traffic-networks-a-graph-convolutional-sequence-to-sequence-learning-approach-with-attention-mechanism/Fig4.jpg)
 
 为了捕获交通模式的外部信息，我们还集成了注意力机制 (Bahdanau et al., 2014; Luong et al., 2015)。注意力机制的关键在于在每个时间步增加捕获了源信息的相关性的注意力向量来帮助交通速度。在时间步 $t+j, j \in \lbrace 1, \dots, n \rbrace$，注意力函数定义为式 18-20，将 query $\boldsymbol{h}\_{t+j}$ 和 一组 key $(\boldsymbol{h}\_{t-m}, \dots, \boldsymbol{t-1}, \boldsymbol{h}\_t)$ 映射起来组成注意力向量 $\boldsymbol{S}\_{t+j}$。如下式 18-20，$\boldsymbol{S}\_{t+j}$ 通过计算这些 key 的带权和得到，权重通过计算得到：
 
@@ -234,12 +234,12 @@ $$
 
 数据集是从 A-map 的用户收集的，是中国的一个手机导航应用提供的 (Sohu, 2018)。研究范围选择在了北京 2 环，是北京最堵的地方。如图5(a)所示，我们将 33km 长的二环以 200m 一段分成 163 个路段。此外，我们通过用户的轨迹点计算每个路段上 5 分钟的平均速度。2环上工作和和周末的车速如图5(b)(c)所示，x 轴是经度，y 轴是纬度，z 轴是时间和速度的颜色表。
 
-!["Figure5 a"](/images/multistep-speed-prediction-on-traffic-networks-a-graph-convolutional-sequence-to-sequence-learning-approach-with-attention-mechanism/Fig5_a.jpg)
-!["Figure5 bc"](/images/multistep-speed-prediction-on-traffic-networks-a-graph-convolutional-sequence-to-sequence-learning-approach-with-attention-mechanism/Fig5_bc.jpg)
+!["Figure5 a"](/blog/images/multistep-speed-prediction-on-traffic-networks-a-graph-convolutional-sequence-to-sequence-learning-approach-with-attention-mechanism/Fig5_a.jpg)
+!["Figure5 bc"](/blog/images/multistep-speed-prediction-on-traffic-networks-a-graph-convolutional-sequence-to-sequence-learning-approach-with-attention-mechanism/Fig5_bc.jpg)
 
 数据范围是2016年10月1日到2016年11月30日。10月1日到11月20日做训练，11月21日到27日做测试。预测的范围是 06:00 到 22:00，因此，每条路段每天包含 192 个数据点。图6展示了划分的数据集。在数据清理后，缺失值通过线性插值的方法填补。
 
-![Figure6](/images/multistep-speed-prediction-on-traffic-networks-a-graph-convolutional-sequence-to-sequence-learning-approach-with-attention-mechanism/Fig6.jpg)
+![Figure6](/blog/images/multistep-speed-prediction-on-traffic-networks-a-graph-convolutional-sequence-to-sequence-learning-approach-with-attention-mechanism/Fig6.jpg)
 
 ## 4.2 Model comparisons
 
@@ -257,12 +257,12 @@ $$
 
 为了保证共鸣，之前提到的预测模型都有和 AGC-Seq2Seq 同样的输入特征（特征类型和窗口长度），尽管传统的时间序列模型利用了训练集的全部速度记录。窗口长度为 12，也就是用过去一小时预测未来。19 维特征如表 1 所示。
 
-![Table1](/images/multistep-speed-prediction-on-traffic-networks-a-graph-convolutional-sequence-to-sequence-learning-approach-with-attention-mechanism/Table1.jpg)
+![Table1](/blog/images/multistep-speed-prediction-on-traffic-networks-a-graph-convolutional-sequence-to-sequence-learning-approach-with-attention-mechanism/Table1.jpg)
 
 所有的符号如 3.1 节定义，$n$ 是定值。我们通过三个错误指标评价模型，MAPE, MAE, RMSE, $\text{MAPE} = \frac{1}{Q} \sum^Q\_{i=1} \frac{\vert v\_i - \hat{v}\_i \vert}{v\_i}$, $\text{MAE} = \frac{1}{Q} \sum^Q\_{i=1} \vert v\_i - \hat{v}\_i \vert$, $\text{RMSE} = \sqrt{\frac{1}{Q} \sum^Q\_{i=1} (v\_i - \hat{v}\_i)^2}$，其中 $v\_i$ 和 $\hat{v}^i$ 分别是真值和预测值；$Q$ 是测试集大小。
 
-!["Table2 a"](/images/multistep-speed-prediction-on-traffic-networks-a-graph-convolutional-sequence-to-sequence-learning-approach-with-attention-mechanism/Table2_a.jpg)
+!["Table2 a"](/blog/images/multistep-speed-prediction-on-traffic-networks-a-graph-convolutional-sequence-to-sequence-learning-approach-with-attention-mechanism/Table2_a.jpg)
 
-!["Table2 b"](/images/multistep-speed-prediction-on-traffic-networks-a-graph-convolutional-sequence-to-sequence-learning-approach-with-attention-mechanism/Table2_b.jpg)
+!["Table2 b"](/blog/images/multistep-speed-prediction-on-traffic-networks-a-graph-convolutional-sequence-to-sequence-learning-approach-with-attention-mechanism/Table2_b.jpg)
 
-!["Table2 c"](/images/multistep-speed-prediction-on-traffic-networks-a-graph-convolutional-sequence-to-sequence-learning-approach-with-attention-mechanism/Table2_c.jpg)
+!["Table2 c"](/blog/images/multistep-speed-prediction-on-traffic-networks-a-graph-convolutional-sequence-to-sequence-learning-approach-with-attention-mechanism/Table2_c.jpg)

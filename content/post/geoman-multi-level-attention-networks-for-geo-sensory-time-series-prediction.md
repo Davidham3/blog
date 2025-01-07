@@ -28,7 +28,7 @@ IJCAI 2018，看了一部分，还没看完。原文链接：[GeoMAN: Multi-leve
 
 现实世界中有大量的检测器，如空气监测站。每个监测站都有一个地理位置，不断地生成时间序列数据。一组检测器不断的监测一个区域的环境，数据间有空间依赖关系。我们成这样的监测数据为 *geosensory time series*。此外，一个检测器生成多种 geo-sensory 时间序列是很常见的，因为这个检测器同时监测不同的目标。举个例子，图1a，路上的循环检测器实时记录车辆通行情况，也记录他们的速度。图1b 展示了检测器每五分钟生成的关于水质的三个不同的气候指标。除了监测，对于 geo-sensory 时间序列预测还有一个重要的需求就是交通预测。
 
-![Fig1](/images/geoman-multi-level-attention-networks-for-geo-sensory-time-series-prediction/Fig1.PNG)
+![Fig1](/blog/images/geoman-multi-level-attention-networks-for-geo-sensory-time-series-prediction/Fig1.PNG)
 
 然而，预测 geo-sensory 时间序列很有挑战性，主要受两个因素影响：
 1. 动态时空关系
@@ -54,7 +54,7 @@ IJCAI 2018，看了一部分，还没看完。原文链接：[GeoMAN: Multi-leve
 
 # 3 Multi-level Attention Networks
 
-![Fig2](/images/geoman-multi-level-attention-networks-for-geo-sensory-time-series-prediction/Fig2.PNG)
+![Fig2](/blog/images/geoman-multi-level-attention-networks-for-geo-sensory-time-series-prediction/Fig2.PNG)
 
 图 2 展示了我们方法的框架。基于编码解码架构[Cho et al., 2014b]，我们用两个分开的 LSTM，一个对输入序列编码，也就是对历史的 geo-sensory 时间序列，另一个来预测输出的序列 $\hat{y}^i$。更具体的讲，我们的模型 GeoMAN 有两个主要部分：
 1. 多级注意力机制。包含一个带有两类空间注意力机制的编码器和一个带有时间注意力的解码器。在编码器，我们开发了两种不同的注意力机制，局部空间注意力和全局空间注意力，如图 2 所示，这两种注意力机制通过前几步编码器的隐藏状态、前几步检测器的值和空间信息（检测器网络），可以在每个时间步上捕获检测器间的复杂关系。在解码器，我们使用了一个时间注意力机制来自适应地选择之前的时间段来做预测。
@@ -160,7 +160,7 @@ $$
 
 - 空气质量：从一个公开数据集抓取的，这个数据集包含不同污染物的浓度，还有气象数据，北京地区一共 35 个监测器。主要污染物是 PM2.5，因此我们将它作为目标。我们只使用空间距离的倒数表示两个监测器之间的相似度。
 
-![Table1](/images/geoman-multi-level-attention-networks-for-geo-sensory-time-series-prediction/Table1.JPG)
+![Table1](/blog/images/geoman-multi-level-attention-networks-for-geo-sensory-time-series-prediction/Table1.JPG)
 
 对于水质数据集，我们将数据分成了不重叠的训练集、验证集和测试集，去年的前一半作为验证机，去年的后半段作为测试集。可惜的是，我们在第二个数据集上没能获得很多的数据，因此我们使用了8：1：1的比例划分。
 

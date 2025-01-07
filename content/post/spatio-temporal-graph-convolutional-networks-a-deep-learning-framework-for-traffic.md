@@ -54,7 +54,7 @@ $$
 
 在我们的工作中，我们在一个图上定义了一个交通网络，并专注于结构化的交通时间序列。观测到的样本$v\_t$间不是相互独立的，而是在图中两两相互连接的。因此，数据点$v\_t$可以被视为定义在权重为$w\_{ij}$，如图1展示的无向图（或有向图）$\mathcal{G}$上的一个信号。在第$t$个时间戳，在图$\mathcal{G\_t}=(\mathcal{V\_t}, \mathcal{\varepsilon}, W)$, $\mathcal{V\_t}$是当顶点的有限集，对应在交通网络中$n$个监测站；$\epsilon$是边集，表示观测站之间的连通性；$W \in \mathbb{R^{n \times n}}$表示$\mathcal{G\_t}$的邻接矩阵。
 
-![Fig1](/images/spatio-temporal-graph-convolutional-networks-a-deep-learning-framework-for-traffic/Fig1.PNG)
+![Fig1](/blog/images/spatio-temporal-graph-convolutional-networks-a-deep-learning-framework-for-traffic/Fig1.PNG)
 
 ## 图上的卷积
 
@@ -71,7 +71,7 @@ $$\tag{2} \Theta \ast\_{\mathcal{G}}x=\Theta(L)x=\Theta(U \Lambda U^T)x=U\Theta(
 
 在这部分，我们详细说明了时空图卷积网络的框架。如图二所示，STGCN有多个时空卷积块组成，每一个都是像一个“三明治”结构的组成，有两个门序列卷积层和一个空间图卷积层在中间。每个模块的细节如下。
 
-![Fig2](/images/spatio-temporal-graph-convolutional-networks-a-deep-learning-framework-for-traffic/Fig2.PNG)
+![Fig2](/blog/images/spatio-temporal-graph-convolutional-networks-a-deep-learning-framework-for-traffic/Fig2.PNG)
 
 图二：时空图卷积网络的架构图。STGCN的架构有两个时空卷积块和一个全连接的在末尾的输出层组成。每个ST-Conv块包含了两个时间门卷积层，中间有一个空间图卷积层。每个块中都使用了残差连接和bottleneck策略。输入$v\_{t-M+1},...v\_t$被ST-Conv块均匀的（uniformly）处理，来获取时空依赖关系。全部特征由一个输出层来整合，生成最后的预测$\hat{v}$。
 
@@ -169,7 +169,7 @@ $$
 
 **PeMSD7**是Caltrans Performance Measurement System(PeMS)通过超过39000个监测站实时获取的数据，这些监测站分布在加州高速公路系统主要的都市部分[Chen *et al*., 2001]。数据是30秒的数据样本聚合成5分钟一次的数据。我们在加州的District 7随机选取了一个小的和一个大的范围作为数据源，分别有228和1026个监测站，分别命名为PeMSD7(S)和PeMSD7(L)（如图3左侧所示）。PeMSD7数据集的时间范围是2012年五月和六月的周末。我们使用同样的原则对数据进行了训练集和测试集的划分。
 
-![Fig1](/images/spatio-temporal-graph-convolutional-networks-a-deep-learning-framework-for-traffic/Fig3.PNG)
+![Fig1](/blog/images/spatio-temporal-graph-convolutional-networks-a-deep-learning-framework-for-traffic/Fig3.PNG)
 
 ## 数据预处理
 

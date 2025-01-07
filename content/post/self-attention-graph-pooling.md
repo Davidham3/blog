@@ -69,9 +69,9 @@ $$
 
 SAGPool 的关键是它使用了 GNN 得到的注意力分数。SAGPool 层和模型架构分别是图 1 和图 2.
 
-![Figure1](/images/self-attention-graph-pooling/Fig1.JPG)
+![Figure1](/blog/images/self-attention-graph-pooling/Fig1.JPG)
 
-![Figure2](/images/self-attention-graph-pooling/Fig2.JPG)
+![Figure2](/blog/images/self-attention-graph-pooling/Fig2.JPG)
 
 ## 3.1 Self-Attention Graph Pooling
 
@@ -151,7 +151,7 @@ $N$ 是结点数，$x\_i$ 是第 $i$ 个结点的特征向量，$\mid \mid$ 表�
 
 **Hierarchical pooling architecture** 在这部分设置中，我们实现了 Cangea et al. 的层次池化结构。如图 2 所示，结构包含了三个块，每个块由一个卷积层和一个池化层组成。每个块的输出通过一个 readout 层聚合。每个 readout 层的输出之和放入线性层做分类。
 
-![Table1](/images/self-attention-graph-pooling/Table1.JPG)
+![Table1](/blog/images/self-attention-graph-pooling/Table1.JPG)
 
 # 4. Experiments
 
@@ -161,10 +161,10 @@ $N$ 是结点数，$x\_i$ 是第 $i$ 个结点的特征向量，$\mid \mid$ 表�
 
 5 个数据集。
 
-![Table2](/images/self-attention-graph-pooling/Table2.JPG)
+![Table2](/blog/images/self-attention-graph-pooling/Table2.JPG)
 
-![Table3](/images/self-attention-graph-pooling/Table3.JPG)
+![Table3](/blog/images/self-attention-graph-pooling/Table3.JPG)
 
-![Table4](/images/self-attention-graph-pooling/Table4.JPG)
+![Table4](/blog/images/self-attention-graph-pooling/Table4.JPG)
 
-![Figure3](/images/self-attention-graph-pooling/Fig3.JPG)
+![Figure3](/blog/images/self-attention-graph-pooling/Fig3.JPG)

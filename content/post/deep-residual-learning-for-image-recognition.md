@@ -17,7 +17,7 @@ CVPR 2015，ResNet，原文链接：[Deep Residual Learning for Image Recognitio
 # Deep Residual Learning for Image Recongnition
 ## problems
 When deeper networks are able to start converging, a degradation problem has been exposed: with the network depth increasing, accuracy gets saturated (which might be unsurprising) and then degrades rapidly. Unexpectedly, such degradation is not caused by overfitting, and adding more layers to a suitably deep model leads to higher training error, as reported in [11, 42] and thoroughly verified by our experiments. Fig. 1 shows a typical example.
-![Fig1](/images/deep-residual-learning-for-image-recognition/Fig1.PNG)
+![Fig1](/blog/images/deep-residual-learning-for-image-recognition/Fig1.PNG)
 
 Figure 1. Training error (left) and test error (right) on CIFAR-10 with 20-layer and 56-layer “plain” networks. The deeper network has higher training error, and thus test error. Similar phenomena on ImageNet is presented in Fig. 4.
 
@@ -30,7 +30,7 @@ Let us consider $\mathcal{H}(x)$ as an underlying mapping to be fit by a few sta
 ### Identity Mapping by Shortcuts
 $$y = \mathcal{F}(x, {W\_i})+x$$
 Here $x$ and $y$ are the input and output vectors of the layers considered. The function $\mathcal{F}(x, W\_i)$ represents the residual mapping to be learned. For the example in Fig. 2 that has two layers, $\mathcal{F} = W\_2\sigma (W\_1x)$ in which $\sigma $ denotes ReLU and the bias are omitting for simplifying notations. The operation $\mathcal{F}+x$ is performed by a shortcut connection and element-wise addition. We adopt the second nonlinearity after the addtion (*i.e.*, $\sigma(y)$, see Fig.2).
-![Fig2](/images/deep-residual-learning-for-image-recognition/Fig2.PNG)
+![Fig2](/blog/images/deep-residual-learning-for-image-recognition/Fig2.PNG)
 
 Figure2. Residual learning: a building block.
 
@@ -41,7 +41,7 @@ We also note that although the above notations are about fully-connected layers 
 
 ## Residual Network
 The identity shortcuts can be directly used when the input and output are of the same dimensions (solid line shortcuts in Fig.3). When the dimensions increase (dotted line shortcuts in Fig.3), we consider two options: (A) The shortcut still performs identity mapping, with extra zero entries padded for increasing dimensions. This option introduces no extra parameter; (B) The projection shortcut in Eqn.(2) is used to match dimensions (done by $1 \times 1$ convolutions). For both options, when the shortcuts go across feature maps of two sizes, they are performed with a stride of 2.
-![Fig3](/images/deep-residual-learning-for-image-recognition/Fig3.PNG)
+![Fig3](/blog/images/deep-residual-learning-for-image-recognition/Fig3.PNG)
 
 Figure3. Example network architectures for ImageNet. <b>Left</b>: the VGG-19 model. <b>Middle</b>: a plain network with 34-parameter layers. **Right**: a residual network with 34 parameter layers. The dotted shortcuts increase dimensions. <b>Table 1</b> shows more details and other variants.
 

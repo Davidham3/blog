@@ -27,7 +27,7 @@ AAAI 2019，网格流量预测，对比ST-ResNet，抛出三个问题，卷积�
 
 如图 1 所示，人口流量预测是在给定历史流量信息的前提下，预测城市内每个区域的流入和流出流量。最近，为了解决这个问题，基于深度学习的模型被相继提出，获得了很好的效果。Deep-ST 是第一个使用卷积网络捕获空间信息的模型。ST-ResNet 用卷积模块替换了卷积。通过融合金字塔型的 ConvGRU 模型和周期表示，Periodic-CRN 设计成了捕获人口流动周期性的模型。
 
-![Figure1](/images/deepstn-context-aware-spatial-temporal-neural-network-for-crowd-flow-prediction-in-metropolis/Fig1.JPG)
+![Figure1](/blog/images/deepstn-context-aware-spatial-temporal-neural-network-for-crowd-flow-prediction-in-metropolis/Fig1.JPG)
 
 这些方法仍然不够有效且不精确：
 
@@ -70,7 +70,7 @@ ST-ResNet 包含四个组件，*closeness*, *period*, *trend* 和 外部因素�
 
 图 2 展示了我们模型的框架。主要有三个部分：流量输入、SemanticPlus 和 ResPlus 单元。流量慎入包含 *closeness, period, terend*，由于数据的时间范围限制可以减少为 *closeness, period*。SemanticPlus 包含 POI 分布和时间信息。ResPlus 单元可以捕获远距离空间依赖。每个区域的流入和流出流量通过每小时或者每半小时统计得到流量地图的时间序列。这些流量地图通过 Min-Max 归一化处理到 $[-1, 1]$。如图 2 所示，人口分布地图通过近期时间、近邻历史、远期历史选择后作为输入放入模型。不同类型的 POI 分布通过 Min-Max 归一化到 $[0, 1]$。如图 2 做部分所示，POI 分布地图通过时间信息赋予了不同的权重。之后，POI 信息和人流信息通过早融合后放入堆叠的 ResPlus 单元中。最后，ResPlus 单元不同级别的特征融合后进入卷积部分，然后通过 Tanh 映射到 $[-1, 1]$。下面会介绍细节。
 
-![Figure2](/images/deepstn-context-aware-spatial-temporal-neural-network-for-crowd-flow-prediction-in-metropolis/Fig2.JPG)
+![Figure2](/blog/images/deepstn-context-aware-spatial-temporal-neural-network-for-crowd-flow-prediction-in-metropolis/Fig2.JPG)
 
 ## ResPlus
 
@@ -78,7 +78,7 @@ ST-ResNet 包含四个组件，*closeness*, *period*, *trend* 和 外部因素�
 
 在这篇论文中，我们设计 ConvPlus 来捕获城市内远距离的空间依赖。如图 3，ResPlus 单元使用一个 ConvPlus 和一个典型卷积。我们尝试了 Batch Normalization 和 Dropout，为了简介没有在图里面画出来。
 
-![Figure3](/images/deepstn-context-aware-spatial-temporal-neural-network-for-crowd-flow-prediction-in-metropolis/Fig3.JPG)
+![Figure3](/blog/images/deepstn-context-aware-spatial-temporal-neural-network-for-crowd-flow-prediction-in-metropolis/Fig3.JPG)
 
 典型卷积的每个通道对应一个卷积核。卷积核使用这些核来计算地图上的互相关系数，比如捕获梯度上的特征。卷积核的大小一般很小。在 ST-ResNet 和 DeepSTN+ 里面，卷积核的大小是 $3 \times 3$。但是城市中存在着远距离的依赖。人们可能坐地铁去上班。我们称这类关系叫远距离空间依赖关系。这种关系使得堆叠卷积难以有效地捕获这个关系。
 
@@ -86,7 +86,7 @@ ST-ResNet 包含四个组件，*closeness*, *period*, *trend* 和 外部因素�
 
 图 4 展示了两个不同区域的空间依赖热力图，分别是红色和黄色的星。这些目标区域不仅有区域上的依赖，还有一些和远处区域的远距离依赖。这也显示出不同的区域和地图上的其他区域有不一样的关系，这很难通过堆叠卷积有效地捕获。
 
-![Figure4](/images/deepstn-context-aware-spatial-temporal-neural-network-for-crowd-flow-prediction-in-metropolis/Fig4.JPG)
+![Figure4](/blog/images/deepstn-context-aware-spatial-temporal-neural-network-for-crowd-flow-prediction-in-metropolis/Fig4.JPG)
 
 因为 ConvPlus 有两类不同的输出通道，我们在 ResPlus 单元中使用 ConvPlus + Conv 而不是 ConvPlus + ConvPlus。没有 SemanticPlus 的 DeepSTN+ 形式化为：
 
@@ -100,7 +100,7 @@ $$
 
 POI 在人口流动上有很强烈的影响，这些影响随时间变化而变化。因此，我们继承这个先验知识到模型内。我们手机了包括类型、数量、位置的 POI 信息。然后统计每个网格内 POI 的数量，使用一个一维向量表示每种 POI 的分布。图 5 展示了北京的流量分布地图和餐饮分布地图。它们的分布很相似，并且互相关系数有 0.87，暗示了它们之间的潜在关系。
 
-![Figure5](/images/deepstn-context-aware-spatial-temporal-neural-network-for-crowd-flow-prediction-in-metropolis/Fig5.JPG)
+![Figure5](/blog/images/deepstn-context-aware-spatial-temporal-neural-network-for-crowd-flow-prediction-in-metropolis/Fig5.JPG)
 
 我们使用一个时间向量来表示每个人口流量地图的时间。时间向量包含两个部分：一个 one-hot 向量表示一天中的各个时间，如果时段按小时走，那长度就是 24；另一个 one-hot 向量表示是一周中的哪天，长度是 7。一个时间向量拼接了这两个向量。
 
@@ -112,7 +112,7 @@ $$
 
 函数 $f\_t()$ 将时间向量转换为表示 POI 影响强度的向量。$\ast$ 表示每个 POI 分布地图会被附上一个权重，表示 POI 的影响强度。我们假设同一类在不同的区域的 POI 有相同的时间模式。因此，一个类别的 POI 分布地图会有相同的权重。图 6 展示了娱乐和居住区的影响强度。影响强度在一周内随时间的变化而变化，每天存在着一些典型的模式。很多人早上去上班，工作结束后回家，所以每天早上和下午住宅区有明显的两个峰。对比居住区，娱乐区的影响相对稳定。
 
-![Figure6](/images/deepstn-context-aware-spatial-temporal-neural-network-for-crowd-flow-prediction-in-metropolis/Fig6.JPG)
+![Figure6](/blog/images/deepstn-context-aware-spatial-temporal-neural-network-for-crowd-flow-prediction-in-metropolis/Fig6.JPG)
 
 ## Fusion
 
@@ -128,7 +128,7 @@ $$
 
 算法 1 描述了训练过程。前 7 行是构建训练集和 POI 信息，模型通过 Adam 训练（8-12 行）
 
-![Alg1](/images/deepstn-context-aware-spatial-temporal-neural-network-for-crowd-flow-prediction-in-metropolis/Alg1.JPG)
+![Alg1](/blog/images/deepstn-context-aware-spatial-temporal-neural-network-for-crowd-flow-prediction-in-metropolis/Alg1.JPG)
 
 # Performance Evaluation
 
@@ -141,13 +141,13 @@ $$
 
 表 1 包含了数据。每个数据有两个子集：流量轨迹和 POI 信息。
 
-![Table1](/images/deepstn-context-aware-spatial-temporal-neural-network-for-crowd-flow-prediction-in-metropolis/Table1.JPG)
+![Table1](/blog/images/deepstn-context-aware-spatial-temporal-neural-network-for-crowd-flow-prediction-in-metropolis/Table1.JPG)
 
 ***MobileBJ:*** 数据是中国一个很流行的社交网络应用商提供的，时间范围是4 月 1 日到 4 月 30 日。记录了用户请求区域服务时的位置。我们用定义 2 转换成了网格流量。我们选择最后一周的数据作为测试集，前面的作为训练集。表 2 展示了这个数据集的 17 类 POI 信息。
 
 ***BikeNYC:*** NYC 的自行车数据，2014 年，4 月 1 日到 9 月 30 日。数据包含了旅途时长，出发和到达站的 ID，起始和结束时间。最后 14 天的数据用来测试，其他的训练。我们选了 9 类 POI 信息。
 
-![Table2](/images/deepstn-context-aware-spatial-temporal-neural-network-for-crowd-flow-prediction-in-metropolis/Table2.JPG)
+![Table2](/blog/images/deepstn-context-aware-spatial-temporal-neural-network-for-crowd-flow-prediction-in-metropolis/Table2.JPG)
 
 ## Baselines
 
@@ -173,12 +173,12 @@ $$
 
 RMSE 作为 loss function。
 
-![Table3](/images/deepstn-context-aware-spatial-temporal-neural-network-for-crowd-flow-prediction-in-metropolis/Table3.JPG)
+![Table3](/blog/images/deepstn-context-aware-spatial-temporal-neural-network-for-crowd-flow-prediction-in-metropolis/Table3.JPG)
 
 表 3 展示了不同的参数设置。
 
-![Table4](/images/deepstn-context-aware-spatial-temporal-neural-network-for-crowd-flow-prediction-in-metropolis/Table4.JPG)
+![Table4](/blog/images/deepstn-context-aware-spatial-temporal-neural-network-for-crowd-flow-prediction-in-metropolis/Table4.JPG)
 
-![Table5](/images/deepstn-context-aware-spatial-temporal-neural-network-for-crowd-flow-prediction-in-metropolis/Table5.JPG)
+![Table5](/blog/images/deepstn-context-aware-spatial-temporal-neural-network-for-crowd-flow-prediction-in-metropolis/Table5.JPG)
 
-![Figure7](/images/deepstn-context-aware-spatial-temporal-neural-network-for-crowd-flow-prediction-in-metropolis/Fig7.JPG)
+![Figure7](/blog/images/deepstn-context-aware-spatial-temporal-neural-network-for-crowd-flow-prediction-in-metropolis/Fig7.JPG)

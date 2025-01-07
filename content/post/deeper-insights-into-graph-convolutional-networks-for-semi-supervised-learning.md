@@ -119,7 +119,7 @@ $$
 
 GCN 和 FCN 之间的唯一一个区别是图卷积矩阵 $\hat{A} = \tilde{D}^{-\frac{1}{2}} \tilde{A} \tilde{D}^{-\frac{1}{2}}$ (式5)用在特征矩阵 $X$ 的左边。我们在 Cora 数据集上，每类 20 个 标签，做了半监督分类的测试。如表1所示。即便是只有一层的 GCN 也比一层的 FCN 好很多。
 
-![Table1](/images/deeper-insights-into-graph-convolutional-networks-for-semi-supervised-learning/Table1.JPG)
+![Table1](/blog/images/deeper-insights-into-graph-convolutional-networks-for-semi-supervised-learning/Table1.JPG)
 
 **Laplacian Smoothing.** 考虑一个一层的 GCN。实际有两步：
 1. 从矩阵 $X$ 通过一个图卷积得到新的特征矩阵 $Y$：
@@ -187,9 +187,9 @@ $$
 
 使用一个 partially absorbing random walks (Wu et al. 2012) 来捕获网络的全局结构。方法就是计算归一化的吸收概率矩阵 $P = (L + \alpha \Lambda)^{-1}$，$P\_{i, j}$ 是从顶点 $i$ 出发被吸收到顶点 $j$ 的概率，表示 $i$ 和 $j$ 有多大的可能性属于同一类。然后我们对每类 $k$，计算可信向量 $\mathbf{p} = \sum\_{j \in S\_k} P\_{:, j}$，其中 $\mathbf{p} \in \mathbb{R}^n$，$p\_i$ 是顶点 $i$ 属于类 $k$ 的概率。最后，找到 $t$ 个最可信的顶点把他们加到训练集的类 $k$ 中。
 
-![Alg1](/images/deeper-insights-into-graph-convolutional-networks-for-semi-supervised-learning/Alg1.JPG)
+![Alg1](/blog/images/deeper-insights-into-graph-convolutional-networks-for-semi-supervised-learning/Alg1.JPG)
 
 **GCN Self-Training**
 另一种方法就是先训练一个 GCN，然后使用这个 GCN 去预测，根据预测结果的 $\text{softmax}$ 分数选择可信的样本，加入到训练集中。
 
-![Alg2](/images/deeper-insights-into-graph-convolutional-networks-for-semi-supervised-learning/Alg2.JPG)
+![Alg2](/blog/images/deeper-insights-into-graph-convolutional-networks-for-semi-supervised-learning/Alg2.JPG)

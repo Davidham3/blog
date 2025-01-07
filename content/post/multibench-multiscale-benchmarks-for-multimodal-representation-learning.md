@@ -28,6 +28,6 @@ NIPS 2021, datasets and benchmarks track, [MULTIBENCH: Multiscale Benchmarks for
 
 A modality refers to a way in which a signal exists or is experienced.模态是指数据的存在或表现形式。
 
-![Figure1](/images/multibench-multiscale-benchmarks-for-multimodal-representation-learning/Fig1.jpg)
+![Figure1](/blog/images/multibench-multiscale-benchmarks-for-multimodal-representation-learning/Fig1.jpg)
 
 **Limitations of current multimodal datasets**：现在的多模态主要研究图像和文本，其他模态太少了。此外，当前的benchmark过分关注效果，忽略了时间和空间复杂度，同时也忽略了一些不完美的模态带来的鲁棒性的下降。在实际应用中，以上三点都应该被考虑。

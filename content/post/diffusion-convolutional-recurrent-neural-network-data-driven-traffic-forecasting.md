@@ -26,7 +26,7 @@ ICLR 2018，DCRNN，模型借鉴了[Structured Sequence Modeling With Graph Conv
 
 任务有挑战性的原因是复杂的时空依赖关系以及长期预测的上的难度。一方面，交通数据序列表现出了强烈的时间动态性(temporal dynamics)。反复的事件如高峰期或交通事故导致了数据的非平稳性，使得长期预测很困难。另一方面，路网上的监测器包含了复杂但是唯一的空间联系(spatial correlations)。图1展示了一个例子。路1和路2是相关联的，但是路1和路3没有关联。尽管路1和路3在欧氏空间中很近，但是他们表现出了不同的形式。此外，未来的车速更容易受到下游交通的影响，而非上游。这就意味着交通上的空间结构不是欧氏空间的，而是有向的。
 
-<div align="center">![Figure1](/images/diffusion-convolutional-recurrent-neural-network-data-driven-traffic-forecasting/Fig1.JPG)
+<div align="center">![Figure1](/blog/images/diffusion-convolutional-recurrent-neural-network-data-driven-traffic-forecasting/Fig1.JPG)
 
 交通预测已经研究了几十年，有两个主要类别：知识驱动的方法和数据驱动的方法。在运输和操作研究中，知识驱动的方法经常使用排队论，模拟交通中的用户行为(Cascetta, 2013)。时间序列社区中，数据驱动的方法如 Auto-Regressive Integrated Moving Average(ARIMA) 模型，Kalman filtering 还是很流行的(Liu et al., 2011; Lippi et al., 2013)。然而，简单的时间序列模型通常依赖平稳假设，这经常与实际交通数据不符。最近开始在交通预测上应用深度学习模型 (Lv et al., 2015; Yu et al., 2017b) ，但是没有考虑空间结构。Wu & Tan 2016和Ma et al. 2017 使用 CNN 对空间关系进行建模，但是在欧氏空间中的。Bruna et al. 2014，Defferrard et al. 2016 研究了图卷积，但是只能处理无向图。
 
@@ -80,7 +80,7 @@ $$
 $$
 其中 $\boldsymbol{X}^{(t)}, \boldsymbol{H}^{(t)}$ 表示时间 $t$ 的输入和输出，$\boldsymbol{r}^{(t)}, \boldsymbol{u}^{(t)}$ 表示时间 $t$ 的reset gate和 update gate。$\star\_\mathcal{G}$ 表示式2中定义的混合卷积，$\mathbf{\Theta}\_r, \mathbf{\Theta}\_u, \mathbf{\Theta}\_C$ 表示对应的滤波器的参数。类似 GRU，DCGRU 可以用来构建循环神经网络层，使用 BPTT 训练。
 
-<div align="center">![Figure2](/images/diffusion-convolutional-recurrent-neural-network-data-driven-traffic-forecasting/Fig2.JPG)
+<div align="center">![Figure2](/blog/images/diffusion-convolutional-recurrent-neural-network-data-driven-traffic-forecasting/Fig2.JPG)
 
 在多步预测中，我们使用 *Sequence to Sequence* 架构。编码解码器都是 DCGRU。训练时，我们把历史的时间序列放到编码器，使用最终状态初始化解码器。解码器生成预测结果。测试时，ground truth 替换成模型本身生成的预测结果。训练和测试输入的分布的差异会导致性能的下降。为了减轻这个问题的影响，我们使用了 *scheduled sampling* (Bengio et al., 2015)，在训练的第 $i$ 轮时，模型的输入要么是概率为 $\epsilon\_i$ 的 ground truth，要么是概率为 $1 - \epsilon\_i$ 的预测结果。在训练阶段，$\epsilon\_i$ 逐渐的减小为0，使得模型可以学习到测试集的分布。
 
@@ -98,9 +98,9 @@ $$
 
 这两个数据集，我们将车速聚合到了5分钟的窗口内，使用了 Z-Score normalization。70%的数用于训练，20%用于测试，10%用于验证。为了构建检测器网络，我们计算了任意两个 sensor 的距离，使用了 thresholded Gaussian kernel 来构建邻接矩阵(Shuman et al., 2013)。$W\_{ij} = \exp{(-\frac{\mathrm{dist}(v\_i, v\_j)^2}{\sigma^2})} \ \text{if} \ \text{dist}(v\_i, v\_j) \leq \mathcal{\kappa}, \mathrm{otherwise} \ 0$，其中 $W\_{ij}$ 表示了检测器 $v\_i$ 和 $v\_j$ 之间的权重，$\mathrm{dist}(v\_i, v\_j)$ 表示检测器 $v\_i$ 到 $v\_j$ 之间的距离。$\sigma$ 表示距离的标准差，$\kappa$ 表示阈值。
 
-<div align="center">![Figure8](/images/diffusion-convolutional-recurrent-neural-network-data-driven-traffic-forecasting/Fig8.JPG)
+<div align="center">![Figure8](/blog/images/diffusion-convolutional-recurrent-neural-network-data-driven-traffic-forecasting/Fig8.JPG)
 
-<div align="center">![Table](/images/diffusion-convolutional-recurrent-neural-network-data-driven-traffic-forecasting/Table1.JPG)
+<div align="center">![Table](/blog/images/diffusion-convolutional-recurrent-neural-network-data-driven-traffic-forecasting/Table1.JPG)
 
 ## 4.1 Experimental Settings
 Baselines 1. $\rm{HA}$：历史均值，将交通流建模成周期性过程，使用之前的周期的加权平均作为预测。2. $\mathrm{ARIMA}\_{kal}$：Auto-Regressive Integrated Moving Average model with Kalman filter，广泛地应用于时间序列预测上。3. $\rm{VAR}$: Vector Auto-Regression(Hamilton, 1994)。4. $\rm{SVR}$：Support Vector Regression，使用线性支持向量机用于回归任务。5. Feed forward Neural network (FNN)：前向传播神经网络，两个隐藏层，L2正则化。6. Recurrent Neural Network with fully connected LSTM hidden units (FC-LSTM)(Sutskever et al., 2014).
@@ -115,27 +115,27 @@ Baselines 1. $\rm{HA}$：历史均值，将交通流建模成周期性过程，�
 ## 4.3 Effect of Spatial Dependency Modeling
 为了继续深入对空间依赖建模的影响，我们对比了 DCRNN 和以下变体： 1. DCRNN-NoConv，这个通过使用单位阵替换扩散卷积（式2）中的转移矩阵，忽略了空间依赖。这就意味着预测只能通过历史值预测。 2. DCRNN-UniConv，扩散卷积中只使用前向随机游走；图3展示了这三个模型使用大体相同数量的参数时的学习曲线。没有扩散卷积，DCRNN-NoConv 有着更大的 validation error。此外，DCRNN获得了最低的 validation error，说明了使用双向随机游走的有效性。这个告诉我们双向随机游走赋予了模型捕获上下游交通影响的能力与灵活性。
 
-<div align="center">![Figure3](/images/diffusion-convolutional-recurrent-neural-network-data-driven-traffic-forecasting/Fig3.JPG)
+<div align="center">![Figure3](/blog/images/diffusion-convolutional-recurrent-neural-network-data-driven-traffic-forecasting/Fig3.JPG)
 
 为了研究图的构建方法的影响，我们构建了一个无向图，$\widehat{W}\_{ij} = \widehat{W}\_{ji} = \max(W\_{ij}, W\_{ji})$，其中 $\widehat{\boldsymbol{W}}$ 是新的对称权重矩阵。然后我们使用了 DCRNN 的一个变体，表示成 GCRNN，使用 *ChebNet* 卷积的序列到序列学习，并用大体相同的参数数量。表2展示了 DCRNN 和 GCRNN 在 METR-LA 数据集上的对比。DCRNN 都比 GCRNN 好。这说明有向图能更好的捕获交通检测器之间的非对称关系。图4展示了不同参数的影响。$K$ 大体对应了卷积核感受野的大小，单元数对应了卷积核数。越大的 $K$ 越能使模型捕获更宽的空间依赖，代价是增加了学习的复杂度。我们观测到随着 $K$ 的增加，验证集上的误差先是快速下降，然后微微上升。改变不同数量的单元也会有相似的情况。
 
-<div align="center">![Table2](/images/diffusion-convolutional-recurrent-neural-network-data-driven-traffic-forecasting/Table2.JPG)
+<div align="center">![Table2](/blog/images/diffusion-convolutional-recurrent-neural-network-data-driven-traffic-forecasting/Table2.JPG)
 
-<div align="center">![Figure4](/images/diffusion-convolutional-recurrent-neural-network-data-driven-traffic-forecasting/Fig4.JPG)
+<div align="center">![Figure4](/blog/images/diffusion-convolutional-recurrent-neural-network-data-driven-traffic-forecasting/Fig4.JPG)
 
 ## 4.4 Effect of Temporal Dependency Modeling
 为了衡量时间建模的影响，包括序列到序列框架以及 scheduled sampling 技术，我们设计 DCRNN 的三种变体：1. DCNN：我们拼接历史的观测值为一个固定长度的向量，将它放到堆叠的扩散卷积层中，预测未来的时间序列。我们训练一个模型只预测一步，将之前的预测结果放到模型中作为输入，使用多步前向预测。2. DCRNN-SEQ：使用编码解码序列到序列学习框架做多步预测。3. DCRNN：类似 DCRNN-SEQ ，除了增加了 scheduled sampling。
 
 图5展示了这四种方法针对 MAE 的对比。我们观察到：1. DCRNN-SEQ 比 DCNN 好很多，符合了对时间建模的重要性。2. DCRNN 达到了最好的效果，随着预测 horizon 的增加，它的先进性变得越来越明显。这主要是因为模型在训练的时候就在处理多步预测时出现的误差，因此会很少的受到误差反向传播的影响。我们也训练了一个总是将输出作为输入扔到模型中的模型。但是它的表现比这三种变体都差，这就强调了 scheduled sampling 的重要性。
 
-<div align="center">![Figure5](/images/diffusion-convolutional-recurrent-neural-network-data-driven-traffic-forecasting/Fig5.JPG)
+<div align="center">![Figure5](/blog/images/diffusion-convolutional-recurrent-neural-network-data-driven-traffic-forecasting/Fig5.JPG)
 
 ## 4.5 模型的解释性
 为了更好的理解模型，我们对预测结果和学习到的滤波器进行性了可视化。图6展示了预测1小时的效果。我们观察到了以下情况：1. DCRNN 在交通流速度中存在小的震荡时，用均值生成了平滑的预测结果（图6a）。这反映了模型的鲁棒性。2. DCRNN 比 baseline 方法（如FC-LSTM）更倾向于精确的预测出突变。图6b展示了 DCRNN 预测了高峰时段的起始和终止。这是因为 DCRNN 捕获了空间依赖，能够利用邻居检测器速度的变换来精确预测。图7展示了以不同顶点为中心学习到的滤波器的样例。星表示中心，颜色表示权重。我们可以观察到权重更好的在中心周围局部化，而且权重基于路网距离进行扩散。更多的可视化在附录F。
 
-<div align="center">![Figure6](/images/diffusion-convolutional-recurrent-neural-network-data-driven-traffic-forecasting/Fig6.JPG)
+<div align="center">![Figure6](/blog/images/diffusion-convolutional-recurrent-neural-network-data-driven-traffic-forecasting/Fig6.JPG)
 
-<div align="center">![Figure7](/images/diffusion-convolutional-recurrent-neural-network-data-driven-traffic-forecasting/Fig7.JPG)
+<div align="center">![Figure7](/blog/images/diffusion-convolutional-recurrent-neural-network-data-driven-traffic-forecasting/Fig7.JPG)
 
 # 5 Conclusion
 我们对路网上的交通预测做了时空上的建模，提出了 *diffusion convolutional recurrent neural network*，可以捕获时空依赖。特别地，我们使用双向随机游走，对空间依赖建模，使用循环神经网络捕获时间的动态性。还继承了编码解码架构和 scheduled sampling 技术来提升长期预测的性能。在两个真实的数据集上评估了性能，我们的方法比 baselines 好很多。未来的工作，1. 使用提出的网络解决其他的时空预测问题；2. 对不断演化的图结构的时空依赖关系建模。

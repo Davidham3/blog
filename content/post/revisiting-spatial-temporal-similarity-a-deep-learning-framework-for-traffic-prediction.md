@@ -49,7 +49,7 @@ AAAI 2019。网格流量预测，两个问题：空间依赖动态性，另一�
 
 这部分，我们讲一下细节。图1是我们模型的架构。
 
-![Figure1](/images/revisiting-spatial-temporal-similarity-a-deep-learning-framework-for-traffic-prediction/Fig1.JPG)
+![Figure1](/blog/images/revisiting-spatial-temporal-similarity-a-deep-learning-framework-for-traffic-prediction/Fig1.JPG)
 
 ## Local Spatial-Temporal Network
 

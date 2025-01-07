@@ -30,7 +30,7 @@ WSDM 2019，原文链接：[Session-based Social Recommendation via Dynamic Grap
 
 **Motivating Example.** 图 1 展示了 Alice 和 她的朋友在一个在线社区的行为。行为通过一个动作（比如点击操作）序列描述。为了捕获用户的动态兴趣，她们的行为被分成了不同的子序列，表示 *sessions*。我们感兴趣的是基于 *session* 的推荐：我们根据当前情境下 Alice 已经消费过的东西给她推荐下一个她可能消费的东西。图 1 展示出两个情景，a 和 b。此外，Alice 朋友们的消费信息也是可获得的。我们会利用这些信息生成更好的推荐。因此我们在一个基于 session 的社交推荐情景下。
 
-![Figure1](/images/session-based-social-recommendation-via-dynamic-graph-attention-networks/Fig1.JPG)
+![Figure1](/blog/images/session-based-social-recommendation-via-dynamic-graph-attention-networks/Fig1.JPG)
 
 在 session a 中，Alice 浏览了体育的物品。她的两个朋友：Bob 和 Eva，是出了名的体育粉丝（长期兴趣），他们最近正好浏览了体育相关的物品（短期兴趣）。考虑到这个情况，Alice 可能被他们两个影响，比如说接下来她可能会学习乒乓球。在 session b 中，Alice 对文学艺术物品感兴趣。这个环境和刚才不一样了因为她没有最近正在消费这样物品的朋友。但是 David 一直对这个话题感兴趣（长期兴趣）。在这种情况下，对 Alice 来说可能会被 David 影响，可能会被推荐一本 David 喜欢的书。这些例子表明了一个用户当前的兴趣是如何与他不同的朋友的兴趣相融合来提供基于情景的推荐的。我们提出了一个推荐模型来处理这两种情况。
 

@@ -18,7 +18,7 @@ title: Event sequence metric learning
 
 # 1. 模型架构
 
-![Figure1](/images/event-sequence-metric-learning/Fig1.jpg)
+![Figure1](/blog/images/event-sequence-metric-learning/Fig1.jpg)
 
 # 2. 原理
 
@@ -44,7 +44,7 @@ title: Event sequence metric learning
 
 但是之前的研究认为，有些嵌入表示，他们的距离过于远，这种样本对模型训练没什么用，因此本文给了两个损失函数来剔除这种情况。一个叫contrastive loss，一个叫margin loss，原理都是一样的。
 
-![loss](/images/event-sequence-metric-learning/loss.jpg)
+![loss](/blog/images/event-sequence-metric-learning/loss.jpg)
 
 对于contrastive loss来说，正样本的损失正常计算，而负样本的损失，如果pair中的两个表示的距离大于 $m$ ，就不要了。
 
@@ -80,7 +80,7 @@ title: Event sequence metric learning
 
 ## 3.2 参数选择
 
-![result](/images/event-sequence-metric-learning/Table4_to_7.jpg)
+![result](/blog/images/event-sequence-metric-learning/Table4_to_7.jpg)
 
 上面4个表的结论：
 
@@ -89,11 +89,11 @@ title: Event sequence metric learning
 3.  随机slice比随机采样更好
 4.  难例挖掘带来的提升是显著的（但是论文前边根本没仔细介绍难例挖掘好吧。。。）
 
-![Figure2](/images/event-sequence-metric-learning/Fig2.jpg)
+![Figure2](/blog/images/event-sequence-metric-learning/Fig2.jpg)
 
 图2是说嵌入在800维的时候效果最好，用bias-variance来解释。维数少的时候高bias，信息丢失，维数高的时候高variance，噪声多了。
 
-![Figure3](/images/event-sequence-metric-learning/Fig3.jpg)
+![Figure3](/blog/images/event-sequence-metric-learning/Fig3.jpg)
 
 图3一样，256到2048比较平缓，下游任务的效果没有明显增强。
 
@@ -103,11 +103,11 @@ title: Event sequence metric learning
 
 tSNE，染色是用数据集中的target value染色的。学习完全是自监督的。交易序列表示的是用户的行为，因此模型可以捕获行为模式，产出的embedding如果相近，则说明用户的行为模式相似。
 
-![Figure4](/images/event-sequence-metric-learning/Fig4.jpg)
+![Figure4](/blog/images/event-sequence-metric-learning/Fig4.jpg)
 
 ## 3.4 结果
 
-![Table8](/images/event-sequence-metric-learning/Table8.jpg)
+![Table8](/blog/images/event-sequence-metric-learning/Table8.jpg)
 
 对比手工构建的特征，模型效果强劲。fine-tuned的表示效果最好。另外可以看到的是，使用手工特征+事件序列嵌入表示的模型效果比纯手工特征效果更好。
 
@@ -115,11 +115,11 @@ tSNE，染色是用数据集中的target value染色的。学习完全是自监�
 
 只取了一部分标签做实验，就像监督学习一样用手工特征的lightgbm和CPC。对于嵌入生成方法（MeLES和CPC），分别使用lightgbm和fine-tuned模型来评估效果。同时还比了监督模型在这些label上的效果。
 
-![Figure5](/images/event-sequence-metric-learning/Fig5.jpg)
+![Figure5](/blog/images/event-sequence-metric-learning/Fig5.jpg)
 
-![Figure6](/images/event-sequence-metric-learning/Fig6.jpg)
+![Figure6](/blog/images/event-sequence-metric-learning/Fig6.jpg)
 
-![Figure7_and_Figure8](/images/event-sequence-metric-learning/Fig78.jpg)
+![Figure7_and_Figure8](/blog/images/event-sequence-metric-learning/Fig78.jpg)
 
 结论就是标签少的时候，效果很好。
 

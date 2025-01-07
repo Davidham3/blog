@@ -37,7 +37,7 @@ DCNN的优势：
 
 如果 $T=1$，也就是只有一个图，标签是顶点或边，那么预测标签 $Y$ 就转换为了半监督分类问题了；如果输入中没有边的表示，就变成了标准的监督问题。如果 $T>1$，标签是每个图的标签，那就是监督图分类问题。
 
-![Figure1](/images/diffusion-convolutional-neural-networks/Fig1.JPG)
+![Figure1](/blog/images/diffusion-convolutional-neural-networks/Fig1.JPG)
 
 DCNN接受 $\mathcal{G}$ 作为输入，返回一个 $Y$ 的hard prediction或是条件概率分布 $\mathbb{P}(Y \mid X)$。每个实体（顶点、图、或边）被转换为扩散卷积表示，由 $F$ 个特征上 $H$ 步扩散的维度为 $H \times F$ 的实数矩阵定义，每个实体是由 $H \times F$ 的实数矩阵 $W^c$ 和一个非线性可微分函数 $f$ 计算激活定义的。所以对于顶点分类任务，图 $t$ 的扩散卷积(diffusion-convolutional)表示 $Z\_t$，是一个 $N\_t \times H \times F$ 的tensor，如图1a所示；对于图或边分类任务，$Z\_t$ 是一个 $H \times F$ 或 $N\_t \times H \times F$ 的矩阵，如图1b和图1c。(原文里面写的是 $M\_t \times H \times F$，我觉得是写错了)
 

@@ -15,11 +15,11 @@ ICLR 2018 workshop, [Time-dependent representation for neural event sequence pre
 
 <!--more-->
 
-![Figure1](/images/time-dependent-representation-for-neural-event-sequence-prediction/Fig1.jpg)
+![Figure1](/blog/images/time-dependent-representation-for-neural-event-sequence-prediction/Fig1.jpg)
 
 在事件序列中，有两个时间段(time span)，一个是duration，事件的持续时长，另一个是interval，事件与事件之间的间隔。为了统一这两个时间段，作者将interval看作是一个空闲事件(idle event)。
 
-![Figure2](/images/time-dependent-representation-for-neural-event-sequence-prediction/Fig2.jpg)
+![Figure2](/blog/images/time-dependent-representation-for-neural-event-sequence-prediction/Fig2.jpg)
 
 图2是模型架构，就是把事件做嵌入表示，然后把duration考虑进去，得到事件序列里面每个时间步的嵌入表示，然后丢到RNN里面，最后是要预测下一个event是什么，同时可以把下一个event的duration拿进来计算损失，起到一个正则的作用。
 
@@ -120,11 +120,11 @@ $Proj$就是公式4和5定义的投影函数，$Proj\_k$是投影向量中的第
 
 ## 5.4 实验结果
 
-![Figure3](/images/time-dependent-representation-for-neural-event-sequence-prediction/Fig3.jpg)
+![Figure3](/blog/images/time-dependent-representation-for-neural-event-sequence-prediction/Fig3.jpg)
 
 Effectiveness of Temporal Representation: 图3展示出了TimeMask和TimeJoint的有效性。MIMIC II数据集上面没效果，可能是加时间本来就没啥用。结论就是，用这两个东西肯定比只加时间的值到RNN里面要有效。
 
-![Table 1 & 2](/images/time-dependent-representation-for-neural-event-sequence-prediction/Table1_2.jpg)
+![Table 1 & 2](/blog/images/time-dependent-representation-for-neural-event-sequence-prediction/Table1_2.jpg)
 
 表1和表2也证明了加入时间的有效性。而且有些时候直接加时间可能会伤害模型的效果。
 
@@ -132,4 +132,4 @@ Effectiveness of Event Duration Regularization: 表1和表2证明了正则的有
 
 Learned Time Representation: 这段说的不明所以，论文里面还有错误，图画的也不清晰，没懂。
 
-![Figure4](/images/time-dependent-representation-for-neural-event-sequence-prediction/Fig4.jpg)
+![Figure4](/blog/images/time-dependent-representation-for-neural-event-sequence-prediction/Fig4.jpg)

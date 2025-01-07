@@ -92,7 +92,7 @@ $$
 
 我们在这里提出了一个采样机制，会在训练的时候，随机地选择 $y\_{t-1}$ 或 $\hat{y}\_{t-1}$。假设我们使用mini-batch随机梯度下降，对于训练算法的第 $i$ 个mini-batch中预测 $y\_t \in Y$ 的每个token，我们提出用抛硬币的方法，设使用真实token的概率为$\epsilon\_i$，使用它估计的token的概率为$(1 - \epsilon\_i)$。模型的估计值可以根据模型的概率分布$P(y\_{t-1} \mid h\_{t-1})$ 来采样获得，或是取 $\mathop{\arg \max\_s} P(y\_{t-1} = s \mid h\_{t-1})$。这个过程由图1所示。
 
-<div align=center>![Figure1](/images/scheduled-sampling-for-sequence-prediction-with-recurrent-neural-networks/Fig1.jpg)
+<div align=center>![Figure1](/blog/images/scheduled-sampling-for-sequence-prediction-with-recurrent-neural-networks/Fig1.jpg)
 
 当 $\epsilon\_i = 1$ 时，模型就像之前一样训练，但是当 $\epsilon\_i = 0$ 时，模型就会和推断时一样训练。我们这里提出了一个递进学习策略，在训练的开始接断，从模型可能生成的token中进行采样，因为此时模型还没有训练好，这可能会使模型的收敛速度变慢，所以这里选择较多的真实token会帮助训练；另一方面，在训练快结束的时候，$\epsilon\_i$ 应该更倾向于从模型的生成结果中采样，因为这个对应了推测的场景，这时我们会期望模型已经有足够好的能力来处理这个问题，并且采样出有效的tokens。
 
@@ -106,4 +106,4 @@ $$
 
 我们的方法命名为 *Scheduled Sampling*。需要注意的是在模型训练时从它的输出采样到前一个token $\hat{y}\_{t-1}$时，我们可以在时间 $t \rightarrow T$ 内进行梯度的反向传播。在实验中我们没有尝试，会在未来的工作中尝试。
 
-<div align=center>![Figure2](/images/scheduled-sampling-for-sequence-prediction-with-recurrent-neural-networks/Fig2.jpg)
+<div align=center>![Figure2](/blog/images/scheduled-sampling-for-sequence-prediction-with-recurrent-neural-networks/Fig2.jpg)

@@ -22,8 +22,8 @@ ACL 2018，基于LSTM+CRF，用word2vec对字符进行表示，然后用大规�
 信息抽取中最基础的任务，NER近些年受到了广泛的关注。NER以往被当作一个序列标注问题来解决，实体的边界和类别标签是同时进行预测的。当前最先进的英文命名实体识别的方法是使用集成进单词表示的字符信息的LSTM-CRF模型（Lample et al., 2016; Ma and Hovy, 2016; Chiu and Nichols, 2016; Liu et al., 2018）。
 中文NER与分词联系的很紧密。尤其是命名实体的边界也是词的边界。一个直观的想法是先分词，再标注词。然而这个pipeline会受到错误分词的影响，因为命名实体是分词中OOV中的很重要的一部分，而且不正确的实体边界划分会导致错误的NER。这个问题在open domain中很严重，因为跨领域的分词还是为解决的问题（Liu and Zhang, 2012; Jiang et al., 2013; Liu et al., 2014; Qiu and Zhang, 2015; Chen et al., 2017; Huang et al., 2017）。基于字符的方法比基于词的方法在中文NER中表现的好（He and Wang, 2008; Liu et al., 2010; Li et al., 2014）。
 然而，基于字符的NER的一个缺点是，词与词的序列信息不能被完全利用到，然而这部分信息可能很有用。为了解决这个问题，我们通过使用一个lattice LSTM表示句子中的lexicon words，在基于字符的LSTM-CRF模型中集成了latent word information。如图1所示，我们通过使用一个大型的自动获取的词典来匹配一个句子，构建了一个词-字lattice。结果是，词序列，像“长江大桥”，“长江”，“大桥”可以用来在上下文中区分潜在的相关的命名实体，比如人名“江大桥”。
-![Fig1](/images/lattice-lstm-中文ner/Fig1.PNG)
-![Fig2](/images/lattice-lstm-中文ner/Fig2.PNG)
+![Fig1](/blog/images/lattice-lstm-中文ner/Fig1.PNG)
+![Fig2](/blog/images/lattice-lstm-中文ner/Fig2.PNG)
 因为在lattice中有很多潜在的词-字路径，我们利用了一个lattice-LSTM结构来自动地控制句子的开始到结尾的信息流。如图2所示，门控细胞被用于动态规划信息从不同的路径到每个字符上。在NER数据上训练的lattice LSTM可以学习到如何从上下文中找到有用的单词，自动地提高NER的精度。对比基于字符的和基于单词的NER方法，我们的模型的优势在于利用在字符序列标签上的单词信息，且不会受到错误分词的影响。
 结果显示我们的模型比字符序列标注模型和使用LSTM-CRF的单词序列标注模型都要好很多，在很多中文跨领域的NER数据集上都获得了很好的结果。我们的模型和数据在https://github.com/jiesutd/LatticeLSTM。
 
@@ -36,7 +36,7 @@ Lattice结构的RNN可以被看作是一个树状结构的RNN（Tai et al., 2015
 
 ## 模型
 我们跟从最好的英语NER模型（Huang et al., 2015; Ma and Hovy, 2016; Lample et al., 2016），使用LSTM-CRF作为主要的网络结构。使用$s=c\_1, c\_2, ..., c\_m$表示输入的句子，其中$c\_j$表示第$j$个字符。$s$可以被看作一个单词序列$s=w\_1, w\_2, ..., w\_n$，其中$w\_i$表示序列中的第$i$个单词，由一个中文分词器获得。我们使用$t(i, k)$表示句子中第$i$个单词的第$k$个字符表示下标$j$。取图1的句子作为例子。如果分词结果是“南京市 长江大桥”，下标从1开始，那么$t(2, 1)=4$（长），$t(1, 3)=3$（市）。我们使用BIOES标记（Ratinov and Roth, 2009）对基于词和基于字的NER进行标记。
-![Fig3](/images/lattice-lstm-中文ner/Fig3.PNG)
+![Fig3](/blog/images/lattice-lstm-中文ner/Fig3.PNG)
 ### 基于字符的模型
 基于字符的模型如图3(a)所示。它在$c\_1, c\_2, ..., c\_m$上使用了LSTM-CRF模型。每个字符$c\_j$表示为
 $$x^c\_j = e^c(c\_j)$$

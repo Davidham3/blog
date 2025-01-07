@@ -41,7 +41,7 @@ $$
 
 假设有行向量$x^1\_l, x^2\_l, ..., x^N\_l$的$X\_l \in \mathbb{R}^{N \times C}$，表示$N$个顶点的图，每个顶点有$C$个特征。邻接矩阵$A \in \mathbb{N}^{N \times N}$，$k$为定值。顶点$i$的特征向量是$x^i\_l$，它有$n$个邻居。通过在$A$中的一个简单查找，我们可以获得这些邻居结点的下标，$i\_1, i\_2, ..., i\_n$。对它们对应的特征向量$x^{i\_1}\_l, x^{i\_2}\_l, ..., x^{i\_n}\_l$进行拼接，得到$M^i\_l \in \mathbb{R}^{n \times C}$。假设$n \geq k$，就没有泛化上的损失。如果$n < k$，我们可以使用全为0的列，给$M^i\_l$加padding。$k$-largest node selection是在$M^i\_l$上做的：也就是，对于每列，我们排出$n$个值，然后选最大的$k$个数。我们就可以得到一个$k \times C$的输出矩阵。因为$M^i\_l$表示特征，这个操作等价于为每个特征选择$k$个最大值。通过在第一行插入$x^i\_l$，输出变为$\tilde{M}^i\_l \in \mathbb{R}^{(k+1) \times C}$。如图2左部分。通过对每个顶点重复这个操作，$g(\cdot)$将$X\_l$变为$\tilde{X}\_l \in \mathbb{R}^{N \times (k + 1) \times C}$。
 
-![Figure2](/images/large-scale-learnable-graph-convolutional-networks/Fig2.JPG)
+![Figure2](/blog/images/large-scale-learnable-graph-convolutional-networks/Fig2.JPG)
 
 注意，如果将$N$，$(k+1)$，$C$分别看作是batch size，spatial size，通道数，那么$\tilde{X}\_l$可以看作是1维网格状的结构。因此，$k$个最大顶点选择函数$g(\cdot)$成功地将图结构变换为网格结构。这个操作充分利用了实数的自然顺序信息，使得每个顶点有固定数量的有序邻居。
 
@@ -73,9 +73,9 @@ $$
 
 我们提出了子图选择算法来解决大尺度图上计算资源的问题，如算法1所示。给定一个图，我们先采样出一些初始顶点。从它们开始，我们使用广度优先搜索算法，迭代地将邻接顶点扩充到子图内。经过一定次数的迭代后，初始顶点的高阶邻居顶点就会被加进去。注意，我们在算法1中使用一个简单的参数$N\_m$。实际上在每个迭代中，我们将$N\_m$设置为了不同的值。图4给出了子图选择过程的一个例子。
 
-![Algorithm1](/images/large-scale-learnable-graph-convolutional-networks/Alg1.JPG)
+![Algorithm1](/blog/images/large-scale-learnable-graph-convolutional-networks/Alg1.JPG)
 
-![Figure4](/images/large-scale-learnable-graph-convolutional-networks/Fig4.JPG)
+![Figure4](/blog/images/large-scale-learnable-graph-convolutional-networks/Fig4.JPG)
 
 这样随机的切分子图，我们可以在大尺度的图上训练深层模型。此外，我们可以充分利用mini-batch训练方法来加速学习过程。在每轮训练中，我们可以使用子图训练方法采样多个子图，然后把它们放到batch中。对应的特征向量和邻接矩阵组成了网络的输入。
 

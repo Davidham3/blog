@@ -59,7 +59,7 @@ $$\tag{2}
 \alpha\_{ij} = \mathrm{softmax}\_j (e\_{ij}) = \frac{\exp{e\_{ij}}}{\sum\_{k \in \mathcal{N}\_i} \exp{e\_{ik}}}
 $$
 
-<div align="center">![Figure1](/images/graph-attention-networks/Fig1.JPG)</div>
+<div align="center">![Figure1](/blog/images/graph-attention-networks/Fig1.JPG)</div>
 
 在我们的实验中，注意力机制 $a$ 是一个单层的前向传播网络，参数为权重向量 $\vec{\text{a}} \in \mathbb{R}^{2F'}$，使用LeakyReLU作为非线性层（斜率$\alpha = 0.2$）。整个合并起来，注意力机制计算出的分数（如图1左侧所示）表示为：
 
@@ -104,7 +104,7 @@ multi-head 图注意力层的聚合过程如图1右侧所示。
 
 # 3 Evaluation
 我们与很多强力的模型进行了对比，在四个基于图的数据集上，达到了state-of-the-art的效果。这部分将总结一下我们的实验过程与结果，并对GAT提取特征表示做一个定性分析。
-![Table1](/images/graph-attention-networks/Table1.JPG)
+![Table1](/blog/images/graph-attention-networks/Table1.JPG)
 
 ## 3.1 Datasets
 **Transductive learning** 我们使用了三个标准的citation network benchmark数据集——Cora, Citeseer和Pubmed(Sen et al., 2008)——并按Yang et al., 2016做的transductive实验。这些数据集中，顶点表示文章，边（无向）表示引用。顶点特征表示文章的BOW特征。每个顶点有一个类标签。我们使用每类20个顶点用来训练，训练算法使用所有的顶点特征。模型的预测性能是在1000个测试顶点上进行评估的，我们使用了500个额外的顶点来验证意图（像Kipf & Welling 2017）。Cora数据集包含了2708个顶点，5429条边，7个类别，每个顶点1433个特征。Citeseer包含3327个顶点，4732条边，6类，每个顶点3703个特征。Pubmed数据集包含19717个顶点，44338条边，3类，每个顶点500个特征。
@@ -130,14 +130,14 @@ multi-head 图注意力层的聚合过程如图1右侧所示。
 代码：https://github.com/PetarV-/GAT
 
 ## 3.4 Results
-![Table2](/images/graph-attention-networks/Table2.JPG)
+![Table2](/blog/images/graph-attention-networks/Table2.JPG)
 对于transductive任务，我们提交了我们的方法100次的平均分类精度（还有标准差），也用了Kipf & Welling., 2017和Monti et al., 2016的metrics。特别地，对于基于切比雪夫方法(Defferrard et al., 2016)，我们提供了二阶和三阶最好的结果。为了公平的评估注意力机制的性能，我们还评估了一个计算出64个隐含特征的GCN模型，并且尝试了ReLU和ELU激活，记录了100轮后更好的那个结果（GCN-64*）（结果显示ReLU更好）。
-![Table3](/images/graph-attention-networks/Table3.JPG)
+![Table3](/blog/images/graph-attention-networks/Table3.JPG)
 对于inductive任务，我们计算了micro-averaged F1 score在两个从未见过的测试图上，平均了10次结果，也使用了Hamilton et al., 2017的metrics。特别地，因为我们的方法是监督的，我们对比了GraphSAGE。为了评估聚合所有的邻居的优点，我们还提供了我们通过修改架构（三层GraphSAGE-LSTM分别计算[512, 512, 726]个特征，128个特征用来聚合邻居）所能达到的GraphSAGE最好的结果（GraphSAGE*）。最后，为了公平的评估注意力机制对比GCN这样的聚合方法，我们记录了我们的constant attention GAT模型的10轮结果（Const-GAT）。
 结果展示出我们的方法在四个数据集上都很好，和预期一致，如2.2节讨论的那样。具体来说，在Cora和Citeseer上我们的模型上升了1.5%和1.6%，推测应该是给邻居分配不同的权重起到了效果。值得注意的是在PPI数据集上：我们的GAT模型对于最好的GraphSAGE结果提升了20.5%，这意味着我们的模型可以应用到inductive上，通过观测所有的邻居，模型会有更强的预测能力。此外，针对Const-GAT也提升3.9%，再一次展现出给不同的邻居分配不同的权重的巨大提升。
 
 学习到的特征表示的有效性可以定性分析——我们提供了t-SNE(Maaten & Hinton, 2008)的可视化——我们对在Cora上面预训练的GAT模型中第一层的输出做了变换（图2）。representation在二维空间中展示出了可辩别的簇。注意，这些簇对应了数据集的七个类别，验证了模型在Cora上对七类的判别能力。此外，我们可视化了归一化的attention系数（对所有的8个attention head取平均）的相对强度。像Bahdanau et al., 2015那样适当的解释这些系数需要更多的领域知识，我们会在未来的工作中研究。
-![Figure2](/images/graph-attention-networks/Fig2.JPG)
+![Figure2](/blog/images/graph-attention-networks/Fig2.JPG)
 
 # 4 Conclusions
 我们展示了图注意力网络(GAT)，新的卷积风格神经网络，利用masked self-attentional层。图注意力网络计算高效（不需要耗时的矩阵操作，在图中的顶点上并行计算），处理不同数量的邻居时对邻居中的不同顶点赋予不同的重要度，不需要依赖整个图的结构信息——因此解决了之前提出的基于谱的方法的问题。我们的这个利用attention的模型在4个数据集针对transductive和inductive（特别是对完全未见过的图），对顶点分类成功地达到了state-of-the-art的performance。

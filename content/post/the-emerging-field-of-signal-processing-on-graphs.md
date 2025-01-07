@@ -20,7 +20,7 @@ IEEE Signal Processing Magazine 2013, 原文链接：[The Emerging Field of Sign
 # 1. Introduction
 图是很多数据的表示形式，在描述很多应用的几何结构时很有用，如社交、能源、运输、传感器、神经网络等。图中每条边的权重，经常表示为两个顶点之间的相似度。连接性和边权重要么由问题的物理性质指明，要么从数据中推断出来。举个例子，边权重可能与网络中两个顶点之间的距离成反比。这些图的数据可以看作是一个样本的有限集合，每个顶点一个样本。我们称这些样本为一个图信号。一个图信号的例子如图1所示。
 
-![Figure1](/images/the-emerging-field-of-signal-processing-on-graphs/Fig1.JPG)
+![Figure1](/blog/images/the-emerging-field-of-signal-processing-on-graphs/Fig1.JPG)
 
 在运输网络中，我们关心分析描述疾病传播的传染病数据，描述用户迁移的人口数据，或是描述货物仓库的后勤数据。现在，在大脑图像中，推断大脑皮层上独特的功能区结构上的连接性变为可能，这种连接可以表示为一个带权图，顶点代表了功能区。因此，noisy fMRI图像可以看作是带权图上的信号。带权图一般用来表示统计学习问题中数据点之间的相似性，如计算机视觉和文本分类问题。事实上，很多研究图数据分析的论文是从统计学习社区中发表出来的，因为基于图的方法在半监督学习问题中变得非常流行，这些问题的目标是用一些标记样本对未知的样本进行分类。在图像处理，对图像的像素构造非局部和半局部连接的图的这种，基于图的filtering methods突然流行了起来，这些方法不仅基于像素间的物理相似性，还有要处理的图像的nosiy versions。这些方法经常能更好地识别并考虑图像的边和材质。
 
@@ -93,14 +93,14 @@ Z\_\mathcal{G}(\mathbf{f}) := \lbrace e = (i, j) \in \Large\varepsilon \normalsi
 $$
 也就是，连接一个正信号和一个负信号的边的集合。
 
-![Figure2](/images/the-emerging-field-of-signal-processing-on-graphs/Fig2.JPG)
+![Figure2](/blog/images/the-emerging-field-of-signal-processing-on-graphs/Fig2.JPG)
 
-![Figure3](/images/the-emerging-field-of-signal-processing-on-graphs/Fig3.JPG)
+![Figure3](/blog/images/the-emerging-field-of-signal-processing-on-graphs/Fig3.JPG)
 
 *D. Graph Signal Representations in Two Domains*  
 图傅里叶变换(3)和它的逆(4)给了我们一种方式在两个不同的域中等价的表示一个信号：顶点域和图谱域。尽管我们经常从顶点域的一个信号$\bf{g}$开始，直接在图谱域中定义一个信号$\hat{\bf{g}}$可能仍然是有用的。我们称这样的信号为*核(kernels)*。图4a和图4b中，一个这样的核，一个heat kernel，分别展示了在两个域中的效果。类比传统的模拟情况，图4中展示的一个平缓的信号图傅里叶系数衰减的很快。这样的信号是*可压缩的(compressible)*，因为可以通过调整一些图傅里叶系数来趋近他们。
 
-![Figure4](/images/the-emerging-field-of-signal-processing-on-graphs/Fig4.JPG)
+![Figure4](/blog/images/the-emerging-field-of-signal-processing-on-graphs/Fig4.JPG)
 
 *E. Discrete Calculus and Signal Smoothness with Respect to the Intrinsic Structure of the Graph*  
 分析信号时，需要强调一点是，属性（如smoothness）与数据域的内在结构相对应，在我们讨论的环境中，就是带权图。尽管微分几何提供了方法将潜在流形的几何结构整合进可微分流形上连续信号的分析中，*离散微积分(discrete calculus)*提供了一组可以在有限离散空间中操作的多变量微积分的定义与可微分操作器。
@@ -154,7 +154,7 @@ $$
 
 总结一下，图的连通性编码进了拉普拉斯矩阵，拉普拉斯矩阵通常用于定义图傅里叶变换（通过特征向量），平滑性的不同表示。Example 1展示了smoothness和一个图信号的谱内容是如何依赖于图的。
 
-!["Example 1"](/images/the-emerging-field-of-signal-processing-on-graphs/Example1.JPG)
+!["Example 1"](/blog/images/the-emerging-field-of-signal-processing-on-graphs/Example1.JPG)
 
 *F. Other Graph Matrices*
 图拉普拉斯矩阵的基$\lbrace  \mathbf{u}\_l \rbrace\_{l = 0, 1, ..., N - 1}$只是在正向(3)和逆向(4)图傅里叶变换中使用的一组可能的基。第二个常用的normalize每个权重$W\_{i,j}$的方法是乘以$\frac{1}{\sqrt{d\_i d\_j}}$。这样可以对图的拉普拉斯矩阵归一化，定义为$\bf\tilde{L} := D^{-\frac{1}{2}} L D^{-\frac{1}{2}}$，等价于：
@@ -217,7 +217,7 @@ $$\tag{15}
 $$
 其中，$S\_p(\mathbf{f})$是式5的p-Dirichlet form。在Example 2中，我们举了个式15的$p = 2$时处理图像去噪的问题的例子。
 
-![Example2](/images/the-emerging-field-of-signal-processing-on-graphs/Example2.JPG)
+![Example2](/blog/images/the-emerging-field-of-signal-processing-on-graphs/Example2.JPG)
 
 ## 2. Filtering in the Vertex Domain:
 在顶点域中filter一个信号，只要简单的将顶点$i$的输出$f\_{out}(i)$写成一个顶点$i$的$K-hop$局部邻居上输入信号各分量的线性组合：

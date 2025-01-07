@@ -28,7 +28,7 @@ AAAI 2018，以人体关节为图的顶点，构建空间上的图，然后通�
 
 为了跨越这些限制，我们需要一个新的方法能自动捕获关节的空间配置与时间动态性中嵌入的模式。这就是深度神经网络的优势了。由于骨骼是图结构，不是2D或3D网格，因此传统的CNN不行，最近GCN已经成功的应用在了一些应用上，如图像分类(Bruna et al., 2014)，文档分类(Defferrard, Bresson, and Vandergheynst 2016)，还有半监督学习(Kipf and Welling 2017)。然而，这些工作都假设一个固定的图作为输入。GCN的应用在大尺度的数据集上对动态图建模，如人体骨骼序列还没有被挖掘过。
 
-![Fig1]](/images/spatial-temporal-graph-convolutional-networks-for-skeleton-based-action-recognition/Fig1.JPG)
+![Fig1]](/blog/images/spatial-temporal-graph-convolutional-networks-for-skeleton-based-action-recognition/Fig1.JPG)
 我们将图网络扩展到一个时空图模型来对骨骼序列进行表示后识别动作。图1所示，这个模型基于一个骨骼图序列，每个顶点表示人体的一个关节。有两种类型的边，空间边，连接关节，时间边连接连续时间的同一关节。构建在上面的时空卷积可以同时集成时间和空间上的信息。
 
 ST-GCN的层次本质消除了手工和遍历部分。不仅有更强的表达能力和更好的表现，也更简单的泛化到其他环境中。在基础的GCN公式基础上，受到图像模型的启发，我们还提出了设计图卷积核新的策略。
@@ -58,7 +58,7 @@ ST-GCN的层次本质消除了手工和遍历部分。不仅有更强的表达�
 顶点集$V = \lbrace v\_{ti} \mid t = 1, ..., T, i = 1, ..., N \rbrace$包含了骨骼序列中所有的关节。ST-GCN的输入，每个顶点的特征向量$F(v\_{ti})$由第$t$帧的第$i$个关节的坐标向量组成，还有estimation confidence。构建时空图分为两步，第一步，一帧内的关节通过人体结构连接，如图1所示。然后每个关节在连续的帧之间连接起来。这里不需要人工干预。举个例子，Kinetics数据集，我们使用OpenPose toolbox(Cao et al., 2017b)2D动作估计生成了18个关节，而NTU-RGB+D(Shahroudy et al., 2016)数据集上使用3D关节追踪产生了25个关节。ST-GCN可以在这两种情况下工作，并且提供一致的优越性能。图1就是时空图的例子。
 严格来说，边集$E$由两个子集组成，第一个子集描述了每帧骨骼内的连接，表示为$E\_S = \lbrace v\_{ti}v\_{tj} \mid (i, j) \in H \rbrace$，$H$是自然连接的关节的结合。第二个子集是连续帧的相同关节$E\_F = \lbrace  v\_{ti} v\_{(t+1)i} \rbrace$，因此$E\_F$中所有的边对于关节$i$来说表示的是它随时间变化的轨迹。
 
-![Fig2](/images/spatial-temporal-graph-convolutional-networks-for-skeleton-based-action-recognition/Fig2.JPG)
+![Fig2](/blog/images/spatial-temporal-graph-convolutional-networks-for-skeleton-based-action-recognition/Fig2.JPG)
 
 ## 3.3 空间图卷积神经网络
 时间$\tau$上，$N$个关节顶点$V\_t$，骨骼边集$E\_S(\tau) = \lbrace v\_{ti} v\_{tj} \mid t = \tau, (i, j) \in H \rbrace$。图像上的2D卷积的输入和输出都上2D网格，stride设为1时，加上适当的padding，输出的size就可以不变。给定一个$K \times K$的卷积操作，输入特征$f\_{in}$的channels数是$c$。在空间位置$\mathbf{x}$的单个通道的输出值可以写成：
@@ -122,7 +122,7 @@ l\_{ti}(v\_tj) = \begin{cases}
 $$
 其中，$r\_i$是训练集中所有帧的重心到关节$i$的平均距离。
 分区策略如图3所示。我们通过实验检验提出的分区策略在骨骼动作识别上的表现。分区策略越高级，效果应该是越好的。
-![Fig3](/images/spatial-temporal-graph-convolutional-networks-for-skeleton-based-action-recognition/Fig3.JPG)
+![Fig3](/blog/images/spatial-temporal-graph-convolutional-networks-for-skeleton-based-action-recognition/Fig3.JPG)
 
 ## 3.5 Learnable edge importance weighting
 尽管人在做动作时关节是以组的形式移动的，但一个关节可以出现在身体的多个部分。然而，这些表现在建模时应该有不同的重要性。我们在每个时空图卷积层上添加了一个可学习的mask$M$。这个mask会基于$E\_S$中每个空间图边上可学习的重要性权重来调整一个顶点的特征对它的邻居顶点的贡献。通过实验我们发现增加这个mask可以提升ST-GCN的性能。使用注意力映射应该也是可行的，这个留到以后再做。

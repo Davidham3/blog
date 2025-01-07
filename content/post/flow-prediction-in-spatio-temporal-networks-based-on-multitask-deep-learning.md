@@ -26,7 +26,7 @@ TKDE 2019，网格流量预测，用一个模型同时预测每个网格的流�
 
 时空网络（ST-networks），如运输网络和传感器网络，在世界上到处都是，每个点有个空间坐标，每个边具有动态属性。时空网络中的流量有两种表示，如图 1，顶点流量（一个结点的流入和流出流量）和边流量（结点间的转移流量）。在运输系统中，这两类流量可通过4种方式测量，1. 近邻道路的车辆数，2. 公交车的旅客数，3. 行人数，4. 以上三点。图1b 是一个示意图。取顶点 $r\_1$ 为例，我们可以根据手机信令和车辆 GPS 轨迹分别计算得到流入流量是 3，流出流量是 3。$r\_3$ 到 $r\_1$ 的转移是 3，$r\_1$ 到 $r\_2$ 和 $r\_4$ 的转移是 2 和 1。因此，如图1c所示，我们能拿到两种类型的流量，四个结点的流入和流出分别是 $(3,3,0,5)$ 和 $(3,2,5,1)$。所有的边转移都看作是在有向图上发生的。
 
-![Figure1](/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Fig1.JPG)
+![Figure1](/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Fig1.JPG)
 
 预测这类的流量对公共安全，交通管理，网络优化很重要。取人口流动做一个例子，2015 年跨年夜的上海，踩踏事故导致 36 人死亡。如果能预测每个区域之间的人流转移，这样的悲剧就可以通过应急预案避免或减轻。
 
@@ -43,13 +43,13 @@ TKDE 2019，网格流量预测，用一个模型同时预测每个网格的流�
 
 表 1 列出了这篇文章中出现的数学符号。
 
-![Table1](/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Table1.JPG)
+![Table1](/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Table1.JPG)
 
 # 2 Problem Formulation
 
 ***Definition 1(Node).*** 一个空间地图基于经纬度被分成 $I \times J$ 个网格，表示为 $V = \lbrace r\_1, r\_2, ..., r\_{I\times J} \rbrace$，每个元素表示一个空间节点，如图2(a)。
 
-![Figure2](/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Fig2.JPG)
+![Figure2](/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Fig2.JPG)
 
 令 $(\tau, x, y)$ 为时空坐标，$\tau$ 表示时间戳，$(x, y)$ 表示空间点。一个物体的移动可以记为一个按时间顺序的空间轨迹，起点和终点表示为 $s = (\tau\_s, x\_s, y\_s)$ 和 $e = (\tau\_e, x\_e, y\_e)$，表示出发地和目的地。$\mathbb{P}$ 表示所有的起止对。
 
@@ -81,7 +81,7 @@ $$
 
 我们将每个时间上的图转为张量。给定时间 $t$ 有向图 $G\_t = (V, E\_t)$，我们先做展开，然后计算有向带权矩阵（转移矩阵 $\mathbf{S}\_t$），最后给定一个张量 $\mathcal{M}\_t \in \mathbf{R}^{2N \times I \times J}$。图 3 是示意图。(a)给定时间 $t$ 4 个顶点 6 条边的图。(b)首先展开成有向图。(c)对每个顶点，有一个流入的转移，还有个流出的转移，由一个向量表示（维度是8）。取 $r\_1$ 为例，它的流出和流入转移向量分别为 $[0, 2, 0, 1]$ 和 $[0, 0, 3, 0]$，拼接后得到一个向量 $[0, 2, 0, 1, 0, 0, 3, 0]$，包含流出和流入的信息。(d)最后，我们将矩阵 reshape 成一个张量，每个顶点根据原来地图有一个固定的空间位置，保护了空间相关性。
 
-![Figure3](/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Fig3.JPG)
+![Figure3](/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Fig3.JPG)
 
 ## 2.2 FLow Prediction Problem
 
@@ -93,7 +93,7 @@ $$
 
 图 4 展示了我们的 MDL 框架，包含 3 个组成部分，分别用于数据转换，顶点流量建模，边流量建模。我们首先将轨迹（或订单）数据转换成两类流量，i) 顶点流量表示成有时间顺序的张量序列 $\lbrace\mathcal{X}\_t \mid t = t\_1, \dots, t\_T \rbrace$ (1a); ii) 边流量是一个有时间顺序的图序列（转移矩阵）$\lbrace\mathbf{S}\_t \mid t = t\_1, \dots, t\_T \rbrace$ (2a)，之后再根据 2.1 节的方法转换为张量的序列 $\lbrace\mathcal{M}\_t \mid t = t\_1, \dots, t\_T \rbrace$ (2b)。这两类像视频一样的数据之后放到 NODENET 和 EDGENET 中。以 NODENET 为例，它选了三个不同类型的片段，放入 3S-FCN 中，对时间相关性建模。在这个模型中，每部分的 FCN 可以通过多重卷积捕获空间相关性。NODENET 和 EDGENET 中间的隐藏表示通过一个 BRIDGE 组件连接，使两个模型可以共同训练。我们使用一个嵌入层来处理转移稀疏的问题。一个门控融合组件用来整合外部信息。顶点流量和边流量用一个正则化来建模。
 
-![Figure4](/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Fig4.JPG)
+![Figure4](/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Fig4.JPG)
 
 ## 3.1 EDGENET
 
@@ -126,7 +126,7 @@ $$
 
 其中 $\odot$ 是哈达玛积，$\mathbf{W}$ 是参数，调整三种时间依赖关系的影响。
 
-![Figure5](/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Fig5.JPG)
+![Figure5](/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Fig5.JPG)
 
 ## 3.2 NODENET and BRIDGE
 
@@ -156,7 +156,7 @@ $C\_x$ 和 $C\_m$ 分别是两个隐藏表示的通道数。$\mathcal{H} \in \ma
 
 在拼接融合中，我们在 NODENET 和 EDGENET 中分别加了一层卷积。卷积用来将合并的隐藏特征 $\mathcal{H}$ 映射到 不同通道大小的输出上，即 $\mathcal{X}\_{res} \in \mathbb{R}^{2 \times I \times J}$ 和 $\mathcal{M}\_{res} \in \mathbb{R}^{2N \times I \times J}$，如图 6。
 
-![Figure6](/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Fig6.JPG)
+![Figure6](/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Fig6.JPG)
 
 ## 3.3 Fusing External Factors Using a Gating Mechanism
 
@@ -206,7 +206,7 @@ $$
 
 或者等价的可以写成
 
-![EQ15](/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/EQ1.JPG)
+![EQ15](/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/EQ1.JPG)
 
 最后，我们获得融合的损失：
 
@@ -218,7 +218,7 @@ $$
 
 ### 3.4.1 Optimization Algorithm
 
-![Alg1](/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Alg1.JPG)
+![Alg1](/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Alg1.JPG)
 
 算法 1 是 MDL 的训练过程。1-4 行是构建训练样例。7-8 行是用批量样本优化目标函数。
 
@@ -226,7 +226,7 @@ $$
 
 两个数据集 **TaxiBJ** 和 **TaxiNYC**，看表 2。我们使用 RMSE 和 MAE 作为评价指标。
 
-![Table2](/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Table2.JPG)
+![Table2](/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Table2.JPG)
 
 ## 4.1 Settings
 
@@ -237,7 +237,7 @@ $$
 - **TaxiBJ**: 北京出租车 GPS 轨迹数据有四个时段：20130101-20131030, 20140301-20140630, 20150501-20150630, 201501101-20160410。我们用最后 4 个星期作为测试集，之前的数据作为训练集。
 - **TaxiNYC**: NYC 2011 到 2014 年的出租车订单数据。订单数据包含上车和下车的时间。上车和下车地点。最后四个星期作为测试集。
 
-![Table3](/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Table3.JPG)
+![Table3](/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Table3.JPG)
 
 ### 4.1.2 Baselines
 
@@ -257,15 +257,15 @@ RMSE 和 MAE。
 
 ## 4.2 Results
 
-![Table4](/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Table4.JPG)
+![Table4](/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Table4.JPG)
 
 **Node Flow Prediction.** 我们先比流入和流出流量的预测。表 4 展示了两个数据集上的评价指标结果。MDL 和 MRF 比其他所有的方法多要好。我们的 MDL 在 NYC 的数据集上明显比 MRF 好。BJ 的数据集上，MDL 比 MRF 差不多。原因是 NYC 数据集比 BJ 数据集大了三倍。换句话说，在大的数据集上，我们的方法比 MRF 更好。我们也注意到训练 MRF 很好使，在 BJ 数据集上训练了一个星期。
 
-![Table5](/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Table5.JPG)
+![Table5](/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Table5.JPG)
 
 **Results of Edge Flow Prediction.** 表6 展示了边流量预测。边流量预测的实验很费时。MDL 比其他的都好。
 
-![Table6](/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Table6.JPG)
+![Table6](/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Table6.JPG)
 
 ## 4.3 Evaluation on Fusing Mechanisms
 
@@ -277,13 +277,13 @@ RMSE 和 MAE。
 
 我们选了 NYC 3 个月，6 个月，1 年，3 年数据。$l\_c = 3$, $l\_p = 1$, $l\_q = 1$。图 8 是结果。我们观察到数据越多，效果越好。
 
-![Figure8](/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Fig8.JPG)
+![Figure8](/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Fig8.JPG)
 
 ### 4.4.2 Effect of Network Depth
 
 图 9 展示了网络深度在 NYC 3 个月数据集上的影响。网络越深，RMSE 会下降，因为网络越深越能捕获更大范围的空间依赖。然而，网络更深 RMSE 就会上升，这是因为网络加深后训练会变得困难。
 
-![Figure9](/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Fig9.JPG)
+![Figure9](/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Fig9.JPG)
 
 ### 4.4.3 Effect of multi-task component
 
@@ -291,12 +291,12 @@ RMSE 和 MAE。
 
 我们可以看到转移流量预测任务大多数情况下可以提升，$\lambda\_{node} = \lambda\_{edge} = 1$，$\lambda\_{mdl}=0.1$，我们的模型获得最好的效果，两种任务都获得更好的结果，证明了多任务可以互相提升。
 
-![Table8](/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Table8.JPG)
+![Table8](/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Table8.JPG)
 
-![Figure10](/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Fig10.JPG)
+![Figure10](/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Fig10.JPG)
 
 ## 4.5 Flow Predictions
 
 图 11 描绘了我们的 MDL 在 NYC 上预测两个节点未来一小时的数据。结点 (10, 1)，总是比 (8, 3) 高。我们的模型在预测曲线上更精确。
 
-![Figure11](/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Fig11.JPG)
+![Figure11](/blog/images/flow-prediction-in-spatio-temporal-networks-based-on-multitask-deep-learning/Fig11.JPG)

@@ -37,7 +37,7 @@ $$
 
 对于降雨量预测，每个时间戳的观测值是一个2D雷达地图。如果我们将地图分到平铺且不重合的部分，将每个部分内的像素看作是它的观测值（图1），预测问题就会自然地变成一个时空序列预测问题。
 
-![Figure1](/images/convolutional-lstm-network-a-machine-learning-approach-for-precipitation-nowcasting/Fig1.JPG)
+![Figure1](/blog/images/convolutional-lstm-network-a-machine-learning-approach-for-precipitation-nowcasting/Fig1.JPG)
 
 我们注意到我们的时空序列预测问题与一步时间序列预测问题不同，因为我们问题的预测目标是一个包含时间和空间结构的序列。尽管长度为$K$的序列中的自由变量的数量可以达到$O(M^KN^KP^K)$，实际上我们可以挖掘可能的预测值的空间结构，减小维度，使问题变得容易处理。
 
@@ -75,7 +75,7 @@ o\_t &= \sigma( W\_{xo} \ast \mathcal{X}\_t + W\_{ho} \ast \mathcal{H}\_{t-1} + 
 \end{aligned}
 $$
 
-![Figure2](/images/convolutional-lstm-network-a-machine-learning-approach-for-precipitation-nowcasting/Fig2.JPG)
+![Figure2](/blog/images/convolutional-lstm-network-a-machine-learning-approach-for-precipitation-nowcasting/Fig2.JPG)
 
 如果我们将状态看作是移动物体的隐藏表示，带有一个更大的变换卷积核的 ConvLSTM 应该能捕获更快的移动，而小的核能捕获慢的移动。同时，如果我们用[16]的角度来看，由式2表示的传统的 FC-LSTM 的输入、细胞输出以及隐藏状态可以看作是一个后两维都是1的三维张量。这样的话，FC-LSTM实际上是所有特征都站立在一个单独细胞上 ConvLSTM 的一个特例。
 
@@ -85,7 +85,7 @@ $$
 
 就像 FC-LSTM，ConvLSTM 可以使用块对复杂的结构建模。对于我们的时空序列预测问题，我们使用图3这样的结构，由两个网络组成，一个编码网络，一个预测网络。就像[21]，预测网络的初始状态和细胞输出从编码网络的最后一个状态复制过来。两个网络都通过堆叠多个 ConvLSTM 层构成。因为我们的预测目标与输入的维度相同，我们将预测网络所有的状态拼接，放到一个 $1 \times 1$ 的卷积层中，生成最后的预测结果。
 
-![Figure3](/images/convolutional-lstm-network-a-machine-learning-approach-for-precipitation-nowcasting/Fig3.JPG)
+![Figure3](/blog/images/convolutional-lstm-network-a-machine-learning-approach-for-precipitation-nowcasting/Fig3.JPG)
 
 我们使用像[23]一样的观点解释这个结构。编码 LSTM 将整个输入序列压缩到一个隐藏状态的张量中，预测 LSTM 解压了这个状态，给出了最后的预测：
 

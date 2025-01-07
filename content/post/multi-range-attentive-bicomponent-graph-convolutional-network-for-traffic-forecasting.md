@@ -23,7 +23,7 @@ AAAI 2020，原文链接：[https://arxiv.org/abs/1911.12093](https://arxiv.org/
 
 # Introduction
 
-![Figure1](/images/multi-range-attentive-bicomponent-graph-convolutional-network-for-traffic-forecasting/Fig1.png)
+![Figure1](/blog/images/multi-range-attentive-bicomponent-graph-convolutional-network-for-traffic-forecasting/Fig1.png)
 
 讲了好多历史。。。然后是论点部分：
 
@@ -59,13 +59,13 @@ $\bm{X}^{(t-T'+1):t} \in \mathbb{R}^{N \times P \times T'}$，$\bm{X}^{(t+1):(t+
 
 ## Model Overview
 
-![Figure2](/images/multi-range-attentive-bicomponent-graph-convolutional-network-for-traffic-forecasting/Fig2.png)
+![Figure2](/blog/images/multi-range-attentive-bicomponent-graph-convolutional-network-for-traffic-forecasting/Fig2.png)
 
 图 2 展示了 MRA-BGCN 的架构，包含两个部分：（1）双组件图卷积模块；（2）多范围注意力层。双组件图卷积模块包含多个结点图卷积层和边图卷积层，直接对结点和边的交互建模。多范围注意力层聚合不同范围的邻居信息，学习不同范围的重要性。此外，我们融合 MRA-BGCN 和 RNN 对时间依赖建模完成交通预测。
 
 ## Bicomponent Graph Convolution
 
-![Figure3](/images/multi-range-attentive-bicomponent-graph-convolutional-network-for-traffic-forecasting/Fig3.png)
+![Figure3](/blog/images/multi-range-attentive-bicomponent-graph-convolutional-network-for-traffic-forecasting/Fig3.png)
 
 图卷积可以有效聚合结点之间的交互关系，然而，交通预测中边更复杂（这句话说三遍了）。因此我们提出双组件图卷积，直接对结点和边的交互建模。
 

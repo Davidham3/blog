@@ -78,7 +78,7 @@ $$
 
 公式5，6，7有不同的表达形式，而且是对过去事件不同类型的依赖结构。受到这一点的启发，我们希望能学习到一个趋近于历史未知依赖结构的通用表示。
 
-![Figure2](/images/recurrent-marked-temporal-point-processes-embedding-event-history-to-vector/Fig2.jpg)
+![Figure2](/blog/images/recurrent-marked-temporal-point-processes-embedding-event-history-to-vector/Fig2.jpg)
 
 我们的想法是用RNN来实现这一步。如图2所示，RNN在时间步$t\_j$的输入是$(t\_j, y\_j)$。$y\_i$是事件的类型。$h\_{j-1}$表示从过去事件和事件得到的影响的memory，在更新的时候会考虑当前的事件和时间。因为$h\_j$表示过去一直到第$j$个事件的影响，那么下一个事件时间的条件强度函数就可以表示为：
 
@@ -92,7 +92,7 @@ $d\_{j+1} = t\_{j+1} - t\_j$。因此，我们可以用$h\_j$去预测时间$\ha
 
 **Input Layer**，先用一个input layer对one-hot的事件表示进行投影。$y\_j = W^T\_{em} y\_j + b\_{em}$。然后事件步$t\_j$也投影成一个向量$t\_j$。
 
-![Figure3](/images/recurrent-marked-temporal-point-processes-embedding-event-history-to-vector/Fig3.jpg)
+![Figure3](/blog/images/recurrent-marked-temporal-point-processes-embedding-event-history-to-vector/Fig3.jpg)
 
 **Hidden Layer**
 

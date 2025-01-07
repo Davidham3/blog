@@ -24,11 +24,11 @@ KDD 2018.强化学习处理共享单车调度问题。
 
 ***A bike-sharing system is complex and dynamic.*** 系统中经常有几十辆三轮车在几百个站点间调度车辆。在这么一个大的系统内协同调度很复杂，更不用说系统是在运行中保持动态的情况了。难以预测系统的动态性有三点原因：1) 图1. A 展示出了一个月每个小时的租车需求。可以看到，每天的租用模式变化得很剧烈，受多个复杂的因素影响，比如天气、事件以及站点间的相关性。2) 很多移动看起来是随机的。图1. B的第一张图表示出了历史通勤，也就是2016年4月到10月每个工作日的早上这段期间，平均至少发生一次的移动，只占了18%。我们用图1. C的例子解释了这种现象：从A到B，站点间的移动有12种可能，用户一般会根据哪个站点有可用的车辆或车位，选择随机的一条路线，使12条路线中的一条变成可能的频繁移动路线。3) 影响车辆使用的外部因素非常不平衡，比如，晴天时长要比雨天时长多很多。因此，在每个条件下训练一个学习器不能保证在次要条件下的准确性。
 
-![Figure1](/images/dynamic-bike-reposition-a-spatio-temporal-reinforcement-learning-approach/Fig1.JPG)
+![Figure1](/blog/images/dynamic-bike-reposition-a-spatio-temporal-reinforcement-learning-approach/Fig1.JPG)
 
 ***A single bike reposition has long-term effect.*** 一个简单的调度是好是坏不是那么简单就能判断的。我们将用图2的两个例子详细描述一下，红圈表示没有可用车位的站点，绿圈表示一个空的站点；带有一个数字和一个时间标记的实线箭头表示在那个时段会有多少辆车从起点租用并返还到目的地；虚线箭头表示了一个三轮车的调度是如何进行的；$t\_0 < t\_1 < t\_2$。首先，一个简单的调度会影响系统内的车辆使用很长的一段时间。如图2. A) 所示，如果一个三轮车到了空站点 $s\_1$，在 $t\_0$ 时段放了5辆车，在 $s\_1$ 的可用车辆就变成了$5$，在 $t\_1$ 时段 $s\_1$ 可以服务 $5$ 位即将到来的租车者；这5个租车者骑车到 $s\_2$ 在 $t\_1 < t\_2$ 还车，4位到来的租车者在 $t\_2$ 时段 $s\_2$ 车站想租车的也可以使用那些还回来的车。因此，一个调度可以服务的额外用户的数量很难估计。其次，当前的调度会影响以下情况。如图2. B) 所示，如果一个三轮车到站点 $s\_1$ 在 $t\_0$ 时段带走了 9 辆自行车，那里的可用车位就变成了 9，因此9个用户就可以在 $t\_1$ 时段把他们的自行车还到 $s\_1$。然而，因为 $s\_1$ 离 $s\_3$ 太远，在完成picking up之后，这辆三轮车不能在 $t\_2$ 时段之前将5辆自行车运送到空站点 $s\_3$，来服务5位即将到来的租客。
 
-![Figure2](/images/dynamic-bike-reposition-a-spatio-temporal-reinforcement-learning-approach/Fig2.JPG)
+![Figure2](/blog/images/dynamic-bike-reposition-a-spatio-temporal-reinforcement-learning-approach/Fig2.JPG)
 
 ***Uncertainties in partical reposition.*** 在实际的调度过程中有很多不确定因素。尽管我们可以预测系统的动态，我们不能保证预测与实际完全一样，因为模型会有错误以及随机噪声。此外，完成一次调度的时间也是不同的，比如，从 $s\_1$ 运送车辆到 $s\_2$ 今天可能需要10分钟，明天可能就要15分钟，尽管方法可能一样。这可能是由于变化的外部因素导致，比如，恶劣的天气状况以及交通的拥挤程度，或是随机噪声。因为动态调度是在系统运行的时候工作的，时间很重要，这也可以从上面两个例子看出来。这些不确定因素，还有长期影响，使得优化模型非常复杂，甚至是无法工作。
 
@@ -42,7 +42,7 @@ KDD 2018.强化学习处理共享单车调度问题。
 
 这部分定义了符号以及相关术语
 
-![Table1](/images/dynamic-bike-reposition-a-spatio-temporal-reinforcement-learning-approach/Table1.JPG)
+![Table1](/blog/images/dynamic-bike-reposition-a-spatio-temporal-reinforcement-learning-approach/Table1.JPG)
 
 ## 2.1 Preliminary
 
@@ -62,7 +62,7 @@ KDD 2018.强化学习处理共享单车调度问题。
 
 ***STRL Model.*** 我们提出了一个STRL模型，对每个类簇学习一个最优的类内调度方案。我们这个基于强化学习的模型是多智能体形式。每次一个三轮车完成它最后的调度，它会不等待其他调度的完成，紧接着开始一个由方案生成的新的调度。新的调度基于当前状态生成，这个调度会很仔细地定义，来捕获系统动态性和实时的不确定性。一个状态包含多个因素，如，每个区域当前自行车和车库的可用性；实时预测的租车和还车需求；三轮车的状态，包含它自身的以及其他的；当前的时间，等等。我们设计了一个深度神经网络为每个STRL估计最优的长期价值函数，通过这个我们能推导出最优的调度策略。网络在系统模拟器迭代地训练出来，在图3中用灰色高亮了出来。
 
-![Figure3](/images/dynamic-bike-reposition-a-spatio-temporal-reinforcement-learning-approach/Fig3.JPG)
+![Figure3](/blog/images/dynamic-bike-reposition-a-spatio-temporal-reinforcement-learning-approach/Fig3.JPG)
 
 ***Online Reposition.*** 在学习过程之后，我们在每个类簇上会获得一个神经网络。在在线过程中，当一个三轮车需要一个新的调度时，我们先确定它在哪个类簇中，通过O模型和I模型生成它的当前状态。然后，对应的网络给当前状态中每个可能的调度估计最优的长期价值。选择最大价值的调度并返回。
 

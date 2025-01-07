@@ -21,7 +21,7 @@ NIPS 2019, [Unsupervised Scalable Representation Learning for Multivariate Time 
 
 目标是无监督的情况下相似的时间序列具有相似的表示。
 
-![Figure1](/images/unsupervised-scalable-representation-learning-for-multivariate-time-series/Fig1.jpg)
+![Figure1](/blog/images/unsupervised-scalable-representation-learning-for-multivariate-time-series/Fig1.jpg)
 
 图1，给定时间序列$y\_i$，一个随机子序列$x^{\text{ref}}$。$x^{\text{ref}}$的表示要与$x^{\text{pos}}$相似，与另一个随机采样的子序列$x^{\text{neg}}$不相似。类比word2vec，$x^{\text{pos}}$是word，$x^{\text{ref}}$是context，$x^{\text{neg}}$是一个随机的词。
 
@@ -33,7 +33,7 @@ $$
 
 $f(\cdot, \theta)$是一个神经网络，参数是$\theta$，$\sigma$是sigmoid激活函数。$K$是负样本的个数
 
-![Algorithm_1](/images/unsupervised-scalable-representation-learning-for-multivariate-time-series/Alg1.jpg)
+![Algorithm_1](/blog/images/unsupervised-scalable-representation-learning-for-multivariate-time-series/Alg1.jpg)
 
 # 4 Encoder Architecture
 

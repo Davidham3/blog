@@ -28,7 +28,7 @@ Definition 1(Trajectory). 轨迹点$p\_{t\_i}$是一个三元组$(t\_i, x, y)$�
 
 Definition 2(Time-dependent Trajectory Outlier)。给一条轨迹$T$，起点$S\_T$，终点是$D\_T$，还有travel时间，一个time-dependent轨迹异常定义为：相同的$S\_T$和$D\_T$以及相同的出发、到达时间下的轨迹里面，一个很稀有的、不同于其他轨迹的轨迹。
 
-![Figure1](/images/deeptea-effective-and-efficient-online-time-dependent-trajectory-outlier-detection/Fig1.jpg)
+![Figure1](/blog/images/deeptea-effective-and-efficient-online-time-dependent-trajectory-outlier-detection/Fig1.jpg)
 
 举例，如果一个轨迹在2016年10月1日的上午10点出发，11点到达，那么一条稀有的轨迹且和相同时间相同OD的轨迹不同的轨迹就是这个Time-dependent Trajectory Outlier.
 
@@ -38,7 +38,7 @@ Problem 1(Online Time-dependent Trajectory Outlier Detection)。给定一条正�
 
 ## 3.1 Framework
 
-![Figure2](/images/deeptea-effective-and-efficient-online-time-dependent-trajectory-outlier-detection/Fig2.jpg)
+![Figure2](/blog/images/deeptea-effective-and-efficient-online-time-dependent-trajectory-outlier-detection/Fig2.jpg)
 
 给定轨迹$T$，在旅行过程中推算latent traffic pattern $q(z \mid T)$。轨迹观测值 $\tau$ 反映时间依赖的轨迹转移，可以在 inference network 里面用来建模latent time-dependent route $r$。之后，time-dependent route $r$用来生成轨迹观测值$\tau$。
 
@@ -196,7 +196,7 @@ $$
 
 整个训练过程的算法如算法1所示。在训练过程中，模型参数通过优化轨迹 $T$ 的 ELBO 来学习。然后这些学到的参数会用于 online anomaly detection，后面会介绍。
 
-![Algo1](/images/deeptea-effective-and-efficient-online-time-dependent-trajectory-outlier-detection/Algo1.jpg)
+![Algo1](/blog/images/deeptea-effective-and-efficient-online-time-dependent-trajectory-outlier-detection/Algo1.jpg)
 
 ## 3.6 Complexity Analysis
 
@@ -210,7 +210,7 @@ $$
 
 图3展示了在线异常轨迹检测的步骤。
 
-![Figure3](/images/deeptea-effective-and-efficient-online-time-dependent-trajectory-outlier-detection/Fig3.jpg)
+![Figure3](/blog/images/deeptea-effective-and-efficient-online-time-dependent-trajectory-outlier-detection/Fig3.jpg)
 
 我们通过学到的网络生成观测到的轨迹来检测异常。latent time-dependent route 的分布 $q\_\gamma (r \mid T)$ 可以通过参数 $\gamma$ 来计算。latent traffic pattern $z$ 可以通过参数 $\phi$ 和 $Z$ 获得。给定 $q\_\gamma (r \mid T)$ 里面第 $k$ 个均值 $u\_k$，我们用 RNN 生成轨迹观测值：
 
@@ -238,7 +238,7 @@ $$
 \tag{21} s\_a(\tau\_{i:i+1}) = 1 - \arg \max\_k \exp [\frac{\log p\_\theta (\tau\_{1:i} \mid u\_k) p\_\theta(\tau\_{i+1} \mid \tau\_{1:i}, u\_k)}{i + 1}]
 $$
 
-![Algo2](/images/deeptea-effective-and-efficient-online-time-dependent-trajectory-outlier-detection/Algo2.jpg)
+![Algo2](/blog/images/deeptea-effective-and-efficient-online-time-dependent-trajectory-outlier-detection/Algo2.jpg)
 
 算法2是在线检测的过程。输入是轨迹 $T$，参数是从算法1学到的。对于新来的轨迹观测值 $\tau\_{i+1}$，如果 latent traffic pattern $z$ 变了，那我们就更新 $z$。然后基于 $\tau\_{1:i}$ 计算 $\tau\_{1:i+1}$。最后返回异常分数。
 

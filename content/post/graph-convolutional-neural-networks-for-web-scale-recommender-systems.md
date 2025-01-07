@@ -40,7 +40,7 @@ KDD 2018。使用图卷积对顶点进行表示，学习顶点的 embedding ，�
 
 在这部分，我们将描述 PinSage 的结构和训练的技术细节，也会讲一下使用训练好的 PinSage 模型来高效地生成 embedding 的MapReduce pipeline。
 
-![Figure1](/images/graph-convolutional-neural-networks-for-web-scale-recommender-systems/Fig1.PNG)
+![Figure1](/blog/images/graph-convolutional-neural-networks-for-web-scale-recommender-systems/Fig1.PNG)
 
 我们方法的计算关键在于局部图卷积的表示(notion)。我们使用多个卷积模块来聚合一个顶点局部的邻域特征信息（图1），来生成这个顶点的 embedding（比如一个物品）。每个模块学习如何从一个小的图邻域中聚合信息，并且通过堆叠多个这样的模块，我们的方法可以获得局部网络的拓扑结构信息。更重要的是，这些局部卷积模块的参数对所有的顶点来说是共享的，这使得我们的方法的参数的计算复杂度与输入的图的大小无关。
 
@@ -60,7 +60,7 @@ Pinterest 是一个内容挖掘应用，在这里用户与 *pins* 进行交互�
 
 **Forward propagation algorithm.** 考虑对顶点 $u$ 生成 embedding $z\_u$ 的任务，需要依赖顶点的输入特征和这个顶点周围的图结构。
 
-!["Algorithm 1"](/images/graph-convolutional-neural-networks-for-web-scale-recommender-systems/algo1.PNG)
+!["Algorithm 1"](/blog/images/graph-convolutional-neural-networks-for-web-scale-recommender-systems/algo1.PNG)
 
 我们的 PinSage 算法是一个局部卷积操作，我们可以通过这个局部卷积操作学到如何从 $u$ 的邻居聚合信息（图1）。这个步骤在算法1 CONVOLVE 中有所描述。从本质上来说，我们通过一个全连接神经网络对 $\forall{v} \in \mathcal{N}(u)$，也就是 $u$ 的邻居的表示 $z\_v$ 进行了变换，之后在结果向量集合上用一个聚合/池化函数（例如：一个 element-wise mean 或是加权求和，表示为 $\gamma$）（Line 1）。这个聚合步骤生成了一个 $u$ 的邻居$\mathcal{N}(u)$ 的表示 $n\_u$。之后我们将这个聚集邻居向量 $n\_u$ 和 $u$ 的当前表示向量进行拼接后，输入到一个全连接神经网络做变换（Line 2）。通过实验我们发现使用拼接操作会获得比平均操作[21]好很多的结果。除此以外，第三行的 normalization 使训练更稳定，而且对近似最近邻搜索来说归一化的 embeddings 更高效（Section 3.5）。算法的输出是集成了 $u$ 自身和他的局部邻域信息的表示。
 
@@ -70,7 +70,7 @@ Pinterest 是一个内容挖掘应用，在这里用户与 *pins* 进行交互�
 
 **Stacking convolutions.** 每次使用算法1的 CONVOLVE 操作都会得到一个顶点的新的表示，我们可以在每个顶点上堆叠卷积来获得更多表示顶点 $u$ 的局部邻域结构的信息。特别地，我们使用多层卷积，其中对第 $k$ 层卷积的输入依赖于 $k-1$ 层的输出（图1），最初的表示（"layer 0"）等价于顶点的输入特征。需要注意的是，算法1中的模型参数（$Q$, $q$, $W$ 和 $w$）在顶点间是共享的，但层与层之间不共享。
 
-![](/images/graph-convolutional-neural-networks-for-web-scale-recommender-systems/algo2.PNG)
+![](/blog/images/graph-convolutional-neural-networks-for-web-scale-recommender-systems/algo2.PNG)
 
 算法2详细描述了如何堆叠卷积操作，针对一个 minibatch 的顶点 $\mathcal{M}$ 生成 embeddings。首先计算每个顶点的邻居，然后使用 $K$ 个卷积迭代来生成目标顶点的 K 层表示。最后一层卷积层的输出之后会输入到一个全连接神经网络来生成最后的 embedding $z\_u$，$\forall{u} \in \mathcal{M}$。
 
@@ -102,7 +102,7 @@ $$
 
 在最简单的情况中，我们从整个样本集中使用均匀分布的抽样方式。然而，确保正例($(q, i)$)的内积大于 $q$ 和 500 个负样本中每个样本的内积是非常简单的，而且这样做不能提供给系统足够学习的分辨率。我们的推荐算法应该能从 200 亿个商品中找到对于物品 $q$ 来说最相关的 1000 个物品。换句话说，我们的模型应该能从超过 2 千万的物品中区分/辨别出 1 件物品。但是通过随机采样的 500 件物品，模型的分辨率只是 $\frac{1}{500}$。因此，如果我们从 200 亿物品中随机抽取 500 个物品，这些物品中的任意一个于当前这件查询的物品相关的几率都很小。因此，模型通过训练不能获得好的参数，同时也不能对相关的物品进行区分的概率很大。为了解决上述问题，对于每个正训练样本（物品对$(q, i)$），我们加入了"hard"负例，也就是那些与查询物品 $q$ 有某种关联的物品，但是又不与物品 $i$ 有关联。我们称这些样本为"hard negative items"。通过在图中根据他们对查询物品 $q$ 的个性化 PageRank 分数来生成[14]。排名在 2000-5000 的物品会被随机采样为 hard negative items。如图2所示，hard negative examples 相比于随机采样的负样本更相似于查询物品，因此对模型来说挑战是排名，迫使模型学会在一个好的粒度上分辨物品。
 
-![](/images/graph-convolutional-neural-networks-for-web-scale-recommender-systems/Fig2.PNG)
+![](/blog/images/graph-convolutional-neural-networks-for-web-scale-recommender-systems/Fig2.PNG)
 
 使用 hard negative items 会让能使模型收敛的训练轮数翻倍。为了帮助模型收敛，我们使用了 curriculum training scheme[4]。在训练的第一轮，不适用 hard negative items，这样算法可以快速地找到 loss 相对较小的参数空间。之后我们在后续的训练中加入了 hard negative items，专注于让模型学习如何从弱关系中区分高度关联的pins。在第 $n$ 轮，我们对每个物品的负样本集中加入了 $n-1$ 个 hard negative items。
 

@@ -191,7 +191,7 @@ for epoch in range(epochs):
 ```
 在实现的时候，超分辨率后需要一个后处理——直方图匹配，这里参考的是[rio-hist](https://github.com/mapbox/rio-hist/blob/master/rio_hist/match.py)。
 实验数据最开始用的是Microsoft的coco2017，将每张图随机截取$144 \times 144$像素的大小，然后使用宽度为1的高斯核进行模糊处理后，downsampling了一下，得到了$72 \times 72$的图片，作为网络的输入。后来发现效果不是很好，就打算向waifu2x一样，只训练动漫图片，上konachan上爬了一万张图，做同样的处理。此时的loss降到了31.
-![Fig1](/images/perceptual-losses-for-real-time-style-transfer-and-super-resolution/400_0.1_31.png)
+![Fig1](/blog/images/perceptual-losses-for-real-time-style-transfer-and-super-resolution/400_0.1_31.png)
 这是训练的最好的一次，最左侧是输入的模糊图片，第二列是网络的输出，第三列是做了直方图匹配得到的图片，第四列是ground truth。可以看到有很多小点点，我分析是tv loss占比太小的原因，当前tv loss乘以了0.1。于是将tv loss乘以0.5后又训练了一次，loss降到了58，结果如下：
-![Fig2](/images/perceptual-losses-for-real-time-style-transfer-and-super-resolution/400_0.5_58.png)
+![Fig2](/blog/images/perceptual-losses-for-real-time-style-transfer-and-super-resolution/400_0.5_58.png)
 感觉没法看了。。。

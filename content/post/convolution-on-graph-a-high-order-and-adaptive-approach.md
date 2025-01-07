@@ -108,7 +108,7 @@ $$
 \tilde{L}^{(k)}\_{HA} = (\tilde{W}\_k \circ \tilde{A}^k)X = B\_k
 $$
 
-![Fig1](/images/convolution-on-graph-a-high-order-and-adaptive-approach/Fig1.JPG)
+![Fig1](/blog/images/convolution-on-graph-a-high-order-and-adaptive-approach/Fig1.JPG)
 图1给了卷积器和HA-GCN框架的可视化。图1a展示了对于一个顶点，$k = 2$时的$\tilde{L}^{(k)}\_{HA}$：自适应滤波器$g$的底层加到权重矩阵$W\_1$和$W\_2$上，得到了自适应权重$\tilde{W}\_1$和$\tilde{W}\_2$（橙色和绿色线）；第二层把自适应权重和对应的邻接矩阵拼到一起为了卷积使用。图1b强调了卷积是在图上每个顶点都做的，并且是一层一层的。需要注意的是高阶卷积器和自适应权重可以和其他的神经网络架构/操作一起使用，比如全连接层，池化层，非线性变换。我们将我们的HA操作的图卷积层命名为HA-GCN。
 
 在所有的卷积层之后，我们将那些来自不同阶的卷积层的输出特征拼接起来：
@@ -145,7 +145,7 @@ gcn_{1, 2}|gcn{1, 2}-fc128-gcn{1, 2}-fc1-softmax
 adp_gcn_{1, 2}|adp_gcn{1, 2}-fc128-adp_gcn{1, 2}-fc1-softmax
 
 为了比较不同模型的性能，我们将数据集随机划分成训练/验证/测试集，比例为$7:1.5:1.5$，记录测试集的预测精度，表1。超参数：dropout rate $0.7$，L2 regularization $0.5 \cdot 10^{-8}$，hidden units $128$。从顶点表示学习角度看，前三个是半监督的模型，后四个是半监督的模型。这也解释了为什么后面的模型效果更好。我们的二姐邻居HA图卷积在精度上提升了2%。自适应模块没能继续提升。这是因为自适应模块是为了对不同的图生成不同的滤波器权重。然而，在顶点为中心的任务中，只有一个图，卷积权重直接就学出来了。因此自适应模块在顶点为中心的任务中是冗余的。
-![Table1](/images/convolution-on-graph-a-high-order-and-adaptive-approach/Table1.JPG)
+![Table1](/blog/images/convolution-on-graph-a-high-order-and-adaptive-approach/Table1.JPG)
 
 **Graph-centric learning**
 预测分子图。目标是给定分子图，预测分子性质。我们使用Duvenaud et al., 2015描述的数据集，评估三种属性：
@@ -160,7 +160,7 @@ l1_adp_gcn|adp_gcn{1,2,3}-ReLU-fc64-ReLU-fc16-ReLU-fc1
 l2_gcn|[gcb_{1,2,3}-ReLU]*2-fc64-ReLU-fc16-ReLU-fc1
 l2_adp_gcn|[adp_gcn_{1,2,3}-ReLU]*2-fc64-ReLU-fc16-ReLU-fc1
 
-![Table2](/images/convolution-on-graph-a-high-order-and-adaptive-approach/Table2.JPG)
+![Table2](/blog/images/convolution-on-graph-a-high-order-and-adaptive-approach/Table2.JPG)
 
 node-GCN就是没有自适应滤波模块的一阶HA-GCN。对比node-GCN,l1_gcn,l2_gcn，可以看到我们的卷积层的效果。有自适应滤波器的比没有的效果好。
 

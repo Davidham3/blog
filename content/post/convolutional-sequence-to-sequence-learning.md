@@ -79,7 +79,7 @@ $$
 
 ## 3.3. Multi-step Attention
 
-![Figure1](/images/convolutional-sequence-to-sequence-learning/Fig1.JPG)
+![Figure1](/blog/images/convolutional-sequence-to-sequence-learning/Fig1.JPG)
 
 我们对于每一个解码层引入了一个分开的注意力机制。为了计算注意力，我们融合了当前解码器状态$h^l\_i$和前一个目标元素$g\_i$的嵌入表示：
 $$d^l\_i=W^l\_dh^l\_i + b^l\_d + g\_i$$

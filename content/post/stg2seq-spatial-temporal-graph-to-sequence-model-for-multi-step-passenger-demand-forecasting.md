@@ -38,7 +38,7 @@ $$
 
 STG2Seq 的架构有三个组件：1. 长期编码器，2. 短期编码器，3.基于注意力的输出模块。长期和短期编码器由多个序列时空门控图卷积模块 (GGCM) 组成，通过在时间维度使用 GCN 可以同时捕获时间和空间相关性。
 
-![Figure2](/images/stg2seq-spatial-temporal-graph-to-sequence-model-for-multi-step-passenger-demand-forecasting/Fig2.JPG)
+![Figure2](/blog/images/stg2seq-spatial-temporal-graph-to-sequence-model-for-multi-step-passenger-demand-forecasting/Fig2.JPG)
 
 ## 3.1 Passenger Demand on Graph
 
@@ -69,9 +69,9 @@ $$
 
 门控图卷积模块是长期编码器和短期编码器的核心。每个 GGCM 由几个 GCN 层组成，沿着时间轴并行。为了捕获时空关联性，每个 GCN 在一定长度的时间窗内操作($k$)。它可以提取 $k$ 个时间步内所有区域的空间关联性。通过堆叠多个 GGCM，我们的模型形成了一个层次结构，可以捕获整个输入的时空关联性。图 3 展示了只使用 GCN 捕获时空关联性，为了简化我们忽略了通道维。Yu et al., 2018 的工作和我们的 GGCM 模块很像。他们的工作首先使用 CNN 捕获时间关联性，然后使用 GCN 捕获空间关联性。我们的方法对比他们的方法极大的简化了，因为我们可以同时捕获时空关联性。
 
-![Figure3](/images/stg2seq-spatial-temporal-graph-to-sequence-model-for-multi-step-passenger-demand-forecasting/Fig3.JPG)
+![Figure3](/blog/images/stg2seq-spatial-temporal-graph-to-sequence-model-for-multi-step-passenger-demand-forecasting/Fig3.JPG)
 
-![Figure4](/images/stg2seq-spatial-temporal-graph-to-sequence-model-for-multi-step-passenger-demand-forecasting/Fig4.JPG)
+![Figure4](/blog/images/stg2seq-spatial-temporal-graph-to-sequence-model-for-multi-step-passenger-demand-forecasting/Fig4.JPG)
 
 GGCM 模块的详细设计如图 4。第 $l$ 个 GGCM 的输入是一个矩阵，维数为 $h \times N \times C^l$。在第一个 GGCM 模块，$C^l$ 是 $d\_{in}$ 维的。第 $l$ 个 GGCM 的输出是 $h \times N \times C^{l+1}$。我们先拼接一个 zero padding，维数为 $(k-1) \times N \times C^l$，得到新的输入 $(h+k-1) \times N \times C^l$，确保变换不会减少序列的长度。接下来，GGCM 中的每个 GCN 取 $k$ 个时间步的数据 $k \times N \times C^l$ 作为输入来提取时空关联性，然后 reshape 成一个二维矩阵 $N \times (k \cdot C^l)$。根据 Kipf & Welling 的 GCN，GCN 层可以描述如下：
 

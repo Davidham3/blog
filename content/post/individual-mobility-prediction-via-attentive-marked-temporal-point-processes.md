@@ -20,7 +20,7 @@ title: Individual Mobility Prediction via Attentive Marked Temporal Point Proces
 
 本质上，用户的移动数据分为两类：带时间戳的位置序列$\{ (t\_i, l\_i) \}^n\_{i=1}$，表示时间$t\_i$的位置$l\_i$；trip/activity sequence $\{(t\_i, o\_i, d\_i)\}^n\_{i=1}$，时间$t\_i$的从$o\_i$出发，目的地是$d\_i$。预测下一位置的研究比较多，但是预测下一个trip的工作比较少。相比前者，后者的信息量更大，时空关联更复杂。而且trip记录比轨迹应用的场景更多。但是对OD建模，假设有$S$个位置，那就要$S \times S$这个数量级，考虑到时间和travel的方式，比如car, bike, bus、旅行的目的，work, school, leisure，这个数量级就更大了。
 
-![Figure1](/images/individual-mobility-prediction-via-attentive-marked-temporal-point-processes/Fig1.jpg)
+![Figure1](/blog/images/individual-mobility-prediction-via-attentive-marked-temporal-point-processes/Fig1.jpg)
 
 本文的目的是给定历史的轨迹$\{t\_i, o\_i, d\_i\}^n\_{i=1}$，预测$t\_{n+1}, o\_{n+1}, d\_{n+1}$。如果把时间$t$看作是连续变量，$o, d$看作是离散变量，那么下一个trip的搜索空间是$[t\_n, +\infty) \times \{1, \dots, S\} \times \{1, \dots, S\}$。现在处理事件序列的方法有两类：
 
@@ -56,7 +56,7 @@ $\ast$表示条件概率。本文认为$o\_{n+1} = d\_n$，也就是上一个tri
 
 # 4 Methodology
 
-![Figure2](/images/individual-mobility-prediction-via-attentive-marked-temporal-point-processes/Fig2.jpg)
+![Figure2](/blog/images/individual-mobility-prediction-via-attentive-marked-temporal-point-processes/Fig2.jpg)
 
 图2是AMTPP的架构。
 

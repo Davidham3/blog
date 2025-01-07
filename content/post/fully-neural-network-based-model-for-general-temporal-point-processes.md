@@ -40,7 +40,7 @@ $$
 
 ## 2.4 Proposed Model
 
-![Figure1](/images/fully-neural-network-based-model-for-general-temporal-point-processes/Fig1.jpg)
+![Figure1](/blog/images/fully-neural-network-based-model-for-general-temporal-point-processes/Fig1.jpg)
 
 这里建模累积hazard函数：
 

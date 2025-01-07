@@ -30,8 +30,8 @@ T-GCN，arxiv上面的一篇文章，用 GCN 对空间建模，GRU 对时间建�
 
 （2）时间依赖。流量随时间动态改变，主要会出现周期性和趋势。如图 2（a）所示，路 1 的流量在一周内展示出了周期性变化。图 2（b）中，一天的流量也发生变换；举个例子，流量会被其前一时刻或更前的时刻的交通状况所影响。
 
-![Figure1](/images/t-gcn-a-temporal-graph-convolutional-network-for-traffic-prediction/Fig1.JPG)
-![Figure1](/images/t-gcn-a-temporal-graph-convolutional-network-for-traffic-prediction/Fig2.JPG)
+![Figure1](/blog/images/t-gcn-a-temporal-graph-convolutional-network-for-traffic-prediction/Fig1.JPG)
+![Figure1](/blog/images/t-gcn-a-temporal-graph-convolutional-network-for-traffic-prediction/Fig2.JPG)
 
 有很多交通预测方法，一些考虑时间依赖，包括 ARIMA，Kalman filtering model, SVR, knn, Beyesian model, partial neural network model.上述方法考虑交通状况在时间上的动态变化，忽略了空间依赖，导致不能精确预测。为了更好地刻画空间特征，一些研究引入了卷积神经网络对空间建模；然而，卷积适用于欧氏空间的数据，如图像、网格等。这样的模型不能在城市路网这样有着复杂拓扑结构的环境下工作，所以他们不能描述空间依赖。
 
@@ -83,7 +83,7 @@ $n$ 是历史时间序列的长度，$T$ 是需要预测的长度。
 
 T-GCN 模型有两个部分：GCN 和 GRU。图 3 所示，我们使用历史 $n$ 个时刻的时间序列数据作为输入，图卷积网络捕获路网拓扑结构获取空间依赖。然后将带有空间特征的时间序列放入 GRU 中，通过信息在单元间的传递捕获动态变化，获得时间特征。最后，将结果送入全连接层。
 
-![Figure3](/images/t-gcn-a-temporal-graph-convolutional-network-for-traffic-prediction/Fig3.JPG)
+![Figure3](/blog/images/t-gcn-a-temporal-graph-convolutional-network-for-traffic-prediction/Fig3.JPG)
 
 ## 3.3 Methodology
 
@@ -97,13 +97,13 @@ $$
 
 $\hat{A} = \tilde{D}^{-\frac{1}{2}} \tilde{A} \tilde{D}^{-\frac{1}{2}}$ 表示预处理，$\tilde{A} = A + I\_N$ 表示加了自连接的邻接矩阵。
 
-![Figure4](/images/t-gcn-a-temporal-graph-convolutional-network-for-traffic-prediction/Fig4.JPG)
+![Figure4](/blog/images/t-gcn-a-temporal-graph-convolutional-network-for-traffic-prediction/Fig4.JPG)
 
 ### 3.3.2 Temporal Dependence Modeling
 
 因为 GRU 比 LSTM 参数少，训练快，我们使用 GRU 获取交通数据的时间依赖。如图 5 所示，$h\_{t-1}$ 表示时刻 $t-1$ 的隐藏状态；$x\_t$ 表示时刻 $t$ 的交通信息；$r\_t$ 表示重置门，用来控制忽略前一时刻信息的程度；$u\_t$ 是更新门，用来控制将信息从上一时刻拿到这个时刻的程度；$c\_t$ 是时刻 $t$ 的记忆内容；$h\_t$ 是时刻 $t$ 的输出状态。GRU 通过将时刻 $t-1$ 的隐藏状态和当前时刻的交通信息作为输入，获取时刻 $t$ 的交通状态。在捕获当前时刻的交通信息的时候，模型仍保留着历史信息，且有能力捕获时间依赖。
 
-![Figure5](/images/t-gcn-a-temporal-graph-convolutional-network-for-traffic-prediction/Fig5.JPG)
+![Figure5](/blog/images/t-gcn-a-temporal-graph-convolutional-network-for-traffic-prediction/Fig5.JPG)
 
 ### 3.3.3 Temporal Graph Convolutional Network
 
@@ -127,7 +127,7 @@ $$
 
 总之，T-GCN 能处理复杂的空间依赖和时间动态性。
 
-![Figure6](/images/t-gcn-a-temporal-graph-convolutional-network-for-traffic-prediction/Fig6.JPG)
+![Figure6](/blog/images/t-gcn-a-temporal-graph-convolutional-network-for-traffic-prediction/Fig6.JPG)
 
 ### 3.3.4 Loss Function
 
@@ -193,6 +193,6 @@ RMSE 和 MAE 用来评估预测误差：越小越好。精度衡量预测的精�
 
 看不下去了。。。
 
-![Figure7](/images/t-gcn-a-temporal-graph-convolutional-network-for-traffic-prediction/Fig7.JPG)
+![Figure7](/blog/images/t-gcn-a-temporal-graph-convolutional-network-for-traffic-prediction/Fig7.JPG)
 
-![Table1](/images/t-gcn-a-temporal-graph-convolutional-network-for-traffic-prediction/Table1.JPG)
+![Table1](/blog/images/t-gcn-a-temporal-graph-convolutional-network-for-traffic-prediction/Table1.JPG)

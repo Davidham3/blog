@@ -13,11 +13,11 @@ title: Semi-supervised Learning for Marked Temporal Point Processes
 
 <!--more-->
 
-![Figure1](/images/semi-supervised-learning-for-marked-temporal-point-processes/Fig1.jpg)
+![Figure1](/blog/images/semi-supervised-learning-for-marked-temporal-point-processes/Fig1.jpg)
 
 # 3 Proposed Algorithm
 
-![Figure2](/images/semi-supervised-learning-for-marked-temporal-point-processes/Fig2.jpg)
+![Figure2](/blog/images/semi-supervised-learning-for-marked-temporal-point-processes/Fig2.jpg)
 
 架构如图2所示，损失函数：
 
@@ -41,7 +41,7 @@ $$
 
 $\mathcal{E}$和$\mathcal{D}$分别表示RNN编码器和RNN解码器。重构损失专注于在给定的时间序列上学习有意义的表示，用于后续marker的预测。重构损失在训练过程完全是无监督的。$(\mathcal{E}(x\_i))$是时间序列的编码。如何用这个嵌入表示预测后续的marker后面会讲。
 
-![Figure3](/images/semi-supervised-learning-for-marked-temporal-point-processes/Fig3.jpg)
+![Figure3](/blog/images/semi-supervised-learning-for-marked-temporal-point-processes/Fig3.jpg)
 
 **Supervised Marker and Time Prediction Loss Components**
 

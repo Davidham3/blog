@@ -25,7 +25,7 @@ GCRN(Graph Convolutional Recurrent Network)，一个可以预测结构化序列�
 
 我们的工作利用了近期的模型——Defferrard et al. 2016; Ranzato et al. 2014; Shi et al. 2015——来设计GCRN模型对时间变化的图结构数据建模和预测。核心思想是融合图结构上的CNN和RNN来同时辨识空间结构和动态模式。图1给出了GCRN的架构。
 
-![Figure1](/images/structured-sequence-modeling-with-graph-convolutional-recurrent-networks/Fig1.JPG)
+![Figure1](/blog/images/structured-sequence-modeling-with-graph-convolutional-recurrent-networks/Fig1.JPG)
 
 # 2 Preliminaries
 ## 2.1 Structured Sequence Modeling
@@ -122,8 +122,8 @@ h\_t = z \odot h\_{t-1} + (1 - z) \odot \tilde{h}.
 $$
 
 # 5 Experiments
-![Table1](/images/structured-sequence-modeling-with-graph-convolutional-recurrent-networks/Table1.JPG)
+![Table1](/blog/images/structured-sequence-modeling-with-graph-convolutional-recurrent-networks/Table1.JPG)
 
 数据集是moving-MNIST(Shi et al., 2015)。
 
-!["Figure3 & Figure4"](/images/structured-sequence-modeling-with-graph-convolutional-recurrent-networks/Fig3.JPG)
+!["Figure3 & Figure4"](/blog/images/structured-sequence-modeling-with-graph-convolutional-recurrent-networks/Fig3.JPG)

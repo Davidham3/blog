@@ -24,7 +24,7 @@ $\{z\_i, t\_i \}^N\_{i=1}$表示事件数据。事件序列的时间间隔不像
 
 本文用RNN编码这种非线性关系，在不用先验知识的情况下以端到端的形式建模非线性强度映射。
 
-![Figure1](/images/modeling-the-intensity-function-of-point-process-via-recurrent-neural-networks/Fig1.jpg)
+![Figure1](/blog/images/modeling-the-intensity-function-of-point-process-via-recurrent-neural-networks/Fig1.jpg)
 
 # 3 Network Structure and End-to-End Learning
 

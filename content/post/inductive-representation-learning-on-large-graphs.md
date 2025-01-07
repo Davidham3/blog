@@ -32,7 +32,7 @@ NIPS 2017。提出的方法叫 GraphSAGE，针对的问题是之前的 NRL 是 t
 
 **Present work.** 我们提出了一个通用的框架，叫 GraphSAGE(SAmple and aggreGatE)，用于学习 inductive node embedding。不像基于矩阵分解的嵌入方法，我们利用了顶点特征（比如文本属性，顶点信息，顶点的度）来学习可以生成未见过的顶点的嵌入的函数。通过在算法中结合顶点信息，我们同时学习了每个顶点邻居的拓扑结构和顶点特征在邻居中的分布。尽管我们的研究更专注于富特征的图（如有文本信息的引文网络，有功能/分子组成的生物数据），我们的方法仍能充分利用所有图展现的结构特征（比如顶点的度）。因此我们的算法可以应用在没有顶点特征的图上。
 
-![Figure1](/images/inductive-representation-learning-on-large-graphs/Fig1.JPG)
+![Figure1](/blog/images/inductive-representation-learning-on-large-graphs/Fig1.JPG)
 
 我们没有对每个顶点都训练一个单独的 embeddding，我们训练了一组 *aggregator functions*，这些函数学习如何从一个顶点的局部邻居聚合特征信息（图1）。每个聚合函数从一个顶点的不同搜索深度聚合信息。测试的时候，或是说推断的时候，我们使用我们训练的系统来对完全未见过的顶点，通过使用学习到的聚合函数来生成 embedding。跟随着前人在生成顶点上的工作，我们设计了无监督的损失函数，使得 GraphSAGE 可以在没有任务监督的情况下训练。我们也展示了如何使用监督的方法训练 GraphSAGE。
 
@@ -54,7 +54,7 @@ NIPS 2017。提出的方法叫 GraphSAGE，针对的问题是之前的 NRL 是 t
 
 假设已经学习到了 $K$ 个聚合函数（表示为 $AGGERGATE\_k, \forall k \in \lbrace 1,...,K\rbrace$ ）的参数，对顶点的信息聚合，还有一组权重矩阵 $\mathbf{W}^k, \forall k \in \lbrace 1,...,K\rbrace$，用来在模型的不同层或搜索深度间传播信息。下一节描述参数是怎么训练的。
 
-![Algo1](/images/inductive-representation-learning-on-large-graphs/Alg1.JPG)
+![Algo1](/blog/images/inductive-representation-learning-on-large-graphs/Alg1.JPG)
 
 算法 1 的思路是在每次迭代，或每一个搜索深度，顶点从他们的局部邻居聚合信息，而且随着这个过程的迭代，顶点会从越来越远的地方获得信息。
 

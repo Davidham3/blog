@@ -29,7 +29,7 @@ AAAI 2019，滴滴的网约车需求预测，5个点预测1个点。空间依赖
 
 我们研究的问题是区域级别网约车需求预测，是智能运输系统的重要部分。目标是通过历史观测值，预测一个城市里面各区域未来的需求。任务的挑战是复杂的时空关系。一方面，不同区域有着复杂的依赖关系。举个例子，一个区域的需求通常受其空间上临近的区域所影响，同时与有着相同背景的较远的区域有联系。另一方面，非线性的依赖关系也存在于不同的时间观测值之间。预测一个时刻通常和多个历史的观测值相关，比如一小时前、一天前、甚至一周前。
 
-![Figure1](/images/spatiotemporal-multi-graph-convolution-network-for-ride-hailing-demand-forecasting/Fig1.JPG)
+![Figure1](/blog/images/spatiotemporal-multi-graph-convolution-network-for-ride-hailing-demand-forecasting/Fig1.JPG)
 
 最近在深度学习的进步使得对基于区域级别的时空关系预测有了很好的结果。使用卷积神经网络和循环神经网络，得到了很多非常好的效果(Shi et al. 2015; Yu et al. 2017; Shi et al. 2017; Zhang, Zheng, and Qi 2017; Zhang et al. 2018a; Ma et al. 2017; Yao et al. 2018b; 2018a)。尽管有了很好的效果，但是我们认为在对时空关系建模上有两点被忽略了。其一，这些方法主要对不同区域的欧式关系建模，但是我们发现非欧关系很重要。图 1 是一个例子，对于区域 1，以及邻居区域 2，可能和很远的区域 3 有相似的功能，也就是他们都靠近学校和医院。此外，区域 1 还可能被区域 4 影响，区域 4 是通过高速公路直接与区域 1 相连的。其二：这些方法中，在使用 RNN 对时间关系建模时，每个区域是独立处理的，或者只基于局部信息。然而，我们认为全局和背景信息也很重要。举个例子，网约车需求的一个全局性的增长/减小通常表明一些可能会影响未来需求的活动发生了。
 
@@ -85,7 +85,7 @@ $$
 
 **Framework overview** ST-MGCN 的系统架构如图2。我们从不同的角度表示区域间的关系，顶点表示区域，边对区域间的关系编码。首先，我们使用提出的 CGRNN，考虑全局背景信息对不同时间的观测值进行聚合。然后，使用多图卷积捕获区域间不同类型的关系。最后，使用全连接神经网络将特征映射到预测上。
 
-![Figure2](/images/spatiotemporal-multi-graph-convolution-network-for-ride-hailing-demand-forecasting/Fig2.JPG)
+![Figure2](/blog/images/spatiotemporal-multi-graph-convolution-network-for-ride-hailing-demand-forecasting/Fig2.JPG)
 
 ## Spatial dependency modeling
 
@@ -136,7 +136,7 @@ $$
 L^1\_{C,1,4} \not = 0; L^1\_{C,1,6} = 0; L^1\_{C,4,6} \not = 0
 $$
 
-![Figure3](/images/spatiotemporal-multi-graph-convolution-network-for-ride-hailing-demand-forecasting/Fig3.JPG)
+![Figure3](/blog/images/spatiotemporal-multi-graph-convolution-network-for-ride-hailing-demand-forecasting/Fig3.JPG)
 
 如果拉普拉斯矩阵的最大度数 $K$ 设为 $1$，那么区域 1 变换的特征向量，即 $\boldsymbol{X}\_{l+1, 1,:}$ 不会包含区域 6: $\boldsymbol{X}\_{l,6,:}$，因为 $L^1\_{C,1,6}=0$。当 $K$ 增大到 2 的时候，对应的元素 $L^2\_{C,1,6}$ 变成非零，$\boldsymbol{X}\_{l+1,1,:}$ 就可以利用 $\boldsymbol{X}\_{l,6,:}$ 的信息了。
 
@@ -198,7 +198,7 @@ $f(\mathbf{A}; \theta\_i)$ 选择的是 $K = 2$ 时的切比雪夫多项式，$\
 
 我们在验证集上用网格搜索调整了所有模型的参数，在测试集上跑了多次得到的最后的结果。我们使用 RMSE 和 MAPE 作为评价指标。表 1 展示了不同方法在 10 次以上的预测中的对比结果。
 
-![Table1](/images/spatiotemporal-multi-graph-convolution-network-for-ride-hailing-demand-forecasting/Table1.JPG)
+![Table1](/blog/images/spatiotemporal-multi-graph-convolution-network-for-ride-hailing-demand-forecasting/Table1.JPG)
 
 我们在两个数据集上观测到了几个现象：（1）基于深度学习的方法能够对非线性的时空依赖关系建模，比其他的方法好；（2）ST-MGCN 在两个数据集上比其他的方法都好，比第二好的高出 10%；（3）对比其他的深度学习方法，ST-MGCN 的方差更小。
 
@@ -206,11 +206,11 @@ $f(\mathbf{A}; \theta\_i)$ 选择的是 $K = 2$ 时的切比雪夫多项式，$\
 
 为了研究空间和时间依赖建模的效果，我们通过减少模型中的组成部分评估了 ST-MGCN 的几个变体，包括：（1）邻居图，（2）功能相似性图，（3）运输连通性图。结果如表 2 所示。移除任何一个图都会造成性能损失，证明了每种关系的重要性。这些图编码了重要的先验知识，也就是区域间的相关性。
 
-![Table2](/images/spatiotemporal-multi-graph-convolution-network-for-ride-hailing-demand-forecasting/Table2.JPG)
+![Table2](/blog/images/spatiotemporal-multi-graph-convolution-network-for-ride-hailing-demand-forecasting/Table2.JPG)
 
 为了评估集成多个区域关系的效果，我们扩展了基于单个图的模型，包括 DCRNN 和 STGCN，分别记为 DCRNN+ 和 ST-GCN+。结果如图 3，两个算法都得到了提升。
 
-![Table3](/images/spatiotemporal-multi-graph-convolution-network-for-ride-hailing-demand-forecasting/Table3.JPG)
+![Table3](/blog/images/spatiotemporal-multi-graph-convolution-network-for-ride-hailing-demand-forecasting/Table3.JPG)
 
 ## Effect of temporal dependency modeling
 
@@ -218,13 +218,13 @@ $f(\mathbf{A}; \theta\_i)$ 选择的是 $K = 2$ 时的切比雪夫多项式，$\
 - 平均池化会盲目地平均不同的样本，导致性能下降，能做上下文依赖非线性时间聚合的 RNN 能显著地提升性能。
 - CGRNN 增强了 RNN。移除 RNN 和 图卷积都导致性能下降，证明了每个部件的有效性。
 
-![Table4](/images/spatiotemporal-multi-graph-convolution-network-for-ride-hailing-demand-forecasting/Table4.JPG)
+![Table4](/blog/images/spatiotemporal-multi-graph-convolution-network-for-ride-hailing-demand-forecasting/Table4.JPG)
 
 ## Effect of model parameters
 
 我们调整了两个最重要的参数来看不同参数对模型的影响，$K$ 和图卷积层数。图 5 展示了测试集上的结果。可以观察到随着层数的增加，错误先降后增。但是随着 $K$ 的增加，错误是先减小，后不变。越大的 $K$ 或层数使得模型能捕获全局关联性，代价是模型的复杂度会增加，更易过拟合。
 
-![Figure5](/images/spatiotemporal-multi-graph-convolution-network-for-ride-hailing-demand-forecasting/Fig5.JPG)
+![Figure5](/blog/images/spatiotemporal-multi-graph-convolution-network-for-ride-hailing-demand-forecasting/Fig5.JPG)
 
 # Conclusion and Future work
 

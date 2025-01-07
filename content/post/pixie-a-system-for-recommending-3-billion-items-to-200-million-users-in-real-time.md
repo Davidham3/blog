@@ -47,7 +47,7 @@ Pixie接受的输入是一组带权的pins $Q = \lbrace (q, w\_q) \rbrace$，其
 
 我们在算法1中描述了最基本的随机游走 $\rm BASICRANDOMWALK$ [28]。每个随机游走生成了一个 *steps* 的序列。每个 step 由3个操作组成。首先，给定当前pin $p$，(初始为 $q$ )，我们从 $E(p)$ 中选择一条连接 $q$ 和 $b$ 的边 $e$。然后我们通过从 $E(b)$ 中采样一条连接 $b$ 和 $p'$ 的一条边，得到pin $pin'$。第三步，当前的pin更新到 $p'$，然后重复之前的步骤。
 
-![Algorithm1](/images/pixie-a-system-for-recommending-3-billion-items-to-200-million-users-in-real-time/Alg1.JPG)
+![Algorithm1](/blog/images/pixie-a-system-for-recommending-3-billion-items-to-200-million-users-in-real-time/Alg1.JPG)
 
 游走的长度由参数 $\alpha$ 决定。所有的 这样的随机游走的 steps 的数量决定了这个步骤的时间复杂度，我们用 $N$ 表示这个和。我们维护一个 *counter* $V$ 用来映射 pin 和访问次数。为了获得推荐的pins，我们可以从返回的 counter 提取访问次数最高的pins，将它们返回作为推荐结果。这个过程的时间复杂度是固定的，与图的大小无关。
 
@@ -57,9 +57,9 @@ Pixie随机游走算法由算法2和算法3组成，在基础随机游走上有�
 3. multi-hit booster对多个查询pins的增强
 4. 在保持预测性能的情况下使用早停减少随机游走的步数
 
-![Algorithm2](/images/pixie-a-system-for-recommending-3-billion-items-to-200-million-users-in-real-time/Alg2.JPG)
+![Algorithm2](/blog/images/pixie-a-system-for-recommending-3-billion-items-to-200-million-users-in-real-time/Alg2.JPG)
 
-![Algorithm3](/images/pixie-a-system-for-recommending-3-billion-items-to-200-million-users-in-real-time/Alg3.JPG)
+![Algorithm3](/blog/images/pixie-a-system-for-recommending-3-billion-items-to-200-million-users-in-real-time/Alg3.JPG)
 
 **(1)Biasing the Pixie Random Walk.** 针对用户对随机游走进行偏离很重要。对于同样的查询集合 $Q$，推荐结果对于不同的用户应该不同。举个例子，Pinterest图包含了不同语言、不同主题，以及不同兴趣的用户的pins和boards，给用户使用的语言以及他们兴趣相关的推荐是非常重要的。
 

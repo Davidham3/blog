@@ -23,7 +23,7 @@ title: 神经网络基础
 
 ## 线性回归
 
-![Figure0](/images/logistic-regression/Fig0.png)
+![Figure0](/blog/images/logistic-regression/Fig0.png)
 
 我们来完成最简单的线性回归，上图是一个最简单的神经网络，一个输入层，一个输出层，没有激活函数。  
 我们记输入为$X \in \mathbb{R}^{n \times m}$，输出为$Z \in \mathbb{R}^{n}$。输入包含了$n$个样本，$m$个特征，输出是对这$n$个样本的预测值。  

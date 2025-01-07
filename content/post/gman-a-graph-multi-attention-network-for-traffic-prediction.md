@@ -25,7 +25,7 @@ AAAI 2020，使用编码解码+att的架构，只不过编码和解码都使用 
 
 交通预测的目标是基于历史观测预测未来的交通状况。在很多应用中扮演着重要的角色。举个例子，精确的交通预测可以帮助交管部门更好的控制交通，减少拥堵。
 
-![Figure1](/images/gman-a-graph-multi-attention-network-for-traffic-prediction/Fig1.png)
+![Figure1](/blog/images/gman-a-graph-multi-attention-network-for-traffic-prediction/Fig1.png)
 
 邻近区域的交通状况会互相影响。大家使用 CNN 捕获这样的空间依赖。同时，一个地方的交通状况和它的历史记录有关。RNN 广泛地用于这样时间相关性的建模。最近的研究将交通预测变为图挖掘问题，因为交通问题受限于路网。使用 GCN 的这些研究在短期预测（5 到 15 分钟）内表现出不错的效果。然而，长期预测（几个小时）仍缺乏令人满意的效果，主要受限于以下几点：
 
@@ -54,7 +54,7 @@ GMAN 使用编码解码架构，编码器编码交通特征，解码器生成预
 
 # Graph Multi-Attention Network
 
-![Figure2](/images/gman-a-graph-multi-attention-network-for-traffic-prediction/Fig2.png)
+![Figure2](/blog/images/gman-a-graph-multi-attention-network-for-traffic-prediction/Fig2.png)
 
 图 2 描述了我们模型的架构。编码和解码器都有 STAtt Block 和残差连接。每个 ST-Attention block 由空间注意力机制、时间注意力机制和一个门控融合组成。编码器和解码器之间有个变换注意力层。我们还通过一个时空嵌入 spatial-temporal embedding (STE) 继承了图结构和时间信息到多注意力机制中。此外，为了辅助残差连接，所有层的输出都是 D 维。
 
@@ -76,7 +76,7 @@ $$\tag{1}
 f(x) = \text{ReLU}(x\mathbf{W} + \mathbf{b}).
 $$
 
-![Figure3](/images/gman-a-graph-multi-attention-network-for-traffic-prediction/Fig3.png)
+![Figure3](/blog/images/gman-a-graph-multi-attention-network-for-traffic-prediction/Fig3.png)
 
 **Spatial Attention** 一条路的交通状况受其他路的影响，且影响不同。这样的影响是高度动态的，随时间变化。为了建模这些属性，我们设计了一个空间注意力机制动态地捕获路网中传感器间的关联性。核心点是在不同的时间步动态地给不同的结点分配权重，如图 3 所示。对于时间步 $t\_j$ 的结点 $v\_i$，我们计算所有结点的带权和：
 
@@ -118,13 +118,13 @@ $$
 
 当结点数 $N$ 很大的时候，时间和内存消耗都会很大，达到 $N^2$ 的数量级。为了解决这个限制，我们提出了组空间注意力，包含了组内注意力分数和组间注意力分数，如图 4 所示。
 
-![Figure4](/images/gman-a-graph-multi-attention-network-for-traffic-prediction/Fig4.png)
+![Figure4](/blog/images/gman-a-graph-multi-attention-network-for-traffic-prediction/Fig4.png)
 
 我们把 $N$ 个结点随机划分为 $G$ 个组，每个组包含 $M = N / G$ 个结点，如果必要的话可以加 padding。每个组，我们使用公式 5，6，7 计算组内的注意力，对局部空间关系建模，参数是对所有的组共享的。然后，我们在每个组使用最大池化得到每个组的表示。接下来计算组间空间注意力，对组间关系建模，给每个组生成一个全局特征。局部特征和全局特征相加得到最后的输出。
 
 组空间注意力中，我们每个时间步需要计算 $GM^2 + G^2 = NM + (N / M)^2$ 个注意力分数。通过使梯度为0，我们知道 $M = \sqrt[3]{2N}$ 时，注意力分数的个数达到最大值 $2^{-1/3} N^{4/3} \ll N^2$。
 
-![Figure5](/images/gman-a-graph-multi-attention-network-for-traffic-prediction/Fig5.png)
+![Figure5](/blog/images/gman-a-graph-multi-attention-network-for-traffic-prediction/Fig5.png)
 
 **Temporal Attention** 一个地点的交通状况和它之前的观测值有关，这个关联是非线性的。为了建模这些性质，我们设计了一个时间注意力机制，自适应地对不同时间步的非线性关系建模，如图 5 所示。可以注意到时间关联受到交通状况和对应的时间环境两者的影响。举个例子，早高峰的拥堵可能会影响交通好几个小时。因此，我们考虑交通特征和时间两者来衡量不同时间步的相关性。我们把隐藏状态和时空嵌入拼接起来，使用多头注意力计算注意力分数。对于结点 $v\_i$，时间步 $t\_j$ 与 $t$ 的相关性定义为：
 
@@ -159,7 +159,7 @@ $$
 
 ## Transform Attention
 
-![Figure6](/images/gman-a-graph-multi-attention-network-for-traffic-prediction/Fig6.png)
+![Figure6](/blog/images/gman-a-graph-multi-attention-network-for-traffic-prediction/Fig6.png)
 
 为了减轻错误传播的问题，我们在编码器和解码器之间加入了一个变换注意力层。它能直接地对历史时间步和未来时间步的关系建模，将交通特征编码为未来的表示，作为解码器的输入。如图 6 所示，对于结点 $v\_i$ 来说，预测的时间步 $t\_j \ (t\_j = t\_{P+1}, \dots, t\_{P+Q})$ 和历史的时间步 $t \ (t\_1, \dots, t\_P)$ 通过时空嵌入来衡量：
 
@@ -195,7 +195,7 @@ $\Theta$ 表示可学习的参数。
 
 我们在两个不同规模的交通预测数据集上衡量了模型的效果：（1）厦门数据集，流量预测，包含 95 个传感器从 2015 年 8 月 1 日到 12 月 31 日 5 个月的数据；（2）PeMS 数据集上速度预测，包含 325 个传感器 6 个月的数据。检测器的分布如图 7.
 
-![Figure7](/images/gman-a-graph-multi-attention-network-for-traffic-prediction/Fig7.png)
+![Figure7](/blog/images/gman-a-graph-multi-attention-network-for-traffic-prediction/Fig7.png)
 
 ## Data Preprocessing
 
@@ -218,6 +218,6 @@ $\epsilon$ 设定为 0.1。
 
 Baselines都是近几年的方法。
 
-![Table1](/images/gman-a-graph-multi-attention-network-for-traffic-prediction/Table1.png)
+![Table1](/blog/images/gman-a-graph-multi-attention-network-for-traffic-prediction/Table1.png)
 
 这里值得一提的是，最后一个训练和预测时间的比较，我个人认为脱离了框架或软件，单单比较每轮训练时长是毫无意义的，因为有些静态图框架它就是很快，动态图的就是慢，而且代码质量也有区别，有的代码质量高，自然就很快，代码质量低的就很慢。拿 Graph WaveNet 举例，他们公开的代码是 pytorch 的，而且他们在 inference 的时候要对 ground truth 进行反归一化，有的代码人家就不反归一化，这也会造成 inference 的时候有差别，且有的模型是随着结点数 $N$ 的增加模型有显著的耗时增加的现象，没有考虑这些就写 computation time 的比较我觉得没有什么用，何况以 AAAI 7 页的限制来说，完全说清楚这些也毫无意义。

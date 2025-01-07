@@ -92,7 +92,7 @@ cd 到 examples 目录下，使用以下命令编译 spark-examples
 mvn clean install -pl :spark-examples_2.10
 ```
 
-![Figure1](/images/pyspark中的hbaseconverters/Fig1.JPG)
+![Figure1](/blog/images/pyspark中的hbaseconverters/Fig1.JPG)
 
 编译的时候没有遇到错误，编译好的包在同级目录下的 target 中，有个叫 spark-examples_2.10-1.6.0.jar 的文件。
 

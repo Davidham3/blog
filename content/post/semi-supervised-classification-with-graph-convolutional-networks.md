@@ -56,7 +56,7 @@ $$\tag{8} Z = \tilde{D}^{-\frac{1}{2}} \tilde{A} \tilde{D}^{-\frac{1}{2}} X \The
 
 # 半监督顶点分类
 介绍过这个简单、灵活的可以在图上传播信息的模型$f(X, A)$后，我们回到半监督顶点分类的问题上。如介绍里面所说的，我们可以减轻在基于图的半监督学习任务中的假设，通过在图结构上的数据$X$和邻接矩阵$A$上使用模型$f(X, A)$。我们期望这个设置可以在邻接矩阵表达出数据$X$没有的信息的这种情况时表现的很好，比如引文网络中，引用的关系或是知识图谱中的关系。整个模型是一个多层的GCN，如图1所示。
-![Fig1](/images/semi-supervised-classification-with-graph-convolutional-networks/Fig1.PNG)
+![Fig1](/blog/images/semi-supervised-classification-with-graph-convolutional-networks/Fig1.PNG)
 
 ## 例子
 我们考虑一个两层GCN对图中的顶点进行半监督分类，邻接矩阵是对称的。我们首先在预处理中计算$\hat{A} = \tilde{D}^{-\frac{1}{2}} \tilde{A} \tilde{D}^{-\frac{1}{2}}$。前向传播模型的形式如下：
