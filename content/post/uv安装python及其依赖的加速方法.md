@@ -1,5 +1,5 @@
 ---
-title: "uv加速"
+title: "uv安装python及其依赖的加速方法"
 description: 国内在使用uv的时候，可能会涉及到装python的速度太慢的问题，为了解决这个问题，可以使用`UV_PYTHON_INSTALL_MIRROR`这个环境变量。除此以外，对于多人协作场景，`UV_CACHE_DIR`也是一个有用的环境变量。本文会介绍这两个变量。
 date: 2025-04-14T15:58:27Z
 image: 
