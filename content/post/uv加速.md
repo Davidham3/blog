@@ -1,6 +1,6 @@
 ---
 title: "uv加速"
-description: 国内在使用uv的时候，可能会涉及到装python的速度太慢的问题，为了解决这个问题，可以使用`UV_PYTHON_INSTALL_DIR`这个环境变量。除此以外，对于多人协作场景，`UV_CACHE_DIR`也是一个有用的环境变量。本文会介绍这两个变量。
+description: 国内在使用uv的时候，可能会涉及到装python的速度太慢的问题，为了解决这个问题，可以使用`UV_PYTHON_INSTALL_MIRROR`这个环境变量。除此以外，对于多人协作场景，`UV_CACHE_DIR`也是一个有用的环境变量。本文会介绍这两个变量。
 date: 2025-04-14T15:58:27Z
 image: 
 math: 
@@ -10,11 +10,11 @@ comments: true
 draft: false
 ---
 
-国内在使用uv的时候，可能会涉及到装python的速度太慢的问题，为了解决这个问题，可以使用`UV_PYTHON_INSTALL_DIR`这个环境变量。除此以外，对于多人协作场景，`UV_CACHE_DIR`也是一个有用的环境变量。本文会介绍这两个变量。
+国内在使用uv的时候，可能会涉及到装python的速度太慢的问题，为了解决这个问题，可以使用`UV_PYTHON_INSTALL_MIRROR`这个环境变量。除此以外，对于多人协作场景，`UV_CACHE_DIR`也是一个有用的环境变量。本文会介绍这两个变量。
 
 <!--more-->
 
-## UV_PYTHON_INSTALL_DIR
+## UV_PYTHON_INSTALL_MIRROR
 
 `uv sync`、`uv venv`、`uv python install`这几个命令都会安装一个python。这个python的安装包会从[astral-sh/python-build-standalone/releases](https://github.com/astral-sh/python-build-standalone/releases)这里下载。但是对于国内的一些位置，从这里下载python的速度非常慢，有些地方根本访问不了。一个比较简单的方法是自己先进入这个页面，找到一个版本，比如`20250409`，然后下载几个需要的python版本，比如3.10、3.11、3.12，然后根据自己机器的架构，比如是x86_64的，linux系统，那就下载：
 ```
@@ -22,7 +22,7 @@ cpython-3.10.17+20250409-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz
 cpython-3.11.12+20250409-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz
 cpython-3.12.10+20250409-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz
 ```
-然后在本地建一个目录，比如`/mnt/workspace/uv_python_install_dir/20250409`，然后将上述压缩包放入这个目录，然后将环境变量`UV_PYTHON_INSTALL_DIR`设置成这个目录，这样就uv就会去这个目录里面找压缩包，然后快速安装python了。
+然后在本地建一个目录，比如`/mnt/workspace/uv_python_install_mirror/20250409`，然后将上述压缩包放入这个目录，然后将环境变量`UV_PYTHON_INSTALL_MIRROR`设置成这个目录，这样就uv就会去这个目录里面找压缩包，然后快速安装python了。比如`export UV_PYTHON_INSTALL_MIRROR=file:///mnt/workspace/uv_python_install_mirror/20250409`
 
 
 ## UV_CACHE_DIR
