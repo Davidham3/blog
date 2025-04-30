@@ -1,0 +1,334 @@
+<!doctype html><html lang=en-us dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="之前项目中有个任务是读取一堆二进制文件，对二进制文件进行解析，然后存到HBase。由于有 .mat 文件，整个 spark 都用 pyspark 写来着，也没用 scala。最近天天都在写文档啥的，还得写毕业论文，觉得太没劲了就研究了一下优化的问题，顺便更新下博客，好久没更新了。"><title>记一次pyspark性能提升，np.frombuffer的使用</title>
+<link rel=canonical href=https://davidham3.github.io/blog/p/%E8%AE%B0%E4%B8%80%E6%AC%A1pyspark%E6%80%A7%E8%83%BD%E6%8F%90%E5%8D%87np.frombuffer%E7%9A%84%E4%BD%BF%E7%94%A8/><link rel=stylesheet href=/blog/scss/style.min.663803bebe609202d5b39d848f2d7c2dc8b598a2d879efa079fa88893d29c49c.css><meta property='og:title' content="记一次pyspark性能提升，np.frombuffer的使用"><meta property='og:description' content="之前项目中有个任务是读取一堆二进制文件，对二进制文件进行解析，然后存到HBase。由于有 .mat 文件，整个 spark 都用 pyspark 写来着，也没用 scala。最近天天都在写文档啥的，还得写毕业论文，觉得太没劲了就研究了一下优化的问题，顺便更新下博客，好久没更新了。"><meta property='og:url' content='https://davidham3.github.io/blog/p/%E8%AE%B0%E4%B8%80%E6%AC%A1pyspark%E6%80%A7%E8%83%BD%E6%8F%90%E5%8D%87np.frombuffer%E7%9A%84%E4%BD%BF%E7%94%A8/'><meta property='og:site_name' content='Davidham的博客'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='Spark'><meta property='article:tag' content='software'><meta property='article:published_time' content='2020-02-13T00:12:07+00:00'><meta property='article:modified_time' content='2020-02-13T00:12:07+00:00'><meta name=twitter:title content="记一次pyspark性能提升，np.frombuffer的使用"><meta name=twitter:description content="之前项目中有个任务是读取一堆二进制文件，对二进制文件进行解析，然后存到HBase。由于有 .mat 文件，整个 spark 都用 pyspark 写来着，也没用 scala。最近天天都在写文档啥的，还得写毕业论文，觉得太没劲了就研究了一下优化的问题，顺便更新下博客，好久没更新了。"><link rel="shortcut icon" href=/favicon.png></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/blog/><img src=/blog/img/avatar_hu_a92d3b55c5d43e55.png width=300 height=300 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>🚀</span></figure><div class=site-meta><h1 class=site-name><a href=/blog>Davidham的博客</a></h1><h2 class=site-description>随便写写</h2></div></header><ol class=menu-social><li><a href=https://github.com/Davidham3 target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/blog/><svg class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><polyline points="5 12 3 12 12 3 21 12 19 12"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/><path d="M9 21v-6a2 2 0 012-2h2a2 2 0 012 2v6"/></svg>
+<span>Home</span></a></li><li><a href=/blog/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>Archives</span></a></li><li><a href=/blog/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>Search</span></a></li><li><a href=/blog/links/><svg class="icon icon-tabler icon-tabler-link" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M10 14a3.5 3.5.0 005 0l4-4a3.5 3.5.0 00-5-5l-.5.5"/><path d="M14 10a3.5 3.5.0 00-5 0l-4 4a3.5 3.5.0 005 5l.5-.5"/></svg>
+<span>Links</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>暗色模式</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#优化方案1使用-c-重写这部分>优化方案1：使用 C++ 重写这部分</a></li><li><a href=#优化方案2使用-npfrombuffer>优化方案2：使用 np.frombuffer</a></li><li><a href=#优化方案3使用-npfrombuffer>优化方案3：使用 np.frombuffer</a></li></ol></nav></div></section></aside><main class="main full-width"><article class=main-article><header class=article-header><div class=article-details><header class=article-category><a href=/blog/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E5%B9%B3%E5%8F%B0/>分布式平台</a></header><div class=article-title-wrapper><h2 class=article-title><a href=/blog/p/%E8%AE%B0%E4%B8%80%E6%AC%A1pyspark%E6%80%A7%E8%83%BD%E6%8F%90%E5%8D%87np.frombuffer%E7%9A%84%E4%BD%BF%E7%94%A8/>记一次pyspark性能提升，np.frombuffer的使用</a></h2><h3 class=article-subtitle>之前项目中有个任务是读取一堆二进制文件，对二进制文件进行解析，然后存到HBase。由于有 .mat 文件，整个 spark 都用 pyspark 写来着，也没用 scala。最近天天都在写文档啥的，还得写毕业论文，觉得太没劲了就研究了一下优化的问题，顺便更新下博客，好久没更新了。</h3></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published>Feb 13, 2020</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>阅读时长: 3 分钟</time></div></footer></div></header><section class=article-content><p>之前项目中有个任务是读取一堆二进制文件，对二进制文件进行解析，然后存到HBase。由于有 .mat 文件，整个 spark 都用 pyspark 写来着，也没用 scala。最近天天都在写文档啥的，还得写毕业论文，觉得太没劲了就研究了一下优化的问题，顺便更新下博客，好久没更新了。</p><p>原来的数据格式很简单，就是一堆 float 类型的数字，转成了二进制的形式，每 4 个字节一个数，连续地写到了文件里面。因为文件很多，而且要存到 HBase，就选择用 Spark 来处理。每个文件差不多 300M，里面的数字很多，最后的目标是提取成文件内数据为矩阵的形式。每个文件里面有 $K \times M \times N$ 个浮点型数字。要提取成 $K$ 个 $M \times N$ 的矩阵。</p><p>假设 $K = 500$，$M = 5000$, $N = 30$，首先写一个数据生成器出来：</p><p>data_generator.py</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=c1># -*- coding:utf-8 -*-</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>numpy</span> <span class=k>as</span> <span class=nn>np</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>K</span> <span class=o>=</span> <span class=mi>500</span>
+</span></span><span class=line><span class=cl><span class=n>M</span> <span class=o>=</span> <span class=mi>5000</span>
+</span></span><span class=line><span class=cl><span class=n>N</span> <span class=o>=</span> <span class=mi>30</span>
+</span></span><span class=line><span class=cl><span class=n>c</span> <span class=o>=</span> <span class=n>K</span> <span class=o>*</span> <span class=n>M</span> <span class=o>*</span> <span class=n>N</span>
+</span></span><span class=line><span class=cl><span class=n>np</span><span class=o>.</span><span class=n>random</span><span class=o>.</span><span class=n>uniform</span><span class=p>(</span><span class=n>size</span><span class=o>=</span><span class=p>(</span><span class=n>c</span><span class=p>,))</span><span class=o>.</span><span class=n>astype</span><span class=p>(</span><span class=n>np</span><span class=o>.</span><span class=n>float32</span><span class=p>)</span><span class=o>.</span><span class=n>tofile</span><span class=p>(</span><span class=s1>&#39;test.data&#39;</span><span class=p>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>原来不知道有这个 np.tofile，今天才知道的。。。速度很快，准确的说是太快了。。。</p><p>数据使用 sparkContext 的 binaryFiles 就可以读到内存中，以 bytes 的形式存储。</p><p>原来我提取 $K$ 个矩阵的方法是：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=n>K</span> <span class=o>=</span> <span class=mi>500</span>
+</span></span><span class=line><span class=cl><span class=n>M</span> <span class=o>=</span> <span class=mi>5000</span>
+</span></span><span class=line><span class=cl><span class=n>N</span> <span class=o>=</span> <span class=mi>30</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>UNIT</span> <span class=o>=</span> <span class=n>M</span> <span class=o>*</span> <span class=n>N</span>
+</span></span><span class=line><span class=cl><span class=n>UNIT_</span> <span class=o>=</span> <span class=n>UNIT</span> <span class=o>*</span> <span class=mi>4</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>record_time</span><span class=p>(</span><span class=n>f</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=nf>wrapper</span><span class=p>(</span><span class=n>content</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=n>t</span> <span class=o>=</span> <span class=n>time</span><span class=o>.</span><span class=n>time</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>        <span class=n>f</span><span class=p>(</span><span class=n>content</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=nb>print</span><span class=p>(</span><span class=n>time</span><span class=o>.</span><span class=n>time</span><span class=p>()</span> <span class=o>-</span> <span class=n>t</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=n>wrapper</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nd>@record_time</span>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>method1</span><span class=p>(</span><span class=n>content</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=n>i</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=n>K</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=n>np</span><span class=o>.</span><span class=n>array</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>            <span class=n>struct</span><span class=o>.</span><span class=n>unpack</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>                <span class=s1>&#39;</span><span class=si>{}</span><span class=s1>f&#39;</span><span class=o>.</span><span class=n>format</span><span class=p>(</span><span class=n>UNIT</span><span class=p>),</span>
+</span></span><span class=line><span class=cl>                <span class=n>content</span><span class=p>[</span><span class=n>i</span> <span class=o>*</span> <span class=n>UNIT_</span><span class=p>:</span> <span class=p>(</span><span class=n>i</span> <span class=o>+</span> <span class=mi>1</span><span class=p>)</span> <span class=o>*</span> <span class=n>UNIT_</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>            <span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=p>)</span><span class=o>.</span><span class=n>reshape</span><span class=p>(</span><span class=n>M</span><span class=p>,</span> <span class=n>N</span><span class=p>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>直接用 struct.unpack $K$ 次，而且每次都用 np.array 构造出新的 array。但是不得不说，因为 python 底层是 C 写的，这个 struct.unpack 很快，完成上面的解析只需要 10s。当时想着 python 解析这个的速度肯定没有 scala 快，写成这样应该就差不多了。但是最近我都没怎么写程序，就想研究研究能不能优化。</p><h2 id=优化方案1使用-c-重写这部分>优化方案1：使用 C++ 重写这部分</h2><p>我当时觉得，使用 C++ 完成 bytes 到 np.ndarray 的转换应该快一点，然后就写了一个：</p><p>tools.cpp</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-cpp data-lang=cpp><span class=line><span class=cl><span class=cp>#include</span> <span class=cpf>&lt;iostream&gt;</span><span class=cp>
+</span></span></span><span class=line><span class=cl><span class=cp>#include</span> <span class=cpf>&lt;fstream&gt;</span><span class=cp>
+</span></span></span><span class=line><span class=cl><span class=cp>#include</span> <span class=cpf>&lt;string&gt;</span><span class=cp>
+</span></span></span><span class=line><span class=cl><span class=cp>#include</span> <span class=cpf>&lt;ctime&gt;</span><span class=cp>
+</span></span></span><span class=line><span class=cl><span class=cp>#include</span> <span class=cpf>&lt;cstring&gt;</span><span class=cp>
+</span></span></span><span class=line><span class=cl><span class=cp>#include</span> <span class=cpf>&lt;time.h&gt;</span><span class=cp>
+</span></span></span><span class=line><span class=cl><span class=cp>#include</span> <span class=cpf>&lt;Eigen/Dense&gt;</span><span class=cp>
+</span></span></span><span class=line><span class=cl><span class=cp>#include&lt;pybind11/eigen.h&gt;
+</span></span></span><span class=line><span class=cl><span class=cp>#include</span> <span class=cpf>&lt;pybind11/pybind11.h&gt;</span><span class=cp>
+</span></span></span><span class=line><span class=cl><span class=cp></span>
+</span></span><span class=line><span class=cl><span class=k>using</span> <span class=k>namespace</span> <span class=n>std</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=k>using</span> <span class=n>Eigen</span><span class=o>::</span><span class=n>MatrixXd</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>MatrixXd</span> <span class=nf>extract_matrix</span><span class=p>(</span><span class=kt>long</span> <span class=kt>long</span> <span class=n>k_idx</span><span class=p>,</span> <span class=kt>char</span> <span class=o>*</span> <span class=n>stream</span><span class=p>,</span> <span class=kt>int</span> <span class=n>M</span><span class=p>,</span> <span class=kt>int</span> <span class=n>N</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=kt>float</span> <span class=n>data</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=n>MatrixXd</span> <span class=n>m</span><span class=p>(</span><span class=n>M</span><span class=p>,</span> <span class=n>N</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=kt>long</span> <span class=n>offset</span> <span class=o>=</span> <span class=n>k_idx</span> <span class=o>*</span> <span class=p>(</span><span class=n>M</span> <span class=o>*</span> <span class=n>N</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=p>(</span><span class=kt>int</span> <span class=n>r</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span> <span class=n>r</span> <span class=o>&lt;</span> <span class=n>M</span><span class=p>;</span> <span class=n>r</span><span class=o>++</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=p>(</span><span class=kt>int</span> <span class=n>c</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span> <span class=n>c</span> <span class=o>&lt;</span> <span class=n>N</span><span class=p>;</span> <span class=n>c</span><span class=o>++</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>memcpy</span><span class=p>(</span><span class=o>&amp;</span><span class=n>data</span><span class=p>,</span> <span class=n>stream</span> <span class=o>+</span> <span class=n>offset</span><span class=p>,</span> <span class=mi>4</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>            <span class=n>m</span><span class=p>(</span><span class=n>r</span><span class=p>,</span> <span class=n>c</span><span class=p>)</span> <span class=o>=</span> <span class=n>data</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>            <span class=n>offset</span> <span class=o>+=</span> <span class=mi>4</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=n>m</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>PYBIND11_MODULE</span><span class=p>(</span><span class=n>tools</span><span class=p>,</span> <span class=n>m</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>m</span><span class=p>.</span><span class=n>def</span><span class=p>(</span><span class=s>&#34;extract_matrix&#34;</span><span class=p>,</span> <span class=o>&amp;</span><span class=n>extract_matrix</span><span class=p>,</span> <span class=n>pybind11</span><span class=o>::</span><span class=n>return_value_policy</span><span class=o>::</span><span class=n>reference</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>实际上是利用 pybind11 实现了一个 C++ 函数，使用下面的命令编译：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=n>c</span><span class=o>++</span> <span class=o>-</span><span class=n>O3</span> <span class=o>-</span><span class=n>Wall</span> <span class=o>-</span><span class=n>shared</span> <span class=o>-</span><span class=n>std</span><span class=o>=</span><span class=n>c</span><span class=o>++</span><span class=mi>11</span> <span class=o>-</span><span class=n>fPIC</span> <span class=err>`</span><span class=n>python3</span> <span class=o>-</span><span class=n>m</span> <span class=n>pybind11</span> <span class=o>--</span><span class=n>includes</span><span class=err>`</span> <span class=o>-</span><span class=n>I</span> <span class=o>/</span><span class=n>mnt</span><span class=o>/</span><span class=n>c</span><span class=o>/</span><span class=n>Users</span><span class=o>/</span><span class=n>chaosong</span><span class=o>/</span><span class=n>Downloads</span><span class=o>/</span><span class=n>eigen</span><span class=o>-</span><span class=mf>3.3</span><span class=o>.</span><span class=mi>7</span> <span class=n>tools</span><span class=o>.</span><span class=n>cpp</span> <span class=o>-</span><span class=n>o</span> <span class=n>tools</span><span class=err>`</span><span class=n>python3</span><span class=o>-</span><span class=n>config</span> <span class=o>--</span><span class=n>extension</span><span class=o>-</span><span class=n>suffix</span><span class=err>`</span>
+</span></span></code></pre></td></tr></table></div></div><p>然后 python 就可以导入了</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=kn>import</span> <span class=nn>tools</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nd>@record_time</span>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>method2</span><span class=p>(</span><span class=n>content</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=n>i</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=n>K</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=n>tools</span><span class=o>.</span><span class=n>extract_matrix</span><span class=p>(</span><span class=n>i</span><span class=p>,</span> <span class=n>content</span><span class=p>,</span> <span class=n>M</span><span class=p>,</span> <span class=n>N</span><span class=p>)</span><span class=o>.</span><span class=n>reshape</span><span class=p>(</span><span class=n>M</span><span class=p>,</span> <span class=n>N</span><span class=p>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>结果这玩意出奇的慢。。。用这个 method2 处理那个文件要 254s。比原来的方法慢了 25 倍。</p><h2 id=优化方案2使用-npfrombuffer>优化方案2：使用 np.frombuffer</h2><p>我去看了看 numpy 的文档，结果发现了这个函数，这个函数可以直接读 bytes，都不需要用 struct 解析了。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=nd>@record_time</span>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>method3</span><span class=p>(</span><span class=n>content</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=n>i</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=n>K</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=n>np</span><span class=o>.</span><span class=n>frombuffer</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>            <span class=n>content</span><span class=p>[</span><span class=n>i</span> <span class=o>*</span> <span class=n>UNIT_</span><span class=p>:</span> <span class=p>(</span><span class=n>i</span> <span class=o>+</span> <span class=mi>1</span><span class=p>)</span> <span class=o>*</span> <span class=n>UNIT_</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>            <span class=n>dtype</span><span class=o>=</span><span class=n>np</span><span class=o>.</span><span class=n>float32</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=n>count</span><span class=o>=</span><span class=n>UNIT</span>
+</span></span><span class=line><span class=cl>        <span class=p>)</span><span class=o>.</span><span class=n>reshape</span><span class=p>(</span><span class=n>M</span><span class=p>,</span> <span class=n>N</span><span class=p>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>这里我故意写成切片的形式，为了和优化方案3的速度做对比。但即便是循环 K 次，将原始数据用切片进行了复制，这个方法的时间都能达到 0.03s，比我那个失败的方案 1 快了 8467 倍，比原方案快了 333 倍。</p><h2 id=优化方案3使用-npfrombuffer>优化方案3：使用 np.frombuffer</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=nd>@record_time</span>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>method4</span><span class=p>(</span><span class=n>content</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=n>i</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=n>K</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=n>np</span><span class=o>.</span><span class=n>frombuffer</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>            <span class=n>content</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=n>dtype</span><span class=o>=</span><span class=n>np</span><span class=o>.</span><span class=n>float32</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=n>count</span><span class=o>=</span><span class=n>UNIT</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=n>offset</span><span class=o>=</span><span class=n>i</span> <span class=o>*</span> <span class=n>UNIT_</span>
+</span></span><span class=line><span class=cl>        <span class=p>)</span><span class=o>.</span><span class=n>reshape</span><span class=p>(</span><span class=n>M</span><span class=p>,</span> <span class=n>N</span><span class=p>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>这个能跑到 0.0007s。比方案 1 快 36 万倍，比原方案快 14285 倍，比方案 2 快 42 倍。</p><p>结论：</p><ol><li>我的那个方案 1 太差劲了，肯定是我不会写才导致的。。。看看以后啥时候有时间研究一下</li><li>np.frombuffer，太强了。。。</li><li>多看 API。</li><li>python 的 struct 其实挺快的，但是基于 C/C++ 的 numpy 更快，无敌快。</li></ol><p>附上完整代码：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=c1># -*- coding:utf-8 -*-</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>time</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>struct</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>numpy</span> <span class=k>as</span> <span class=nn>np</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>tools</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>with</span> <span class=nb>open</span><span class=p>(</span><span class=s1>&#39;test.data&#39;</span><span class=p>,</span> <span class=s1>&#39;rb&#39;</span><span class=p>)</span> <span class=k>as</span> <span class=n>f</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>content</span> <span class=o>=</span> <span class=n>f</span><span class=o>.</span><span class=n>read</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>K</span> <span class=o>=</span> <span class=mi>500</span>
+</span></span><span class=line><span class=cl><span class=n>M</span> <span class=o>=</span> <span class=mi>5000</span>
+</span></span><span class=line><span class=cl><span class=n>N</span> <span class=o>=</span> <span class=mi>30</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>UNIT</span> <span class=o>=</span> <span class=n>M</span> <span class=o>*</span> <span class=n>N</span>
+</span></span><span class=line><span class=cl><span class=n>UNIT_</span> <span class=o>=</span> <span class=n>UNIT</span> <span class=o>*</span> <span class=mi>4</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>record_time</span><span class=p>(</span><span class=n>f</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=nf>wrapper</span><span class=p>(</span><span class=n>content</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=n>t</span> <span class=o>=</span> <span class=n>time</span><span class=o>.</span><span class=n>time</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>        <span class=n>f</span><span class=p>(</span><span class=n>content</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=nb>print</span><span class=p>(</span><span class=n>time</span><span class=o>.</span><span class=n>time</span><span class=p>()</span> <span class=o>-</span> <span class=n>t</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=n>wrapper</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nd>@record_time</span>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>method1</span><span class=p>(</span><span class=n>content</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=n>i</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=n>K</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=n>np</span><span class=o>.</span><span class=n>array</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>            <span class=n>struct</span><span class=o>.</span><span class=n>unpack</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>                <span class=s1>&#39;</span><span class=si>{}</span><span class=s1>f&#39;</span><span class=o>.</span><span class=n>format</span><span class=p>(</span><span class=n>UNIT</span><span class=p>),</span>
+</span></span><span class=line><span class=cl>                <span class=n>content</span><span class=p>[</span><span class=n>i</span> <span class=o>*</span> <span class=n>UNIT_</span><span class=p>:</span> <span class=p>(</span><span class=n>i</span> <span class=o>+</span> <span class=mi>1</span><span class=p>)</span> <span class=o>*</span> <span class=n>UNIT_</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>            <span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=p>)</span><span class=o>.</span><span class=n>reshape</span><span class=p>(</span><span class=n>M</span><span class=p>,</span> <span class=n>N</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nd>@record_time</span>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>method2</span><span class=p>(</span><span class=n>content</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=n>i</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=n>K</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=n>tools</span><span class=o>.</span><span class=n>extract_matrix</span><span class=p>(</span><span class=n>i</span><span class=p>,</span> <span class=n>content</span><span class=p>,</span> <span class=n>M</span><span class=p>,</span> <span class=n>N</span><span class=p>)</span><span class=o>.</span><span class=n>reshape</span><span class=p>(</span><span class=n>M</span><span class=p>,</span> <span class=n>N</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nd>@record_time</span>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>method3</span><span class=p>(</span><span class=n>content</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=n>i</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=n>K</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=n>np</span><span class=o>.</span><span class=n>frombuffer</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>            <span class=n>content</span><span class=p>[</span><span class=n>i</span> <span class=o>*</span> <span class=n>UNIT_</span><span class=p>:</span> <span class=p>(</span><span class=n>i</span> <span class=o>+</span> <span class=mi>1</span><span class=p>)</span> <span class=o>*</span> <span class=n>UNIT_</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>            <span class=n>dtype</span><span class=o>=</span><span class=n>np</span><span class=o>.</span><span class=n>float32</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=n>count</span><span class=o>=</span><span class=n>UNIT</span>
+</span></span><span class=line><span class=cl>        <span class=p>)</span><span class=o>.</span><span class=n>reshape</span><span class=p>(</span><span class=n>M</span><span class=p>,</span> <span class=n>N</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nd>@record_time</span>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>method4</span><span class=p>(</span><span class=n>content</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=n>i</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=n>K</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=n>np</span><span class=o>.</span><span class=n>frombuffer</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>            <span class=n>content</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=n>dtype</span><span class=o>=</span><span class=n>np</span><span class=o>.</span><span class=n>float32</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=n>count</span><span class=o>=</span><span class=n>UNIT</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=n>offset</span><span class=o>=</span><span class=n>i</span> <span class=o>*</span> <span class=n>UNIT_</span>
+</span></span><span class=line><span class=cl>        <span class=p>)</span><span class=o>.</span><span class=n>reshape</span><span class=p>(</span><span class=n>M</span><span class=p>,</span> <span class=n>N</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>if</span> <span class=vm>__name__</span> <span class=o>==</span> <span class=s2>&#34;__main__&#34;</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=n>f</span> <span class=ow>in</span> <span class=p>[</span><span class=n>method1</span><span class=p>,</span> <span class=n>method2</span><span class=p>,</span> <span class=n>method3</span><span class=p>,</span> <span class=n>method4</span><span class=p>]:</span>
+</span></span><span class=line><span class=cl>        <span class=n>f</span><span class=p>(</span><span class=n>content</span><span class=p>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>接下来需要验证的是，我们的 pyspark 程序比原来快了多少，这个明天再验证吧。</p></section><footer class=article-footer><section class=article-tags><a href=/blog/tags/spark/>Spark</a>
+<a href=/blog/tags/software/>Software</a></section><section class=article-copyright><svg class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><path d="M14.5 9a3.5 4 0 100 6"/></svg>
+<span>Licensed under Apache License 2.0</span></section><section class=article-lastmod><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<span>最后更新于 Feb 13, 2020 00:12 UTC</span></section></footer><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css integrity=sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV crossorigin=anonymous><script src=https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js integrity=sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8 crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js integrity=sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05 crossorigin=anonymous defer></script><script>window.addEventListener("DOMContentLoaded",()=>{const e=document.querySelector(".main-article");renderMathInElement(e,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1},{left:"\\(",right:"\\)",display:!1},{left:"\\[",right:"\\]",display:!0}],ignoredClasses:["gist"]})})</script></article><aside class=related-content--wrapper><h2 class=section-title>相关文章</h2><div class=related-content><div class="flex article-list--tile"><article><a href=/blog/p/pyspark%E8%AF%BB%E5%86%99hbase/><div class=article-details><h2 class=article-title>pyspark读写HBase</h2></div></a></article><article><a href=/blog/p/pyspark%E4%B8%AD%E7%9A%84hbaseconverters/><div class=article-details><h2 class=article-title>pyspark中的HBaseConverters</h2></div></a></article><article><a href=/blog/p/hadoop-ha%E5%AE%89%E8%A3%85%E4%B8%89zookeeper%E7%9A%84%E5%AE%89%E8%A3%85/><div class=article-details><h2 class=article-title>Hadoop HA安装三：zookeeper的安装</h2></div></a></article><article><a href=/blog/p/hadoop-ha%E5%AE%89%E8%A3%85%E4%BA%8Cmysql%E5%8F%8C%E6%9C%BA%E7%83%AD%E5%A4%87/><div class=article-details><h2 class=article-title>Hadoop HA安装二：MySQL双机热备</h2></div></a></article><article><a href=/blog/p/hadoop-ha%E5%AE%89%E8%A3%85%E4%B8%80%E5%9C%A8linux%E4%B8%AD%E5%AE%89%E8%A3%85%E5%92%8C%E9%85%8D%E7%BD%AEntpssh%E5%92%8Cjdk/><div class=article-details><h2 class=article-title>Hadoop HA安装一：在Linux中安装和配置ntp，ssh和jdk</h2></div></a></article></div></div></aside><footer class=site-footer><section class=copyright>&copy;
+2020 -
+2025 Davidham的博客</section><section class=powerby>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.30.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/blog/ts/main.1e9a3bafd846ced4c345d084b355fb8c7bae75701c338f8a1f8a82c780137826.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

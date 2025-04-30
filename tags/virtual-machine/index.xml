@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Virtual Machine on Davidham的博客</title><link>https://davidham3.github.io/blog/tags/virtual-machine/</link><description>Recent content in Virtual Machine on Davidham的博客</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Tue, 12 Jun 2018 11:15:17 +0000</lastBuildDate><atom:link href="https://davidham3.github.io/blog/tags/virtual-machine/index.xml" rel="self" type="application/rss+xml"/><item><title>迁移CentOS7虚拟机mac和网卡名变换导致网络不通的问题</title><link>https://davidham3.github.io/blog/p/%E8%BF%81%E7%A7%BBcentos7%E8%99%9A%E6%8B%9F%E6%9C%BAmac%E5%92%8C%E7%BD%91%E5%8D%A1%E5%90%8D%E5%8F%98%E6%8D%A2%E5%AF%BC%E8%87%B4%E7%BD%91%E7%BB%9C%E4%B8%8D%E9%80%9A%E7%9A%84%E9%97%AE%E9%A2%98/</link><pubDate>Tue, 12 Jun 2018 11:15:17 +0000</pubDate><guid>https://davidham3.github.io/blog/p/%E8%BF%81%E7%A7%BBcentos7%E8%99%9A%E6%8B%9F%E6%9C%BAmac%E5%92%8C%E7%BD%91%E5%8D%A1%E5%90%8D%E5%8F%98%E6%8D%A2%E5%AF%BC%E8%87%B4%E7%BD%91%E7%BB%9C%E4%B8%8D%E9%80%9A%E7%9A%84%E9%97%AE%E9%A2%98/</guid><description>&lt;p>vcenter迁移虚拟机的时候，迁移之后虚拟机网络不通。&lt;/p>
+&lt;p>参考：&lt;a class="link" href="https://www.jianshu.com/p/29af2068cfb6" target="_blank" rel="noopener"
+>解决CentOS 7虚拟机克隆的网络问题&lt;/a>&lt;/p>
+&lt;p>使用vcenter的迁移后，虚拟机出现了网络不通的现象，仔细观察可以发现vcenter给虚拟机分配了新的mac地址。
+因为Linux系统会记录mac地址与网卡名的关系，所以Linux系统在运行后，发现mac变了，于是会给当前这张网卡分配一个新的网卡名。
+解决方案就是：&lt;/p>
+&lt;ol>
+&lt;li>修改网卡配置文件/etc/sysconfig/network-scripts/ifcfg-eno16884287
+删除UUID这一行，因为每张网卡的mac地址是不一样的，所以UUID也是不一样的。
+修改HWADDR为虚拟机克隆后的MAC地址&lt;/li>
+&lt;li>进入/etc/udev/rules.d/这个目录，将里面的.rules文件改名
+&lt;code>mv 70-persistent-ipoib.rules 70-persistent-ipoib.rules.bak&lt;/code>
+&lt;code>mv 90-eno-fix.rules 90-eno-fix.rules.bak&lt;/code>&lt;/li>
+&lt;li>重启
+&lt;code>reboot&lt;/code>&lt;/li>
+&lt;/ol></description></item></channel></rss>

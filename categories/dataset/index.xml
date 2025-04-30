@@ -1,0 +1,396 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Dataset on Davidham的博客</title><link>https://davidham3.github.io/blog/categories/dataset/</link><description>Recent content in Dataset on Davidham的博客</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Thu, 12 Jul 2018 14:05:06 +0000</lastBuildDate><atom:link href="https://davidham3.github.io/blog/categories/dataset/index.xml" rel="self" type="application/rss+xml"/><item><title>FHWA数据</title><link>https://davidham3.github.io/blog/p/fhwa%E6%95%B0%E6%8D%AE/</link><pubDate>Thu, 12 Jul 2018 14:05:06 +0000</pubDate><guid>https://davidham3.github.io/blog/p/fhwa%E6%95%B0%E6%8D%AE/</guid><description>&lt;p>FHWA数据
+数据地址：&lt;a class="link" href="https://www.fhwa.dot.gov/policyinformation/tables/tmasdata/" target="_blank" rel="noopener"
+>https://www.fhwa.dot.gov/policyinformation/tables/tmasdata/&lt;/a>
+数据包含了2011到2016年的全年数据。
+数据说明：&lt;a class="link" href="https://www.fhwa.dot.gov/policyinformation/tmguide/" target="_blank" rel="noopener"
+>https://www.fhwa.dot.gov/policyinformation/tmguide/&lt;/a>
+说明共有三版，但是数据对应的其实是最老的一个版本，2001年修订的那个文档。&lt;/p>
+&lt;p>本文只对文档中的一部分进行说明，详细的还是得看官方文档。&lt;/p>
+&lt;h1 id="数据概况">数据概况
+&lt;/h1>&lt;p>数据是美国高速公路局收集的交通流量数据，每月一组。&lt;/p>
+&lt;p>数据的格式是FHWA定的，数据会被输入到FHWA维护的两个数据库中，Traffic Volume Trends（TVT）和Vehicle Travel Information System（VTRIS）。TVT系统处理连续的流量数据，按月生成交通流量趋势报告。VIRIS系统处理车辆分类和卡车称重数据，作为年度卡车重量研究。这两个数据管理系统处理、验证、汇总、维护交通数据。TVT和VIRIS向任何人提供，通过这个地址&lt;a class="link" href="http://www.fhwa.dot.gov/ohim/tvtw/tvtwpage.htm" target="_blank" rel="noopener"
+>http://www.fhwa.dot.gov/ohim/tvtw/tvtwpage.htm&lt;/a>获得。数据收集计划由the Office of Management and Budget批准，OMB # 2125-0587，期限是2004年4月30日。（因为现在看的文档是2001年编写的，所以已经过时了，但是数据格式没有过时，新版的文档反而和当前数据(2016年)的格式对不上）&lt;/p>
+&lt;p>数据记录分为四类，站点描述数据、流量数据、车辆分类数据、卡车重量数据。每类数据都有自己的格式。接下来会分章节讨论四类数据的格式规范。&lt;/p>
+&lt;p>注意：一些字段被标记为&amp;quot;critical&amp;quot;，意思是必不可少的字段。这里描述的所有数据都上ASCII flat文件。对于缺失的字段或数据，会用空格代替。数字是右对其的，如果没有说明的话左侧补空格或0。数值型字段缺失或不可用的数据，输入空格或右对齐的-1。&lt;/p>
+&lt;p>四类数据记录中的部分数据项是相同的。举个例子，所有的记录包含一个6字符长度的站点标识符。这使得每个州都需要使用一个共同的标识系统。&lt;/p>
+&lt;p>站点描述中的一些字段被替换成了需要与GIS连接起来的交通数据。这会使得数据与NHPN(National Highway Planning Network)或相似的系统重叠。&lt;/p>
+&lt;h1 id="站点数据描述">站点数据描述
+&lt;/h1>&lt;p>站点数据描述对所有的流量、车辆分类、称重站点都适用。一个站点描述文件包含了对每个交通监测站的记录（每年）。所有的字段都是字符型。命名规则是&amp;quot;ssyy.STA&amp;quot;（现在已经不是了）。&lt;/p>
+&lt;p>2016年数据的文件名：AK_2016 (TMAS).STA，前两个字符表示这个州的缩写。TMAS是指Travel Monitoring Analysis System(National)。&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>下标&lt;/th>
+&lt;th>含义&lt;/th>
+&lt;th>样例&lt;/th>
+&lt;th>critical/optional&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>1&lt;/td>
+&lt;td>Record Type: 记录类型(S表示站点)&lt;/td>
+&lt;td>S&lt;/td>
+&lt;td>c&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>2-3&lt;/td>
+&lt;td>FIPS State Codes: 州编号&lt;/td>
+&lt;td>02&lt;/td>
+&lt;td>c&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>4-9&lt;/td>
+&lt;td>Station Identification: 站标识符&lt;/td>
+&lt;td>000101&lt;/td>
+&lt;td>c&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>10&lt;/td>
+&lt;td>Direction of Travel Code: 路的走向&lt;/td>
+&lt;td>1&lt;/td>
+&lt;td>c&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>11&lt;/td>
+&lt;td>Lane of Travel: 哪条路&lt;/td>
+&lt;td>1&lt;/td>
+&lt;td>c&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>12-13&lt;/td>
+&lt;td>Year of Data: 年&lt;/td>
+&lt;td>16&lt;/td>
+&lt;td>c&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>14-15&lt;/td>
+&lt;td>Functional Classification Code: 功能类型&lt;/td>
+&lt;td>1R&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>16&lt;/td>
+&lt;td>Number of Lanes in Direction Indicated: 这个方向几条路&lt;/td>
+&lt;td>1&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>17&lt;/td>
+&lt;td>Sample Type for Traffic Volume: 是否用于监测流量&lt;/td>
+&lt;td>T&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>18&lt;/td>
+&lt;td>Number of Lanes Monitored for Traffic Volume: 几条路监测流量&lt;/td>
+&lt;td>1&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>19&lt;/td>
+&lt;td>Method of Traffic Volume Counting: 流量监测方法&lt;/td>
+&lt;td>3&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>20&lt;/td>
+&lt;td>Sample Type for Vehicle Classification: 车辆分类方法&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>21&lt;/td>
+&lt;td>Number of Lanes Monitored for Vehicle Classification: 几条路对车辆分类&lt;/td>
+&lt;td>0&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>22&lt;/td>
+&lt;td>Method of Vehicle Classification: 车辆分类方法&lt;/td>
+&lt;td>0&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>23&lt;/td>
+&lt;td>Algorithm for Vehicle Classification: 车辆分类算法&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>24-25&lt;/td>
+&lt;td>Classification System for Vehicle Classification: 车辆分类系统&lt;/td>
+&lt;td>13&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>26&lt;/td>
+&lt;td>Sample Type for Truck Weight: 称重类型&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>27&lt;/td>
+&lt;td>Number of Lanes Monitored for Truck Weight: 几条路称重&lt;/td>
+&lt;td>0&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>28&lt;/td>
+&lt;td>Method of Truck Weighing: 称重方法&lt;/td>
+&lt;td>0&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>29&lt;/td>
+&lt;td>Calibration of Weighing System: 称重系统精度&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>30&lt;/td>
+&lt;td>Method of Data Retrieval: 数据获得的类型&lt;/td>
+&lt;td>2&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>31&lt;/td>
+&lt;td>Type of Sensor: 检测器类型&lt;/td>
+&lt;td>P&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>32&lt;/td>
+&lt;td>Second Type of Sensor: 检测器的第二种类型&lt;/td>
+&lt;td>L&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>33&lt;/td>
+&lt;td>Primary Purpose: 安装检测器的意图&lt;/td>
+&lt;td>P&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>34-45&lt;/td>
+&lt;td>LRS Identification&lt;/td>
+&lt;td>001700000000&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>46-51&lt;/td>
+&lt;td>LRS Location Point&lt;/td>
+&lt;td>81967&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>52-59&lt;/td>
+&lt;td>Latitude: 纬度&lt;/td>
+&lt;td>62351650&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>60-68&lt;/td>
+&lt;td>Longitude: 经度&lt;/td>
+&lt;td>150252360&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>69-72&lt;/td>
+&lt;td>SHRP Site Identification&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>73-78&lt;/td>
+&lt;td>Previous Station ID&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>79-80&lt;/td>
+&lt;td>Year Station Established: 哪年建的站点&lt;/td>
+&lt;td>91&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>81-82&lt;/td>
+&lt;td>Year Station Discontinued&lt;/td>
+&lt;td>00&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>83-85&lt;/td>
+&lt;td>FIPS County Code&lt;/td>
+&lt;td>170&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>86&lt;/td>
+&lt;td>HPMS Sample Type&lt;/td>
+&lt;td>Y&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>87-98&lt;/td>
+&lt;td>HPMS Sample Identifier&lt;/td>
+&lt;td>170000008007&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>99&lt;/td>
+&lt;td>National Highway System&lt;/td>
+&lt;td>Y&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>100&lt;/td>
+&lt;td>Posted Route Signing&lt;/td>
+&lt;td>3&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>101-108&lt;/td>
+&lt;td>Posted Signed Route Number&lt;/td>
+&lt;td>00000003&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>109&lt;/td>
+&lt;td>Concurrent Route Signing&lt;/td>
+&lt;td>0&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>110-117&lt;/td>
+&lt;td>Concurrent Signed Route Number&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>118-167&lt;/td>
+&lt;td>Station Location&lt;/td>
+&lt;td>PARKS HIGHWAY AT CHULITNA - NB&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>数据样例：
+S0200010111161R1T13 00 13 00 2PLP001700000000 8196762351650150252360 9100170Y170000008007Y3000000030 PARKS HIGHWAY AT CHULITNA - NB (后面有很多空格)&lt;/p>
+&lt;h1 id="流量数据格式">流量数据格式
+&lt;/h1>&lt;p>2016年数据的文件名：AK_JAN_2016 (TMAS).VOL
+12个字段&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>下标&lt;/th>
+&lt;th>描述&lt;/th>
+&lt;th>样例&lt;/th>
+&lt;th>critical/optional&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>1&lt;/td>
+&lt;td>Record Type: 记录类型&lt;/td>
+&lt;td>3&lt;/td>
+&lt;td>c&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>2-3&lt;/td>
+&lt;td>FIPS State Code&lt;/td>
+&lt;td>02&lt;/td>
+&lt;td>c&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>4-5&lt;/td>
+&lt;td>Functional Classification Code&lt;/td>
+&lt;td>1R&lt;/td>
+&lt;td>c&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>6-11&lt;/td>
+&lt;td>Station Identification&lt;/td>
+&lt;td>000101&lt;/td>
+&lt;td>c&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>12&lt;/td>
+&lt;td>Direction of Travel Code&lt;/td>
+&lt;td>1&lt;/td>
+&lt;td>c&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>13&lt;/td>
+&lt;td>Lane of Travel&lt;/td>
+&lt;td>1&lt;/td>
+&lt;td>c&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>14-15&lt;/td>
+&lt;td>Year of Data&lt;/td>
+&lt;td>16&lt;/td>
+&lt;td>c&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>16-17&lt;/td>
+&lt;td>Month of Data&lt;/td>
+&lt;td>01&lt;/td>
+&lt;td>c&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>18-19&lt;/td>
+&lt;td>Day of Data&lt;/td>
+&lt;td>01&lt;/td>
+&lt;td>c&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>20&lt;/td>
+&lt;td>Day of Week(1表示周日)&lt;/td>
+&lt;td>6&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>21-25,&amp;hellip;136-140&lt;/td>
+&lt;td>Traffic Volume Counted Fields(从00:00到24:00，24个小时的流量)&lt;/td>
+&lt;td>00005 00004 00002 &amp;hellip; 00003&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>141&lt;/td>
+&lt;td>Restrictions(1表示施工或活动影响流量，2表示检测器出现问题，0表示正常)&lt;/td>
+&lt;td>0&lt;/td>
+&lt;td>o&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>数据样例：
+3021R0001011116010160000500004000020000000001000010000200001000150003100026000430003200052000340002800024000140001400007000120000800007000030
+不知道为什么这行数据在浏览器里面直接出去了。。。&lt;/p>
+&lt;p>关于车辆分类和称重数据就不描述了，可以直接看官方文档。&lt;/p></description></item><item><title>MnDOT traffic data</title><link>https://davidham3.github.io/blog/p/mndot-traffic-data/</link><pubDate>Wed, 11 Jul 2018 15:54:11 +0000</pubDate><guid>https://davidham3.github.io/blog/p/mndot-traffic-data/</guid><description>&lt;p>MnDOT的全称是Minnesota Department of Transportation。RTMC traffic data是其的一个子集。美国明尼苏达州双子城交通管理中心的交通数据。
+地址：&lt;a class="link" href="http://www.d.umn.edu/~tkwon/TMCdata/TMCarchive.html" target="_blank" rel="noopener"
+>http://www.d.umn.edu/~tkwon/TMCdata/TMCarchive.html&lt;/a>&lt;/p>
+&lt;p>数据是RTMC采集的连续数据，是MnDOT的一个子集，超过4500个每30秒为间隔的线圈检测器部署Twin Cities Metro freeways。最近加入了Rochester线圈数据。每天的数据都会UMD的服务器被打包进一个zip文件，之后存入这个仓库。文件名是&amp;quot;yyyymmdd.traffic&amp;quot;，分别是年月日。使用unzip软件直接解压即可。解压后有9000个文件，4500个是流量数据，文件名是&amp;quot;###.v30&amp;quot;，另外4000个文件是占用率文件，是&amp;quot;###.o30&amp;quot;或者&amp;quot;###.c30&amp;quot;。###表示检测器的id。数据服务由UMD的Transportation Research Data Lab(TDRL)提供，旨在与学者分享资源与思路。我们鼓励数据使用者与我们联系，分享研究成果与想法。这个数据是免费的，但是禁止用于商业用途。最后，感谢RTMC如此慷慨地提供交通数据。&lt;/p>
+&lt;p>数据格式：
+&lt;a class="link" href="http://www.d.umn.edu/~tkwon/TMCdata/Traffic.html" target="_blank" rel="noopener"
+>http://www.d.umn.edu/~tkwon/TMCdata/Traffic.html&lt;/a>
+MN/DOT已经收集了路中的检测器的数据很多年了。从2000年3月开始，在Twin Cities metro area，超过4000个检测器每30秒都会收集一次数据。原始数据包括了流量和占有率。每天都会有大量的数据，将这些数据存储进传统数据库的价值比乱放大很多。因此，这些数据的存储促使了MN/DOT交通数据文件格式的发展。这个格式现在是TDRL的UTSDF的一个特例。&lt;/p>
+&lt;p>UTSDF的优点很多。最重要的好处就是简单。早期的文件格式有复杂的bit操作，对数据分析工具很难操作。后来所有的数据存成8bit或16bit的整数解决了这个问题。这个格式的另一个好处是它的紧凑性。早期的格式，数据33M。现在这个格式，同样的数据只有13M（精度不变）。早期格式的另一个问题是30秒、5分钟的区分使得获取数据很麻烦。现在这个数据把所有数据融合到一个文件中，简化了读取数据的过程。&lt;/p>
+&lt;p>另一个重要的好处是可扩展性，未来可能在不牺牲紧凑性的情况下增加其他类型的数据（比如速度）。&lt;/p>
+&lt;p>每个traffic数据文件包含了一天的交通数据。文件一版命名为8个数字的日期加.traffic的后缀。压缩成了zip格式。每个检测器有两个文件，一个是整天的流量，另一个是占用率。这些文件的命名是检测器的id。流量的后缀是.v30，占用率是.o30。所以如果有个编号为100的检测器，那就有两个文件，100.v30和100.o30。&lt;/p>
+&lt;p>流量文件（.v30）共2880个字节。每字节是一个8比特带符号的流量值，每天30秒为一个周期。-1表示缺失值。最开始的8bit表示一天最开始的值，也就是午夜0点0分30秒，最后一个值是11点59分30秒。&lt;/p>
+&lt;p>占用率文件（.o30）和流量文件很相似，除了每个值是16bit。每个文件是5760字节。占用率值是从0到1000（百分点的十分之一）的fixed-point interger。-1表示缺失，16bit是高位优先（high-byte first order）。&lt;/p>
+&lt;p>以上格式说明修订于: 23 March 2000&lt;/p>
+&lt;p>附录：2001年8月3日&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>.c30文件是记录在&amp;quot;scans&amp;quot;中，并且比.o30文件更精确。不久所有的数据都会使用.c30格式。Scans定义为$\frac{1}{60}$秒，所以数据的范围是0到1800（30秒 $\times$ 60 scans/second），老版的文件.o30表示的是千分之一为单位的占有率，所以范围是0到1000。这是这两个文件的区别。如果你想要0到100的数据，将scan数据除以18，或者将占用率数据除以10。任何在这个范围外的数据都是有问题的数据。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>对于流量数据，把他当成有符号或者没符号无所谓。因为样本是30秒的流量数据，如果有40量车通过那就说明每小时会通过4800量车，平均车与车之间差了0.75秒。肯定是不可能，所以我建议如果数据不在0到40之间，那就说明是异常值。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>那些不同的负数是数据采集软件的小bug。未来我们会修复他们，所以对于流量数据，任何不在合理范围的数据都应该被当成异常值。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;p>以上格式信息由TMC Mn/DOT的Doug Lau提供。&lt;/p></description></item></channel></rss>
