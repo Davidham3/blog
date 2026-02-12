@@ -82,4 +82,4 @@ hugo server --bind 0.0.0.0 --port 1314
 
 通过上述命令启动server，然后就可以直接打开浏览器访问`localhost:1314`。
 
-另外，我编写了一个python脚本用来将hexo的博客迁移到hugo上面，命名位`scripts/migrate.py`，直接使用`uv run scripts/migrate.py`运行即可：
+另外，我编写了一个python脚本用来将hexo的博客迁移到hugo上面，命名位`scripts/migrate.py`，直接使用`uv run scripts/migrate.py`运行即可。
