@@ -1,0 +1,216 @@
+<!doctype html><html lang=en-us dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="leetcode algorithms #3. Title: Longest Substring Without Repeating Characters"><title>leetcode algorithms #3</title><link rel=canonical href=https://davidham3.github.io/blog/p/leetcode-algorithms-%233/><link rel=stylesheet href=/blog/scss/style.min.6a692fd055deae459f2a9767f57f3855ba80cafd5041317f24f7360f6ca47cdf.css><meta property='og:title' content="leetcode algorithms #3"><meta property='og:description' content="leetcode algorithms #3. Title: Longest Substring Without Repeating Characters"><meta property='og:url' content='https://davidham3.github.io/blog/p/leetcode-algorithms-%233/'><meta property='og:site_name' content='Davidham的博客'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='algorithms'><meta property='article:published_time' content='2018-02-24T16:13:34+00:00'><meta property='article:modified_time' content='2018-02-24T16:13:34+00:00'><meta name=twitter:title content="leetcode algorithms #3"><meta name=twitter:description content="leetcode algorithms #3. Title: Longest Substring Without Repeating Characters"><link rel="shortcut icon" href=/favicon.png></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/blog/><img src=/blog/img/avatar_hu_a95981f1fc190aef.png width=300 height=300 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>🚀</span></figure><div class=site-meta><h1 class=site-name><a href=/blog>Davidham的博客</a></h1><h2 class=site-description>随便写写</h2></div></header><ol class=menu-social><li><a href=https://github.com/Davidham3 target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/blog/><svg class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><polyline points="5 12 3 12 12 3 21 12 19 12"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/><path d="M9 21v-6a2 2 0 012-2h2a2 2 0 012 2v6"/></svg>
+<span>Home</span></a></li><li><a href=/blog/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>Archives</span></a></li><li><a href=/blog/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>Search</span></a></li><li><a href=/blog/links/><svg class="icon icon-tabler icon-tabler-link" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M10 14a3.5 3.5.0 005 0l4-4a3.5 3.5.0 00-5-5l-.5.5"/><path d="M14 10a3.5 3.5.0 00-5 0l-4 4a3.5 3.5.0 005 5l.5-.5"/></svg>
+<span>Links</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>暗色模式</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#description>Description</a></li><li><a href=#discussion>Discussion</a></li><li><a href=#implementation>implementation</a></li></ol></nav></div></section></aside><main class="main full-width"><article class=main-article><header class=article-header><div class=article-details><header class=article-category><a href=/blog/categories/algorithms/>Algorithms</a></header><div class=article-title-wrapper><h2 class=article-title><a href=/blog/p/leetcode-algorithms-%233/>leetcode algorithms #3</a></h2><h3 class=article-subtitle>leetcode algorithms #3. Title: Longest Substring Without Repeating Characters</h3></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published>Feb 24, 2018</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>阅读时长: 4 分钟</time></div></footer></div></header><section class=article-content><p>leetcode algorithms #3. Title: Longest Substring Without Repeating Characters</p><h1 id=longest-substring-without-repeating-characters>Longest Substring Without Repeating Characters</h1><h2 id=description>Description</h2><p>Given a string, find the length of the longest substring without repeating characters.</p><p>Examples:</p><p>Given &ldquo;abcabcbb&rdquo;, the answer is &ldquo;abc&rdquo;, which the length is 3.</p><p>Given &ldquo;bbbbb&rdquo;, the answer is &ldquo;b&rdquo;, with the length of 1.</p><p>Given &ldquo;pwwkew&rdquo;, the answer is &ldquo;wke&rdquo;, with the length of 3. Note that the answer must be a substring, &ldquo;pwke&rdquo; is a subsequence and not a substring.</p><h2 id=discussion>Discussion</h2><p>枚举：
+对于第一个字母，从它开始向后找，如果遍历的途中发现有重复的字母，停止，记录长度。
+然后从第二个字母开始，用同样的方法找。
+最后取所有长度中的最大值即可。
+时间复杂度: $O(n^2)$。</p><p>第二种方法
+滑动窗扫描
+对于第一个字母，从它开始向后找，记录此时首字符的下标为$i$，找到第一个重复的字母后，记录末字符小标为$j$。得到长度$j-i$。然后$i++$，将首字符下标向后移动一位，$j$变为$i+1$，若碰到重复的字符，计算长度$j-i$，$i++$，反复如此，最后取大的那个数。
+这个时间复杂度我不会计算，不过应该是比线性要慢一点点，但是趋近于线性扫描的速度。
+下面的sliding window是我实现的，看了一下别人的solution
+Algorithm</p><p>The naive approach is very straightforward. But it is too slow. So how can we optimize it?</p><p>In the naive approaches, we repeatedly check a substring to see if it has duplicate character. But it is unnecessary. If a substring $s_{ij}$ from index $i$ to $j - 1$ is already checked to have no duplicate characters. We only need to check if $s[j]$ is already in the substring $s_{ij}$.</p><p>To check if a character is already in the substring, we can scan the substring, which leads to an $O(n^2)$ algorithm. But we can do better.</p><p>By using HashSet as a sliding window, checking if a character in the current can be done in $O(1)$.</p><p>A sliding window is an abstract concept commonly used in array/string problems. A window is a range of elements in the array/string which usually defined by the start and end indices, i.e. $[i, j)$ (left-closed, right-open). A sliding window is a window &ldquo;slides&rdquo; its two boundaries to the certain direction. For example, if we slide $[i, j)$ to the right by $1$ element, then it becomes $[i+1, j+1)$ (left-closed, right-open).</p><p>Back to our problem. We use HashSet to store the characters in current window $[i, j)$ ($j = i$ initially). Then we slide the index $j$ to the right. If it is not in the HashSet, we slide $j$ further. Doing so until $s[j]$ is already in the HashSet. At this point, we found the maximum size of substrings without duplicate characters start with index $i$. If we do this for all $i$, we get our answer.</p><p>时间复杂度: $O(2n)=O(n)$，最坏情况下每个元素被访问两次
+空间复杂度：$O(min(m, n))$，$n$是字符串$s$的长度，$m$是字符种类个数</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span><span class=w> </span><span class=kd>class</span> <span class=nc>Solution</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=kd>public</span><span class=w> </span><span class=kt>int</span><span class=w> </span><span class=nf>lengthOfLongestSubstring</span><span class=p>(</span><span class=n>String</span><span class=w> </span><span class=n>s</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=kt>int</span><span class=w> </span><span class=n>n</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>s</span><span class=p>.</span><span class=na>length</span><span class=p>();</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=n>Set</span><span class=o>&lt;</span><span class=n>Character</span><span class=o>&gt;</span><span class=w> </span><span class=n>set</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=k>new</span><span class=w> </span><span class=n>HashSet</span><span class=o>&lt;&gt;</span><span class=p>();</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=kt>int</span><span class=w> </span><span class=n>ans</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>0</span><span class=p>,</span><span class=w> </span><span class=n>i</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>0</span><span class=p>,</span><span class=w> </span><span class=n>j</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>0</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=k>while</span><span class=w> </span><span class=p>(</span><span class=n>i</span><span class=w> </span><span class=o>&lt;</span><span class=w> </span><span class=n>n</span><span class=w> </span><span class=o>&amp;&amp;</span><span class=w> </span><span class=n>j</span><span class=w> </span><span class=o>&lt;</span><span class=w> </span><span class=n>n</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=c1>// try to extend the range [i, j]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=k>if</span><span class=w> </span><span class=p>(</span><span class=o>!</span><span class=n>set</span><span class=p>.</span><span class=na>contains</span><span class=p>(</span><span class=n>s</span><span class=p>.</span><span class=na>charAt</span><span class=p>(</span><span class=n>j</span><span class=p>))){</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=n>set</span><span class=p>.</span><span class=na>add</span><span class=p>(</span><span class=n>s</span><span class=p>.</span><span class=na>charAt</span><span class=p>(</span><span class=n>j</span><span class=o>++</span><span class=p>));</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=n>ans</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>Math</span><span class=p>.</span><span class=na>max</span><span class=p>(</span><span class=n>ans</span><span class=p>,</span><span class=w> </span><span class=n>j</span><span class=w> </span><span class=o>-</span><span class=w> </span><span class=n>i</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=k>else</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=n>set</span><span class=p>.</span><span class=na>remove</span><span class=p>(</span><span class=n>s</span><span class=p>.</span><span class=na>charAt</span><span class=p>(</span><span class=n>i</span><span class=o>++</span><span class=p>));</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=k>return</span><span class=w> </span><span class=n>ans</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=p>}</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>第三种方法是优化的sliding window
+The above solution requires at most $2n$ steps. In fact, it could be optimized to require only $n$ steps. Instead of using a set to tell if a character exists or not, we could define a mapping of the characters to its index. Then we can skip the characters immediately when we found a repeated character.</p><p>The reason is that if $s[j]$ have a duplicate in the range $[i, j)$ with index $j&rsquo;$, we don&rsquo;t need to increase $i$ little by little. We can skip all the elements in the range $[i, j&rsquo;]$ and let $i$ to be $j&rsquo; + 1$ directly.
+第三种方法的意思是，如果在当前的滑动窗$i$到$j$中，现在的j指向的元素与$j&rsquo;$相同，这个$j&rsquo;$在$i$和$j$之间，那我们就可以直接让$i=j+1$。
+假设字符串是&rsquo;pwawb&rsquo;，$i$是0，$j$是3，此时$j&rsquo;$是1，我们可以让$i$直接跳到$j&rsquo;+1$，因此我们需要一种能马上查询到$j&rsquo;$的方法，也就是Hash table。
+$j$这个下标在移动过程中，如果碰到没有的见过的元素，就加入table中，如果见过，就获得当前的长度$j-i$，但是这里涉及到一个更新延时的问题。
+比如字符串"abba"，table中{&lsquo;a&rsquo;: 0, &lsquo;b&rsquo;: 1}，此时$j$为2，那么$j&rsquo;$为1，需要将$i$挪到table中$j$对应的值$+1$，即$i=2$，而且要更新table为{&lsquo;a&rsquo;: 0, &lsquo;b&rsquo;: 2}。接下来$j=3$，$a$已经在table中了，但是$j&rsquo;$在$i$前面，此时就不应该移动$i$了，直接更新$a$即可。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span><span class=w> </span><span class=kd>class</span> <span class=nc>Solution</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=kd>public</span><span class=w> </span><span class=kt>int</span><span class=w> </span><span class=nf>lengthOfLongestSubstring</span><span class=p>(</span><span class=n>String</span><span class=w> </span><span class=n>s</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=kt>int</span><span class=w> </span><span class=n>n</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>s</span><span class=p>.</span><span class=na>length</span><span class=p>(),</span><span class=w> </span><span class=n>ans</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>0</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=n>Map</span><span class=o>&lt;</span><span class=n>Character</span><span class=p>,</span><span class=w> </span><span class=n>Integer</span><span class=o>&gt;</span><span class=w> </span><span class=n>map</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=k>new</span><span class=w> </span><span class=n>HashMap</span><span class=o>&lt;&gt;</span><span class=p>();</span><span class=w> </span><span class=c1>// current index of character</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=c1>// try to extend the range [i, j]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=k>for</span><span class=w> </span><span class=p>(</span><span class=kt>int</span><span class=w> </span><span class=n>j</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>0</span><span class=p>,</span><span class=w> </span><span class=n>i</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>0</span><span class=p>;</span><span class=w> </span><span class=n>j</span><span class=w> </span><span class=o>&lt;</span><span class=w> </span><span class=n>n</span><span class=p>;</span><span class=w> </span><span class=n>j</span><span class=o>++</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=k>if</span><span class=w> </span><span class=p>(</span><span class=n>map</span><span class=p>.</span><span class=na>containsKey</span><span class=p>(</span><span class=n>s</span><span class=p>.</span><span class=na>charAt</span><span class=p>(</span><span class=n>j</span><span class=p>)))</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=n>i</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>Math</span><span class=p>.</span><span class=na>max</span><span class=p>(</span><span class=n>map</span><span class=p>.</span><span class=na>get</span><span class=p>(</span><span class=n>s</span><span class=p>.</span><span class=na>charAt</span><span class=p>(</span><span class=n>j</span><span class=p>)),</span><span class=w> </span><span class=n>i</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>ans</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>Math</span><span class=p>.</span><span class=na>max</span><span class=p>(</span><span class=n>ans</span><span class=p>,</span><span class=w> </span><span class=n>j</span><span class=w> </span><span class=o>-</span><span class=w> </span><span class=n>i</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=n>1</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>map</span><span class=p>.</span><span class=na>put</span><span class=p>(</span><span class=n>s</span><span class=p>.</span><span class=na>charAt</span><span class=p>(</span><span class=n>j</span><span class=p>),</span><span class=w> </span><span class=n>j</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=n>1</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=k>return</span><span class=w> </span><span class=n>ans</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=p>}</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=implementation>implementation</h2><p>sliding window 1 runing time: 816ms</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=k>class</span> <span class=nc>Solution</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=nf>lengthOfLongestSubstring</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>s</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;&#34;&#34;
+</span></span></span><span class=line><span class=cl><span class=s2>        :type s: str
+</span></span></span><span class=line><span class=cl><span class=s2>        :rtype: int
+</span></span></span><span class=line><span class=cl><span class=s2>        &#34;&#34;&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=n>lengths</span> <span class=o>=</span> <span class=p>[]</span>
+</span></span><span class=line><span class=cl>        <span class=n>chars</span> <span class=o>=</span> <span class=nb>set</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>        <span class=n>i</span><span class=p>,</span> <span class=n>j</span> <span class=o>=</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>1</span>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=nb>len</span><span class=p>(</span><span class=n>s</span><span class=p>)</span> <span class=o>==</span> <span class=mi>0</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=k>return</span> <span class=mi>0</span>
+</span></span><span class=line><span class=cl>        <span class=n>chars</span><span class=o>.</span><span class=n>add</span><span class=p>(</span><span class=n>s</span><span class=p>[</span><span class=n>i</span><span class=p>])</span>
+</span></span><span class=line><span class=cl>        <span class=k>while</span> <span class=n>i</span> <span class=o>&lt;</span> <span class=nb>len</span><span class=p>(</span><span class=n>s</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>            <span class=k>while</span> <span class=n>j</span> <span class=o>&lt;</span> <span class=nb>len</span><span class=p>(</span><span class=n>s</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>                <span class=k>if</span> <span class=n>s</span><span class=p>[</span><span class=n>j</span><span class=p>]</span> <span class=ow>in</span> <span class=n>chars</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>                    <span class=n>lengths</span><span class=o>.</span><span class=n>append</span><span class=p>(</span><span class=n>j</span><span class=o>-</span><span class=n>i</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>                    <span class=n>i</span> <span class=o>+=</span> <span class=mi>1</span>
+</span></span><span class=line><span class=cl>                    <span class=n>j</span> <span class=o>=</span> <span class=n>i</span> <span class=o>+</span> <span class=mi>1</span>
+</span></span><span class=line><span class=cl>                    <span class=n>chars</span> <span class=o>=</span> <span class=nb>set</span><span class=p>([</span><span class=n>s</span><span class=p>[</span><span class=n>i</span><span class=p>]])</span>
+</span></span><span class=line><span class=cl>                <span class=k>else</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>                    <span class=n>chars</span><span class=o>.</span><span class=n>add</span><span class=p>(</span><span class=n>s</span><span class=p>[</span><span class=n>j</span><span class=p>])</span>
+</span></span><span class=line><span class=cl>                    <span class=n>j</span> <span class=o>+=</span> <span class=mi>1</span>
+</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=n>j</span> <span class=o>==</span> <span class=nb>len</span><span class=p>(</span><span class=n>s</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>                <span class=n>lengths</span><span class=o>.</span><span class=n>append</span><span class=p>(</span><span class=n>j</span> <span class=o>-</span> <span class=n>i</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>                <span class=k>return</span> <span class=nb>max</span><span class=p>(</span><span class=n>lengths</span><span class=p>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>sliding window 2 runing time: 120ms</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=k>class</span> <span class=nc>Solution</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=nf>lengthOfLongestSubstring</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>s</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;&#34;&#34;
+</span></span></span><span class=line><span class=cl><span class=s2>        :type s: str
+</span></span></span><span class=line><span class=cl><span class=s2>        :rtype: int
+</span></span></span><span class=line><span class=cl><span class=s2>        &#34;&#34;&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=n>chars</span> <span class=o>=</span> <span class=nb>set</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>        <span class=n>ans</span><span class=p>,</span> <span class=n>i</span><span class=p>,</span> <span class=n>j</span> <span class=o>=</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>0</span>
+</span></span><span class=line><span class=cl>        <span class=k>while</span> <span class=n>i</span> <span class=o>&lt;</span> <span class=nb>len</span><span class=p>(</span><span class=n>s</span><span class=p>)</span> <span class=ow>and</span> <span class=n>j</span> <span class=o>&lt;</span> <span class=nb>len</span><span class=p>(</span><span class=n>s</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=n>s</span><span class=p>[</span><span class=n>j</span><span class=p>]</span> <span class=ow>not</span> <span class=ow>in</span> <span class=n>chars</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>                <span class=n>chars</span><span class=o>.</span><span class=n>add</span><span class=p>(</span><span class=n>s</span><span class=p>[</span><span class=n>j</span><span class=p>])</span>
+</span></span><span class=line><span class=cl>                <span class=n>j</span> <span class=o>+=</span> <span class=mi>1</span>
+</span></span><span class=line><span class=cl>                <span class=n>ans</span> <span class=o>=</span> <span class=nb>max</span><span class=p>(</span><span class=n>ans</span><span class=p>,</span> <span class=nb>len</span><span class=p>(</span><span class=n>chars</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>            <span class=k>else</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>                <span class=n>chars</span><span class=o>.</span><span class=n>remove</span><span class=p>(</span><span class=n>s</span><span class=p>[</span><span class=n>i</span><span class=p>])</span>
+</span></span><span class=line><span class=cl>                <span class=n>i</span> <span class=o>+=</span> <span class=mi>1</span>
+</span></span><span class=line><span class=cl>        <span class=k>return</span> <span class=n>ans</span>
+</span></span></code></pre></td></tr></table></div></div><p>sliding window 3 runing time: 128ms</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=k>class</span> <span class=nc>Solution</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=nf>lengthOfLongestSubstring</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>s</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;&#34;&#34;
+</span></span></span><span class=line><span class=cl><span class=s2>        :type s: str
+</span></span></span><span class=line><span class=cl><span class=s2>        :rtype: int
+</span></span></span><span class=line><span class=cl><span class=s2>        &#34;&#34;&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=n>chars</span> <span class=o>=</span> <span class=nb>dict</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>        <span class=n>ans</span><span class=p>,</span> <span class=n>i</span><span class=p>,</span> <span class=n>j</span> <span class=o>=</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>0</span>
+</span></span><span class=line><span class=cl>        <span class=k>while</span> <span class=n>i</span> <span class=o>&lt;</span> <span class=nb>len</span><span class=p>(</span><span class=n>s</span><span class=p>)</span> <span class=ow>and</span> <span class=n>j</span> <span class=o>&lt;</span> <span class=nb>len</span><span class=p>(</span><span class=n>s</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=n>s</span><span class=p>[</span><span class=n>j</span><span class=p>]</span> <span class=ow>in</span> <span class=n>chars</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>                <span class=k>if</span> <span class=n>chars</span><span class=p>[</span><span class=n>s</span><span class=p>[</span><span class=n>j</span><span class=p>]]</span> <span class=o>&gt;=</span> <span class=n>i</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>                    <span class=n>i</span> <span class=o>=</span> <span class=n>chars</span><span class=p>[</span><span class=n>s</span><span class=p>[</span><span class=n>j</span><span class=p>]]</span> <span class=o>+</span> <span class=mi>1</span>
+</span></span><span class=line><span class=cl>            <span class=n>chars</span><span class=p>[</span><span class=n>s</span><span class=p>[</span><span class=n>j</span><span class=p>]]</span> <span class=o>=</span> <span class=n>j</span>
+</span></span><span class=line><span class=cl>            <span class=n>j</span> <span class=o>+=</span> <span class=mi>1</span>
+</span></span><span class=line><span class=cl>            <span class=n>ans</span> <span class=o>=</span> <span class=nb>max</span><span class=p>(</span><span class=n>ans</span><span class=p>,</span> <span class=n>j</span> <span class=o>-</span> <span class=n>i</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=k>return</span> <span class=n>ans</span>
+</span></span></code></pre></td></tr></table></div></div></section><footer class=article-footer><section class=article-tags><a href=/blog/tags/algorithms/>Algorithms</a></section><section class=article-copyright><svg class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><path d="M14.5 9a3.5 4 0 100 6"/></svg>
+<span>Licensed under Apache License 2.0</span></section></footer><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css integrity=sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV crossorigin=anonymous><script src=https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js integrity=sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8 crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js integrity=sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05 crossorigin=anonymous defer></script><script>window.addEventListener("DOMContentLoaded",()=>{const e=document.querySelector(".main-article");renderMathInElement(e,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1},{left:"\\(",right:"\\)",display:!1},{left:"\\[",right:"\\]",display:!0}],ignoredClasses:["gist"]})})</script></article><aside class=related-content--wrapper><h2 class=section-title>相关文章</h2><div class=related-content><div class="flex article-list--tile"><article><a href=/blog/p/%E5%BD%92%E5%B9%B6%E6%8E%92%E5%BA%8F%E6%94%B9%E8%BF%9B/><div class=article-details><h2 class=article-title>归并排序改进</h2></div></a></article><article><a href=/blog/p/leetcode-algorithms-%235/><div class=article-details><h2 class=article-title>leetcode algorithms #5</h2></div></a></article><article><a href=/blog/p/leetcode-algorithms-%234/><div class=article-details><h2 class=article-title>leetcode algorithms #4</h2></div></a></article><article><a href=/blog/p/leetcode-algorithms-%232/><div class=article-details><h2 class=article-title>leetcode algorithms #2</h2></div></a></article><article><a href=/blog/p/leetcode-algorithms-%231/><div class=article-details><h2 class=article-title>leetcode algorithms #1</h2></div></a></article></div></div></aside><footer class=site-footer><section class=copyright>&copy;
+2020 -
+2026 Davidham的博客</section><section class=powerby>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.30.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/blog/ts/main.1e9a3bafd846ced4c345d084b355fb8c7bae75701c338f8a1f8a82c780137826.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

@@ -1,0 +1,526 @@
+<!doctype html><html lang=en-us dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="应甲方需求，写一个 pyspark 读写 HBase 的教程。主要包含了基本读写方法和自定义 Converter 的方法。"><title>pyspark读写HBase</title><link rel=canonical href=https://davidham3.github.io/blog/p/pyspark%E8%AF%BB%E5%86%99hbase/><link rel=stylesheet href=/blog/scss/style.min.6a692fd055deae459f2a9767f57f3855ba80cafd5041317f24f7360f6ca47cdf.css><meta property='og:title' content="pyspark读写HBase"><meta property='og:description' content="应甲方需求，写一个 pyspark 读写 HBase 的教程。主要包含了基本读写方法和自定义 Converter 的方法。"><meta property='og:url' content='https://davidham3.github.io/blog/p/pyspark%E8%AF%BB%E5%86%99hbase/'><meta property='og:site_name' content='Davidham的博客'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='Spark'><meta property='article:tag' content='software'><meta property='article:published_time' content='2019-04-10T17:26:30+00:00'><meta property='article:modified_time' content='2019-04-10T17:26:30+00:00'><meta name=twitter:title content="pyspark读写HBase"><meta name=twitter:description content="应甲方需求，写一个 pyspark 读写 HBase 的教程。主要包含了基本读写方法和自定义 Converter 的方法。"><link rel="shortcut icon" href=/favicon.png></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/blog/><img src=/blog/img/avatar_hu_a95981f1fc190aef.png width=300 height=300 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>🚀</span></figure><div class=site-meta><h1 class=site-name><a href=/blog>Davidham的博客</a></h1><h2 class=site-description>随便写写</h2></div></header><ol class=menu-social><li><a href=https://github.com/Davidham3 target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/blog/><svg class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><polyline points="5 12 3 12 12 3 21 12 19 12"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/><path d="M9 21v-6a2 2 0 012-2h2a2 2 0 012 2v6"/></svg>
+<span>Home</span></a></li><li><a href=/blog/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>Archives</span></a></li><li><a href=/blog/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>Search</span></a></li><li><a href=/blog/links/><svg class="icon icon-tabler icon-tabler-link" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M10 14a3.5 3.5.0 005 0l4-4a3.5 3.5.0 00-5-5l-.5.5"/><path d="M14 10a3.5 3.5.0 00-5 0l-4 4a3.5 3.5.0 005 5l.5-.5"/></svg>
+<span>Links</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>暗色模式</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#基本方法>基本方法</a></li><li><a href=#进阶方法>进阶方法</a></li></ol></nav></div></section></aside><main class="main full-width"><article class=main-article><header class=article-header><div class=article-details><header class=article-category><a href=/blog/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E5%B9%B3%E5%8F%B0/>分布式平台</a></header><div class=article-title-wrapper><h2 class=article-title><a href=/blog/p/pyspark%E8%AF%BB%E5%86%99hbase/>pyspark读写HBase</a></h2><h3 class=article-subtitle>应甲方需求，写一个 pyspark 读写 HBase 的教程。主要包含了基本读写方法和自定义 Converter 的方法。</h3></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published>Apr 10, 2019</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>阅读时长: 9 分钟</time></div></footer></div></header><section class=article-content><p>应甲方需求，写一个 pyspark 读写 HBase 的教程。主要包含了基本读写方法和自定义 Converter 的方法。</p><h1 id=pyspark-读取-hbase>pyspark 读取 HBase</h1><p>以下内容的环境：python 3.5，spark 1.6</p><p>pyspark 读取 HBase 需要借助 Java 的类完成读写。</p><p>首先需要明确的是，HBase 中存储的是 <code>byte[]</code>，也就是说，不管是什么样的数据，都需要先转换为 <code>byte[]</code> 后，才能存入 HBase。</p><h2 id=基本方法>基本方法</h2><p>pyspark 读取 HBase 需要使用 <code>SparkContext</code> 的 <a class=link href=http://spark.apache.org/docs/1.6.0/api/python/pyspark.html#pyspark.SparkContext.newAPIHadoopRDD target=_blank rel=noopener>newAPIHadoopRDD</a> 这个方法，这个方法需要使用 Java 的类，用这些类读取 HBase</p><p>下面的示例代码默认 HBase 中的行键、列族名、列名和值都是字符串转成的 <code>byte</code> 数组：</p><p>read_hbase_pyspark.py</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=c1># -*- coding:utf-8 -*-</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>json</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kn>from</span> <span class=nn>pyspark</span> <span class=kn>import</span> <span class=n>SparkContext</span>
+</span></span><span class=line><span class=cl><span class=kn>from</span> <span class=nn>pyspark</span> <span class=kn>import</span> <span class=n>SparkConf</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>if</span> <span class=vm>__name__</span> <span class=o>==</span> <span class=s2>&#34;__main__&#34;</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>conf</span> <span class=o>=</span> <span class=n>SparkConf</span><span class=p>()</span><span class=o>.</span><span class=n>set</span><span class=p>(</span><span class=s2>&#34;spark.executorEnv.PYTHONHASHSEED&#34;</span><span class=p>,</span> <span class=s2>&#34;0&#34;</span><span class=p>)</span>\
+</span></span><span class=line><span class=cl>                      <span class=o>.</span><span class=n>set</span><span class=p>(</span><span class=s2>&#34;spark.kryoserializer.buffer.max&#34;</span><span class=p>,</span> <span class=s2>&#34;2040mb&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>sc</span> <span class=o>=</span> <span class=n>SparkContext</span><span class=p>(</span><span class=n>appName</span><span class=o>=</span><span class=s1>&#39;HBaseInputFormat&#39;</span><span class=p>,</span> <span class=n>conf</span><span class=o>=</span><span class=n>conf</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># 配置项要包含 zookeeper 的 ip</span>
+</span></span><span class=line><span class=cl>    <span class=n>zookeeper_host</span> <span class=o>=</span> <span class=s1>&#39;zkServer&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># 还要包含要读取的 HBase 表名</span>
+</span></span><span class=line><span class=cl>    <span class=n>hbase_table_name</span> <span class=o>=</span> <span class=s1>&#39;testTable&#39;</span>    
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>conf</span> <span class=o>=</span> <span class=p>{</span><span class=s2>&#34;hbase.zookeeper.quorum&#34;</span><span class=p>:</span> <span class=n>zookeeper_host</span><span class=p>,</span> <span class=s2>&#34;hbase.mapreduce.inputtable&#34;</span><span class=p>:</span> <span class=n>hbase_table_name</span><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># 这个Java类用来将 HBase 的行键转换为字符串</span>
+</span></span><span class=line><span class=cl>    <span class=n>keyConv</span> <span class=o>=</span> <span class=s2>&#34;org.apache.spark.examples.pythonconverters.ImmutableBytesWritableToStringConverter&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=c1># 这个Java类用来将 HBase 查询得到的结果，转换为字符串</span>
+</span></span><span class=line><span class=cl>    <span class=n>valueConv</span> <span class=o>=</span> <span class=s2>&#34;org.apache.spark.examples.pythonconverters.HBaseResultToStringConverter&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># 第一个参数是 hadoop 文件的输入类型</span>
+</span></span><span class=line><span class=cl>    <span class=c1># 第二个参数是 HBase rowkey 的类型</span>
+</span></span><span class=line><span class=cl>    <span class=c1># 第三个参数是 HBase 值的类型</span>
+</span></span><span class=line><span class=cl>    <span class=c1># 这三个参数不用改变</span>
+</span></span><span class=line><span class=cl>    <span class=c1># 读取后的 rdd，每个元素是一个键值对，(key, value)</span>
+</span></span><span class=line><span class=cl>    <span class=n>hbase_rdd</span> <span class=o>=</span> <span class=n>sc</span><span class=o>.</span><span class=n>newAPIHadoopRDD</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;org.apache.hadoop.hbase.mapreduce.TableInputFormat&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;org.apache.hadoop.hbase.io.ImmutableBytesWritable&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;org.apache.hadoop.hbase.client.Result&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=n>keyConverter</span><span class=o>=</span><span class=n>keyConv</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=n>valueConverter</span><span class=o>=</span><span class=n>valueConv</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=n>conf</span><span class=o>=</span><span class=n>conf</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># 读取后，将键值对 (key, value) 中的值 value，使用\n切分，用 flatMap 展开</span>
+</span></span><span class=line><span class=cl>    <span class=c1># 然后将键值对 (key, value) 中的值 value 使用 json.loads 解析，得到 dict</span>
+</span></span><span class=line><span class=cl>    <span class=n>hbase_rdd</span> <span class=o>=</span> <span class=n>hbase_rdd</span><span class=o>.</span><span class=n>flatMapValues</span><span class=p>(</span><span class=k>lambda</span> <span class=n>v</span><span class=p>:</span> <span class=n>v</span><span class=o>.</span><span class=n>split</span><span class=p>(</span><span class=s2>&#34;</span><span class=se>\n</span><span class=s2>&#34;</span><span class=p>))</span><span class=o>.</span><span class=n>mapValues</span><span class=p>(</span><span class=n>json</span><span class=o>.</span><span class=n>loads</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>output</span> <span class=o>=</span> <span class=n>hbase_rdd</span><span class=o>.</span><span class=n>collect</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=p>(</span><span class=n>k</span><span class=p>,</span> <span class=n>v</span><span class=p>)</span> <span class=ow>in</span> <span class=n>output</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>        <span class=nb>print</span><span class=p>((</span><span class=n>k</span><span class=p>,</span> <span class=n>v</span><span class=p>))</span>
+</span></span></code></pre></td></tr></table></div></div><p>上述代码在提交给 spark 集群的时候，要指名用到的 Java 类的位置，这些类都在 spark-examples 这个包里面，这个包在 spark 目录下的 lib 里面。以 CDH 5.7.2 为例，CDH 集群中这个包的位置在 <code>/opt/cloudera/parcels/CDH-5.7.2-1.cdh5.7.2.p0.18/lib/spark/lib/spark-examples-1.6.0-cdh5.7.2-hadoop2.6.0-cdh5.7.2.jar</code>，所以提交命令为：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>spark-submit --master yarn --jars /opt/cloudera/parcels/CDH-5.7.2-1.cdh5.7.2.p0.18/lib/spark/lib/spark-examples-1.6.0-cdh5.7.2-hadoop2.6.0-cdh5.7.2.jar read_hbase_pyspark.py
+</span></span></code></pre></td></tr></table></div></div><p>所以，上述的 Java 类，核心都是认为 HBase 中所有的值，原本都是字符串，然后转换成 <code>byte</code> 数组后存入的 HBase，它在解析的时候，将读取到的 <code>byte[]</code> 转换为字符串后返回，所以我们拿到的值就是字符串。</p><h2 id=进阶方法>进阶方法</h2><p>对于其他类型的数据，转换为 <code>byte</code> 数组后存入 HBase，如果我们还使用上面的 Java 类去读取 HBase，那么我们拿到的字符串的值就是不正确的。</p><p>为了理解这些内容，我们首先要讨论 HBase 中值的存储结构。</p><p>HBase 是非结构化数据库，以行为单位，每行拥有一个行键 rowkey，对应的值可以表示为一个 map（python 中的 dict），举个例子，如果我们有一条记录，行键记为 &ldquo;r1&rdquo;，里面有 1 个列族(columnFamily) &ldquo;A&rdquo;，列族中有两列(qualifier)，分别记为 &ldquo;a&rdquo; 和 &ldquo;b&rdquo;，对应的值分别为 &ldquo;v1&rdquo; 和 &ldquo;v2&rdquo;，那么表示成 json 字符串就是下面的形式：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;r1&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;A&#34;</span> <span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>            <span class=s2>&#34;a&#34;</span><span class=p>:</span> <span class=s2>&#34;v1&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=s2>&#34;b&#34;</span><span class=p>:</span> <span class=s2>&#34;v2&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>上面这个 json 字符串就是上面那条记录在 HBase 中存储的示例，第一层的键表示行键(rowkey)，对应的值表示这一行的值；第二层的键表示列族名(columnFamily)，值表示这个列族下列的值；第三层的键表示列名(qualifier)，对应的值(value)表示这个由行键、列族名、列名三项确定的一个单元格(Cell)内的值。所以上面这个例子中，只有一行，两个单元格。</p><p>下面我们针对 pyspark 读取 HBase 使用到的 <code>org.apache.spark.examples.pythonconverters.HBaseResultToStringConverter</code> 来讨论。</p><p>Java 的 API 在读取 HBase 的时候，会得到一个 <code>Result</code> 类型，这个 <code>Result</code> 就是查询结果。<code>Result</code> 可以遍历，里面拥有多个 <code>Cell</code>，也就是单元格。上面我们说了，每个单元格至少有 4 个内容：行键、列族名、列名、值。</p><p><code>HBaseResultToStringConverter</code> 是由 scala 实现的一个类，它的功能是将 Java HBase API 的 <code>Result</code> 转换为 <code>String</code>，源码如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=k>package</span> <span class=nn>org.apache.spark.examples.pythonconverters</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>import</span> <span class=nn>scala.collection.JavaConverters._</span>
+</span></span><span class=line><span class=cl><span class=k>import</span> <span class=nn>scala.util.parsing.json.JSONObject</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>import</span> <span class=nn>org.apache.spark.api.python.Converter</span>
+</span></span><span class=line><span class=cl><span class=k>import</span> <span class=nn>org.apache.hadoop.hbase.client.</span><span class=o>{</span><span class=nc>Put</span><span class=o>,</span> <span class=nc>Result</span><span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=k>import</span> <span class=nn>org.apache.hadoop.hbase.util.Bytes</span>
+</span></span><span class=line><span class=cl><span class=k>import</span> <span class=nn>org.apache.hadoop.hbase.KeyValue.Type</span>
+</span></span><span class=line><span class=cl><span class=k>import</span> <span class=nn>org.apache.hadoop.hbase.CellUtil</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>class</span> <span class=nc>HBaseResultToStringConverter</span> <span class=k>extends</span> <span class=nc>Converter</span><span class=o>[</span><span class=kt>Any</span>, <span class=kt>String</span><span class=o>]</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>override</span> <span class=k>def</span> <span class=n>convert</span><span class=o>(</span><span class=n>obj</span><span class=k>:</span> <span class=kt>Any</span><span class=o>)</span><span class=k>:</span> <span class=kt>String</span> <span class=o>=</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=n>result</span> <span class=k>=</span> <span class=n>obj</span><span class=o>.</span><span class=n>asInstanceOf</span><span class=o>[</span><span class=kt>Result</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=n>output</span> <span class=k>=</span> <span class=n>result</span><span class=o>.</span><span class=n>listCells</span><span class=o>.</span><span class=n>asScala</span><span class=o>.</span><span class=n>map</span><span class=o>(</span><span class=n>cell</span> <span class=k>=&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nc>Map</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>          <span class=s>&#34;row&#34;</span> <span class=o>-&gt;</span> <span class=nc>Bytes</span><span class=o>.</span><span class=n>toStringBinary</span><span class=o>(</span><span class=nc>CellUtil</span><span class=o>.</span><span class=n>cloneRow</span><span class=o>(</span><span class=n>cell</span><span class=o>)),</span>
+</span></span><span class=line><span class=cl>          <span class=s>&#34;columnFamily&#34;</span> <span class=o>-&gt;</span> <span class=nc>Bytes</span><span class=o>.</span><span class=n>toStringBinary</span><span class=o>(</span><span class=nc>CellUtil</span><span class=o>.</span><span class=n>cloneFamily</span><span class=o>(</span><span class=n>cell</span><span class=o>)),</span>
+</span></span><span class=line><span class=cl>          <span class=s>&#34;qualifier&#34;</span> <span class=o>-&gt;</span> <span class=nc>Bytes</span><span class=o>.</span><span class=n>toStringBinary</span><span class=o>(</span><span class=nc>CellUtil</span><span class=o>.</span><span class=n>cloneQualifier</span><span class=o>(</span><span class=n>cell</span><span class=o>)),</span>
+</span></span><span class=line><span class=cl>          <span class=s>&#34;timestamp&#34;</span> <span class=o>-&gt;</span> <span class=n>cell</span><span class=o>.</span><span class=n>getTimestamp</span><span class=o>.</span><span class=n>toString</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>          <span class=s>&#34;type&#34;</span> <span class=o>-&gt;</span> <span class=nc>Type</span><span class=o>.</span><span class=n>codeToType</span><span class=o>(</span><span class=n>cell</span><span class=o>.</span><span class=n>getTypeByte</span><span class=o>).</span><span class=n>toString</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>          <span class=s>&#34;value&#34;</span> <span class=o>-&gt;</span> <span class=nc>Bytes</span><span class=o>.</span><span class=n>toStringBinary</span><span class=o>(</span><span class=nc>CellUtil</span><span class=o>.</span><span class=n>cloneValue</span><span class=o>(</span><span class=n>cell</span><span class=o>))</span>
+</span></span><span class=line><span class=cl>        <span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>output</span><span class=o>.</span><span class=n>map</span><span class=o>(</span><span class=nc>JSONObject</span><span class=o>(</span><span class=k>_</span><span class=o>).</span><span class=n>toString</span><span class=o>()).</span><span class=n>mkString</span><span class=o>(</span><span class=s>&#34;\n&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>  <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>它完成的工作是遍历 <code>Result</code> 中的 <code>Cell</code>，每个 <code>Cell</code> 转换成一个 scala <code>Map</code>，键分别是行键、列族名、列名、时间戳、HBase 操作类型、值。最后每个 scala <code>Map</code> 被转换成 json 字符串，之间用 &lsquo;\n&rsquo; 分隔。</p><p>这里的 <code>CellUtil.CloneRow</code>，<code>CellUtil.cloneFamily</code>，<code>CellUtil.cloneQualifier</code>，<code>CellUtil.cloneValue</code> 是我们主要使用的四个方法，这四个方法生成的都是 <code>byte[]</code>，然后这四个 <code>byte[]</code> 都被 <code>Bytes.toStringBinary</code> 转换成了 <code>String</code> 类型。</p><p>所以，如果我们存入 HBase 的数据是 <code>String</code> 以外类型的，如 <code>Float</code>, <code>Double</code>, <code>BigDecimal</code>，那么这里使用 <code>CellUtil</code> 的方法拿到 <code>byte[]</code> 后，需要使用 <code>Bytes</code> 里面的对应方法转换为原来的类型，再转成字符串或其他类型，生成 json 字符串，然后返回，这样我们通过 pyspark 才能拿到正确的值。</p><p>下面是一个示例，我们的数据都是 <code>java.math.BigDecimal</code> 类型的值，存 HBase 的时候将他们转换为 <code>byte[]</code> 后进行了存储。那么解析的时候，就需要自定义一个处理 <code>BigDecimal</code> 的类：<code>HBaseResultToBigDecimalToStringConverter</code></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=k>package</span> <span class=nn>org.apache.spark.examples.pythonconverters</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>import</span> <span class=nn>java.math.BigDecimal</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>import</span> <span class=nn>scala.collection.JavaConverters._</span>
+</span></span><span class=line><span class=cl><span class=k>import</span> <span class=nn>scala.util.parsing.json.JSONObject</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>import</span> <span class=nn>org.apache.spark.api.python.Converter</span>
+</span></span><span class=line><span class=cl><span class=k>import</span> <span class=nn>org.apache.hadoop.hbase.client.</span><span class=o>{</span><span class=nc>Put</span><span class=o>,</span> <span class=nc>Result</span><span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=k>import</span> <span class=nn>org.apache.hadoop.hbase.io.ImmutableBytesWritable</span>
+</span></span><span class=line><span class=cl><span class=k>import</span> <span class=nn>org.apache.hadoop.hbase.util.Bytes</span>
+</span></span><span class=line><span class=cl><span class=k>import</span> <span class=nn>org.apache.hadoop.hbase.KeyValue.Type</span>
+</span></span><span class=line><span class=cl><span class=k>import</span> <span class=nn>org.apache.hadoop.hbase.CellUtil</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>class</span> <span class=nc>HBaseResultToBigDecimalToStringConverter</span> <span class=k>extends</span> <span class=nc>Converter</span><span class=o>[</span><span class=kt>Any</span>, <span class=kt>String</span><span class=o>]</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>override</span> <span class=k>def</span> <span class=n>convert</span><span class=o>(</span><span class=n>obj</span><span class=k>:</span> <span class=kt>Any</span><span class=o>)</span><span class=k>:</span> <span class=kt>String</span> <span class=o>=</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=n>result</span> <span class=k>=</span> <span class=n>obj</span><span class=o>.</span><span class=n>asInstanceOf</span><span class=o>[</span><span class=kt>Result</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=n>output</span> <span class=k>=</span> <span class=n>result</span><span class=o>.</span><span class=n>listCells</span><span class=o>.</span><span class=n>asScala</span><span class=o>.</span><span class=n>map</span><span class=o>(</span><span class=n>cell</span> <span class=k>=&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nc>Map</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>          <span class=s>&#34;row&#34;</span> <span class=o>-&gt;</span> <span class=nc>Bytes</span><span class=o>.</span><span class=n>toStringBinary</span><span class=o>(</span><span class=nc>CellUtil</span><span class=o>.</span><span class=n>cloneRow</span><span class=o>(</span><span class=n>cell</span><span class=o>)),</span>
+</span></span><span class=line><span class=cl>          <span class=s>&#34;columnFamily&#34;</span> <span class=o>-&gt;</span> <span class=nc>Bytes</span><span class=o>.</span><span class=n>toStringBinary</span><span class=o>(</span><span class=nc>CellUtil</span><span class=o>.</span><span class=n>cloneFamily</span><span class=o>(</span><span class=n>cell</span><span class=o>)),</span>
+</span></span><span class=line><span class=cl>          <span class=s>&#34;qualifier&#34;</span> <span class=o>-&gt;</span> <span class=nc>Bytes</span><span class=o>.</span><span class=n>toStringBinary</span><span class=o>(</span><span class=nc>CellUtil</span><span class=o>.</span><span class=n>cloneQualifier</span><span class=o>(</span><span class=n>cell</span><span class=o>)),</span>
+</span></span><span class=line><span class=cl>          <span class=s>&#34;timestamp&#34;</span> <span class=o>-&gt;</span> <span class=n>cell</span><span class=o>.</span><span class=n>getTimestamp</span><span class=o>.</span><span class=n>toString</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>          <span class=s>&#34;type&#34;</span> <span class=o>-&gt;</span> <span class=nc>Type</span><span class=o>.</span><span class=n>codeToType</span><span class=o>(</span><span class=n>cell</span><span class=o>.</span><span class=n>getTypeByte</span><span class=o>).</span><span class=n>toString</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>          <span class=s>&#34;value&#34;</span> <span class=o>-&gt;</span> <span class=nc>Bytes</span><span class=o>.</span><span class=n>toBigDecimal</span><span class=o>(</span><span class=nc>CellUtil</span><span class=o>.</span><span class=n>cloneValue</span><span class=o>(</span><span class=n>cell</span><span class=o>)).</span><span class=n>toString</span><span class=o>()</span>
+</span></span><span class=line><span class=cl>        <span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>output</span><span class=o>.</span><span class=n>map</span><span class=o>(</span><span class=nc>JSONObject</span><span class=o>(</span><span class=k>_</span><span class=o>).</span><span class=n>toString</span><span class=o>()).</span><span class=n>mkString</span><span class=o>(</span><span class=s>&#34;\n&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>  <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>上述代码中，引入了 <code>java.math.BigDecimal</code>，将 <code>value</code> 的解析进行了简单的修改，通过 <code>CellUtil.cloneValue</code> 拿到 <code>byte[]</code> 后，通过 <code>Bytes.toBigDecimal</code> 转换成 <code>java.math.BigDecimal</code>，然后使用 <code>toString</code> 方法转换成字符串。</p><p>这个类写完后，我们就可以对其进行编译，导出成 jar 包，在 pyspark 程序中指明，读取的时候，使用这个类解析 value。</p><p>这样源代码就改完了，需要编译成 jar 包。</p><p>首先安装 <a class=link href=http://maven.apache.org/ target=_blank rel=noopener>maven</a> 3.6.0，下载后，解压，配置环境变量即可。</p><p>下载 spark 的源码，去 Apache Spark 官网，下载仓库中的源代码 <a class=link href=https://archive.apache.org/dist/spark/spark-1.6.0/ target=_blank rel=noopener>spark-1.6.0.tgz</a> 。</p><p>下载后解压，将根目录中的 scalastyle-config.xml 拷贝到 examples 目录下。</p><p>修改 <code>examples/src/main/scala/org/apache/spark/examples/pythonconverters/HBaseConverters.scala</code>，增加自己用的类。</p><p>修改 <code>examples/pom.xml</code>，将 <code>&lt;artifactId>spark-examples_2.10&lt;/artifactId></code> 修改为 <code>&lt;artifactId>spark-examples_2.10_my_converters&lt;/artifactId></code>。</p><p>cd 到 examples 目录下，使用以下命令编译 spark-examples</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>mvn clean install -pl :spark-examples_2.10_my_converters
+</span></span></code></pre></td></tr></table></div></div><p>编译途中保证全程联网，编译的时候会有一些警告，编译好的包在同级目录下的 target 中，有个叫 spark-examples_2.10_my_converters-1.6.0.jar 的文件。</p><p>然后就是使用这个包读取 HBase 中的 BigDecimal了：</p><p>我们使用 standalone 模式运行 pyspark 交互式界面：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>pyspark --master spark://host1:7077 --jars spark-examples_2.10_my_converters-1.6.0.jar
+</span></span></code></pre></td></tr></table></div></div><p>执行以下内容：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=kn>import</span> <span class=nn>json</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>zookeeper_host</span> <span class=o>=</span> <span class=s1>&#39;host1&#39;</span>
+</span></span><span class=line><span class=cl><span class=n>hbase_table_name</span> <span class=o>=</span> <span class=s1>&#39;testTable&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>conf</span> <span class=o>=</span> <span class=p>{</span><span class=s2>&#34;hbase.zookeeper.quorum&#34;</span><span class=p>:</span> <span class=n>zookeeper_host</span><span class=p>,</span> <span class=s2>&#34;hbase.mapreduce.inputtable&#34;</span><span class=p>:</span> <span class=n>hbase_table_name</span><span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=n>keyConv</span> <span class=o>=</span> <span class=s2>&#34;org.apache.spark.examples.pythonconverters.ImmutableBytesWritableToStringConverter&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 注意这里，使用自己定义的Converter读取</span>
+</span></span><span class=line><span class=cl><span class=n>valueConv</span> <span class=o>=</span> <span class=s2>&#34;org.apache.spark.examples.pythonconverters.HBaseResultToBigDecimalToStringConverter&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>hbase_rdd</span> <span class=o>=</span> <span class=n>sc</span><span class=o>.</span><span class=n>newAPIHadoopRDD</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;org.apache.hadoop.hbase.mapreduce.TableInputFormat&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;org.apache.hadoop.hbase.io.ImmutableBytesWritable&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;org.apache.hadoop.hbase.client.Result&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=n>keyConverter</span><span class=o>=</span><span class=n>keyConv</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=n>valueConverter</span><span class=o>=</span><span class=n>valueConv</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=n>conf</span><span class=o>=</span><span class=n>conf</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=n>hbase_rdd</span> <span class=o>=</span> <span class=n>hbase_rdd</span><span class=o>.</span><span class=n>flatMapValues</span><span class=p>(</span><span class=k>lambda</span> <span class=n>v</span><span class=p>:</span> <span class=n>v</span><span class=o>.</span><span class=n>split</span><span class=p>(</span><span class=s2>&#34;</span><span class=se>\n</span><span class=s2>&#34;</span><span class=p>))</span><span class=o>.</span><span class=n>mapValues</span><span class=p>(</span><span class=n>json</span><span class=o>.</span><span class=n>loads</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>hbase_rdd</span><span class=o>.</span><span class=n>take</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>然后就可以看到结果了，如何验证读取的对不对呢，可以尝试将 <code>valueConv</code> 改回 <code>HBaseResultToStringConverter</code>，然后观察 value 的值。</p><p>以上就是如何通过修改 HBaseConverters.scala 让 pyspark 从 HBase 中读取 <code>java.math.BigDecimal</code> 的示例。</p><h1 id=pyspark-写入-hbase>pyspark 写入 HBase</h1><p>pyspark 写入 HBase 使用 <code>SparkContext</code> 的 <a class=link href=http://spark.apache.org/docs/1.6.0/api/python/pyspark.html#pyspark.RDD.saveAsNewAPIHadoopDataset target=_blank rel=noopener>saveAsNewAPIHadoopDataset</a>，和读取的方法类似，也需要使用 Java 的类。</p><p><strong>下面的方法要求存入 HBase 中的数据，行键、列族名、列名、值都为字符串</strong></p><p>write_into_hbase_pyspark.py</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=c1># -*- coding:utf-8 -*-</span>
+</span></span><span class=line><span class=cl><span class=kn>from</span> <span class=nn>pyspark</span> <span class=kn>import</span> <span class=n>SparkContext</span>
+</span></span><span class=line><span class=cl><span class=kn>from</span> <span class=nn>pyspark</span> <span class=kn>import</span> <span class=n>SparkConf</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>if</span> <span class=vm>__name__</span> <span class=o>==</span> <span class=s2>&#34;__main__&#34;</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>conf</span> <span class=o>=</span> <span class=n>SparkConf</span><span class=p>()</span><span class=o>.</span><span class=n>set</span><span class=p>(</span><span class=s2>&#34;spark.executorEnv.PYTHONHASHSEED&#34;</span><span class=p>,</span> <span class=s2>&#34;0&#34;</span><span class=p>)</span>\
+</span></span><span class=line><span class=cl>                      <span class=o>.</span><span class=n>set</span><span class=p>(</span><span class=s2>&#34;spark.kryoserializer.buffer.max&#34;</span><span class=p>,</span> <span class=s2>&#34;2040mb&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>sc</span> <span class=o>=</span> <span class=n>SparkContext</span><span class=p>(</span><span class=n>appName</span><span class=o>=</span><span class=s1>&#39;HBaseOutputFormat&#39;</span><span class=p>,</span> <span class=n>conf</span><span class=o>=</span><span class=n>conf</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># 配置项要包含 zookeeper 的 ip</span>
+</span></span><span class=line><span class=cl>    <span class=n>zookeeper_host</span> <span class=o>=</span> <span class=s1>&#39;zkServer&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># 还要包含要写入的 HBase 表名</span>
+</span></span><span class=line><span class=cl>    <span class=n>hbase_table_name</span> <span class=o>=</span> <span class=s1>&#39;testTable&#39;</span>    
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>conf</span> <span class=o>=</span> <span class=p>{</span><span class=s2>&#34;hbase.zookeeper.quorum&#34;</span><span class=p>:</span> <span class=n>zookeeper_host</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=s2>&#34;hbase.mapred.outputtable&#34;</span><span class=p>:</span> <span class=n>hbase_table_name</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=s2>&#34;mapreduce.outputformat.class&#34;</span><span class=p>:</span> <span class=s2>&#34;org.apache.hadoop.hbase.mapreduce.TableOutputFormat&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=s2>&#34;mapreduce.job.output.key.class&#34;</span><span class=p>:</span> <span class=s2>&#34;org.apache.hadoop.hbase.io.ImmutableBytesWritable&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=s2>&#34;mapreduce.job.output.value.class&#34;</span><span class=p>:</span> <span class=s2>&#34;org.apache.hadoop.io.Writable&#34;</span><span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=n>keyConv</span> <span class=o>=</span> <span class=s2>&#34;org.apache.spark.examples.pythonconverters.StringToImmutableBytesWritableConverter&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>valueConv</span> <span class=o>=</span> <span class=s2>&#34;org.apache.spark.examples.pythonconverters.StringListToPutConverter&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>records</span> <span class=o>=</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>        <span class=p>[</span><span class=s1>&#39;row1&#39;</span><span class=p>,</span> <span class=s1>&#39;f1&#39;</span><span class=p>,</span> <span class=s1>&#39;q1&#39;</span><span class=p>,</span> <span class=s1>&#39;value1&#39;</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>        <span class=p>[</span><span class=s1>&#39;row2&#39;</span><span class=p>,</span> <span class=s1>&#39;f1&#39;</span><span class=p>,</span> <span class=s1>&#39;q1&#39;</span><span class=p>,</span> <span class=s1>&#39;value2&#39;</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>        <span class=p>[</span><span class=s1>&#39;row3&#39;</span><span class=p>,</span> <span class=s1>&#39;f1&#39;</span><span class=p>,</span> <span class=s1>&#39;q1&#39;</span><span class=p>,</span> <span class=s1>&#39;value3&#39;</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>        <span class=p>[</span><span class=s1>&#39;row4&#39;</span><span class=p>,</span> <span class=s1>&#39;f1&#39;</span><span class=p>,</span> <span class=s1>&#39;q1&#39;</span><span class=p>,</span> <span class=s1>&#39;value4&#39;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>    <span class=p>]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>sc</span><span class=o>.</span><span class=n>parallelize</span><span class=p>(</span><span class=n>records</span><span class=p>)</span>\
+</span></span><span class=line><span class=cl>      <span class=o>.</span><span class=n>map</span><span class=p>(</span><span class=k>lambda</span> <span class=n>x</span><span class=p>:</span> <span class=p>(</span><span class=n>x</span><span class=p>[</span><span class=mi>0</span><span class=p>],</span> <span class=n>x</span><span class=p>))</span>\
+</span></span><span class=line><span class=cl>      <span class=o>.</span><span class=n>saveAsNewAPIHadoopDataset</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>        <span class=n>conf</span><span class=o>=</span><span class=n>conf</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=n>keyConverter</span><span class=o>=</span><span class=n>keyConv</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=n>valueConverter</span><span class=o>=</span><span class=n>valueConv</span><span class=p>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>首先在控制台启动 HBase-shell</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>hbase shell
+</span></span></code></pre></td></tr></table></div></div><p>然后创建表，表名为 testTable，只有一个列族，列族名为 f1：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>create <span class=s1>&#39;testTable&#39;</span>, <span class=s1>&#39;f1&#39;</span>
+</span></span></code></pre></td></tr></table></div></div><p>使用 <code>quit</code> 退出 HBase-shell</p><p>提交 pyspark 程序：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>spark-submit --master spark://master:7077 --jars /opt/cloudera/parcels/CDH-5.7.2-1.cdh5.7.2.p0.18/lib/spark/lib/spark-examples-1.6.0-cdh5.7.2-hadoop2.6.0-cdh5.7.2.jar write_into_hbase_pyspark.py
+</span></span></code></pre></td></tr></table></div></div><p>运行完成后，再次进入 HBase-shell，运行：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>scan <span class=s1>&#39;testTable&#39;</span>
+</span></span></code></pre></td></tr></table></div></div><p>可以看到类似下面的输出结果：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>hbase(main):001:0&gt; scan &#39;testTable&#39;
+</span></span><span class=line><span class=cl>ROW                           COLUMN+CELL
+</span></span><span class=line><span class=cl> row1                         column=f1:q1, timestamp=1554892784494, value=value1
+</span></span><span class=line><span class=cl> row2                         column=f1:q1, timestamp=1554892784494, value=value2
+</span></span><span class=line><span class=cl> row3                         column=f1:q1, timestamp=1554892816961, value=value3
+</span></span><span class=line><span class=cl> row4                         column=f1:q1, timestamp=1554892816961, value=value4
+</span></span><span class=line><span class=cl>4 row(s) in 0.3330 seconds
+</span></span></code></pre></td></tr></table></div></div><p>这就完成了写入 HBase 的过程。</p><p><strong>需要注意的是：rdd 中的每个元素，都必须是一个列表(<code>list</code>)，不能是其他类型，如 <code>tuple</code>，而且每个列表内必须是 4 个元素，分别表示 <code>[行键、列族名、列名、值]</code>，且每个元素都为 <code>str</code> 类型。</strong></p><p>原因是 <code>StringListToPutConverter</code> 这个类做转换的时候需要将 rdd 中的元素，看作是一个 <code>java.util.ArrayList[String]</code></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=k>class</span> <span class=nc>StringListToPutConverter</span> <span class=k>extends</span> <span class=nc>Converter</span><span class=o>[</span><span class=kt>Any</span>, <span class=kt>Put</span><span class=o>]</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>override</span> <span class=k>def</span> <span class=n>convert</span><span class=o>(</span><span class=n>obj</span><span class=k>:</span> <span class=kt>Any</span><span class=o>)</span><span class=k>:</span> <span class=kt>Put</span> <span class=o>=</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=n>output</span> <span class=k>=</span> <span class=n>obj</span><span class=o>.</span><span class=n>asInstanceOf</span><span class=o>[</span><span class=kt>java.util.ArrayList</span><span class=o>[</span><span class=kt>String</span><span class=o>]].</span><span class=n>asScala</span><span class=o>.</span><span class=n>map</span><span class=o>(</span><span class=nc>Bytes</span><span class=o>.</span><span class=n>toBytes</span><span class=o>).</span><span class=n>toArray</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=n>put</span> <span class=k>=</span> <span class=k>new</span> <span class=nc>Put</span><span class=o>(</span><span class=n>output</span><span class=o>(</span><span class=mi>0</span><span class=o>))</span>
+</span></span><span class=line><span class=cl>    <span class=n>put</span><span class=o>.</span><span class=n>add</span><span class=o>(</span><span class=n>output</span><span class=o>(</span><span class=mi>1</span><span class=o>),</span> <span class=n>output</span><span class=o>(</span><span class=mi>2</span><span class=o>),</span> <span class=n>output</span><span class=o>(</span><span class=mi>3</span><span class=o>))</span>
+</span></span><span class=line><span class=cl>  <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p><code>StringListToPutConverter</code> 的工作原理是，将传入的元素强制类型转换为 <code>java.util.ArrayList[String]</code>，将第一个元素作为行键、第二个元素作为列族名、第三个元素作为列名、第四个元素作为值，四个值都转换为 <code>byte[]</code> 后上传至 HBase。</p><p>所以我们可以修改这个类，实现存入类型的多样化。</p><p>举个例子，如果我想存入一个 <code>java.math.BigDecimal</code>，那实现的方法就是：在 pyspark 程序中，将数字转换成 <code>str</code> 类型，调用我们自己写的一个 converter：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=k>import</span> <span class=nn>java.math.BigDecimal</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>class</span> <span class=nc>StringListToBigDecimalToPutConverter</span> <span class=k>extends</span> <span class=nc>Converter</span><span class=o>[</span><span class=kt>Any</span>, <span class=kt>Put</span><span class=o>]</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>override</span> <span class=k>def</span> <span class=n>convert</span><span class=o>(</span><span class=n>obj</span><span class=k>:</span> <span class=kt>Any</span><span class=o>)</span><span class=k>:</span> <span class=kt>Put</span> <span class=o>=</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=n>output</span> <span class=k>=</span> <span class=n>obj</span><span class=o>.</span><span class=n>asInstanceOf</span><span class=o>[</span><span class=kt>java.util.ArrayList</span><span class=o>[</span><span class=kt>String</span><span class=o>]].</span><span class=n>asScala</span><span class=o>.</span><span class=n>toArray</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=n>put</span> <span class=k>=</span> <span class=k>new</span> <span class=nc>Put</span><span class=o>(</span><span class=nc>Bytes</span><span class=o>.</span><span class=n>toBytes</span><span class=o>(</span><span class=n>output</span><span class=o>(</span><span class=mi>0</span><span class=o>)))</span>
+</span></span><span class=line><span class=cl>    <span class=n>put</span><span class=o>.</span><span class=n>add</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>        <span class=nc>Bytes</span><span class=o>.</span><span class=n>toBytes</span><span class=o>(</span><span class=n>output</span><span class=o>(</span><span class=mi>1</span><span class=o>)),</span>
+</span></span><span class=line><span class=cl>        <span class=nc>Bytes</span><span class=o>.</span><span class=n>toBytes</span><span class=o>(</span><span class=n>output</span><span class=o>(</span><span class=mi>2</span><span class=o>)),</span>
+</span></span><span class=line><span class=cl>        <span class=nc>Bytes</span><span class=o>.</span><span class=n>toBytes</span><span class=o>(</span><span class=k>new</span> <span class=nc>BigDecimal</span><span class=o>(</span><span class=n>output</span><span class=o>(</span><span class=mi>3</span><span class=o>)))</span>
+</span></span><span class=line><span class=cl>    <span class=o>)</span>
+</span></span><span class=line><span class=cl>  <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>就可以实现存入的值是 <code>java.math.BigDecimal</code> 了。</p><h1 id=cdh-59-以前的版本python3master-选定为-yarn-时的-bug>CDH 5.9 以前的版本，python3，master 选定为 yarn 时的 bug</h1><p>CDH 5.9 以前的版本在使用 yarn 作为 spark master 的时候，如果使用 python3，会出现 yarn 內部 <code>topology.py</code> 这个文件引发的 bug。这个文件是 python2 的语法，我们使用 python3 运行任务的时候，python3 的解释器在处理这个文件时会出错。</p><p>解决方案是：将这个文件重写为 python3 的版本，每次在重启 yarn 之后，将这个文件复制到所有机器的 <code>/etc/hadoop/conf.cloudera.yarn/</code>目录下。</p><p>以下是 python3 版本的 <code>topology.py</code>。</p><p><code>topology.py</code></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=ch>#!/usr/bin/env python</span>
+</span></span><span class=line><span class=cl><span class=c1>#</span>
+</span></span><span class=line><span class=cl><span class=c1># Copyright (c) 2010-2012 Cloudera, Inc. All rights reserved.</span>
+</span></span><span class=line><span class=cl><span class=c1>#</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=s1>&#39;&#39;&#39;
+</span></span></span><span class=line><span class=cl><span class=s1>This script is provided by CMF for hadoop to determine network/rack topology.
+</span></span></span><span class=line><span class=cl><span class=s1>It is automatically generated and could be replaced at any time. Any changes
+</span></span></span><span class=line><span class=cl><span class=s1>made to it will be lost when this happens.
+</span></span></span><span class=line><span class=cl><span class=s1>&#39;&#39;&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>os</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>sys</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>xml.dom.minidom</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>main</span><span class=p>():</span>
+</span></span><span class=line><span class=cl>  <span class=n>MAP_FILE</span> <span class=o>=</span> <span class=s1>&#39;{{CMF_CONF_DIR}}/topology.map&#39;</span>
+</span></span><span class=line><span class=cl>  <span class=n>DEFAULT_RACK</span> <span class=o>=</span> <span class=s1>&#39;/default&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>if</span> <span class=s1>&#39;CMF_CONF_DIR&#39;</span> <span class=ow>in</span> <span class=n>MAP_FILE</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=c1># variable was not substituted. Use this file&#39;s dir</span>
+</span></span><span class=line><span class=cl>    <span class=n>MAP_FILE</span> <span class=o>=</span> <span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>join</span><span class=p>(</span><span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>dirname</span><span class=p>(</span><span class=vm>__file__</span><span class=p>),</span> <span class=s2>&#34;topology.map&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c1># We try to keep the default rack to have the same</span>
+</span></span><span class=line><span class=cl>  <span class=c1># number of elements as the other hosts available.</span>
+</span></span><span class=line><span class=cl>  <span class=c1># There are bugs in some versions of Hadoop which</span>
+</span></span><span class=line><span class=cl>  <span class=c1># make the system error out.</span>
+</span></span><span class=line><span class=cl>  <span class=n>max_elements</span> <span class=o>=</span> <span class=mi>1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=nb>map</span> <span class=o>=</span> <span class=nb>dict</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>try</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>mapFile</span> <span class=o>=</span> <span class=nb>open</span><span class=p>(</span><span class=n>MAP_FILE</span><span class=p>,</span> <span class=s1>&#39;r&#39;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>dom</span> <span class=o>=</span> <span class=n>xml</span><span class=o>.</span><span class=n>dom</span><span class=o>.</span><span class=n>minidom</span><span class=o>.</span><span class=n>parse</span><span class=p>(</span><span class=n>mapFile</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=n>node</span> <span class=ow>in</span> <span class=n>dom</span><span class=o>.</span><span class=n>getElementsByTagName</span><span class=p>(</span><span class=s2>&#34;node&#34;</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>      <span class=n>rack</span> <span class=o>=</span> <span class=n>node</span><span class=o>.</span><span class=n>getAttribute</span><span class=p>(</span><span class=s2>&#34;rack&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>      <span class=n>max_elements</span> <span class=o>=</span> <span class=nb>max</span><span class=p>(</span><span class=n>max_elements</span><span class=p>,</span> <span class=n>rack</span><span class=o>.</span><span class=n>count</span><span class=p>(</span><span class=s2>&#34;/&#34;</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>      <span class=nb>map</span><span class=p>[</span><span class=n>node</span><span class=o>.</span><span class=n>getAttribute</span><span class=p>(</span><span class=s2>&#34;name&#34;</span><span class=p>)]</span> <span class=o>=</span> <span class=n>node</span><span class=o>.</span><span class=n>getAttribute</span><span class=p>(</span><span class=s2>&#34;rack&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=k>except</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>default_rack</span> <span class=o>=</span> <span class=s2>&#34;&#34;</span><span class=o>.</span><span class=n>join</span><span class=p>([</span> <span class=n>DEFAULT_RACK</span> <span class=k>for</span> <span class=n>_</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=n>max_elements</span><span class=p>)])</span>
+</span></span><span class=line><span class=cl>    <span class=nb>print</span><span class=p>(</span><span class=n>default_rack</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=o>-</span><span class=mi>1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=n>default_rack</span> <span class=o>=</span> <span class=s2>&#34;&#34;</span><span class=o>.</span><span class=n>join</span><span class=p>([</span> <span class=n>DEFAULT_RACK</span> <span class=k>for</span> <span class=n>_</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=n>max_elements</span><span class=p>)])</span>
+</span></span><span class=line><span class=cl>  <span class=k>if</span> <span class=nb>len</span><span class=p>(</span><span class=n>sys</span><span class=o>.</span><span class=n>argv</span><span class=p>)</span><span class=o>==</span><span class=mi>1</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=nb>print</span><span class=p>(</span><span class=n>default_rack</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=k>else</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=nb>print</span><span class=p>(</span><span class=s2>&#34; &#34;</span><span class=o>.</span><span class=n>join</span><span class=p>([</span><span class=nb>map</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=n>i</span><span class=p>,</span> <span class=n>default_rack</span><span class=p>)</span> <span class=k>for</span> <span class=n>i</span> <span class=ow>in</span> <span class=n>sys</span><span class=o>.</span><span class=n>argv</span><span class=p>[</span><span class=mi>1</span><span class=p>:]]))</span>
+</span></span><span class=line><span class=cl>  <span class=k>return</span> <span class=mi>0</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>if</span> <span class=vm>__name__</span> <span class=o>==</span> <span class=s2>&#34;__main__&#34;</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>sys</span><span class=o>.</span><span class=n>exit</span><span class=p>(</span><span class=n>main</span><span class=p>())</span>
+</span></span></code></pre></td></tr></table></div></div></section><footer class=article-footer><section class=article-tags><a href=/blog/tags/spark/>Spark</a>
+<a href=/blog/tags/software/>Software</a></section><section class=article-copyright><svg class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><path d="M14.5 9a3.5 4 0 100 6"/></svg>
+<span>Licensed under Apache License 2.0</span></section></footer><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css integrity=sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV crossorigin=anonymous><script src=https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js integrity=sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8 crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js integrity=sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05 crossorigin=anonymous defer></script><script>window.addEventListener("DOMContentLoaded",()=>{const e=document.querySelector(".main-article");renderMathInElement(e,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1},{left:"\\(",right:"\\)",display:!1},{left:"\\[",right:"\\]",display:!0}],ignoredClasses:["gist"]})})</script></article><aside class=related-content--wrapper><h2 class=section-title>相关文章</h2><div class=related-content><div class="flex article-list--tile"><article><a href=/blog/p/%E8%AE%B0%E4%B8%80%E6%AC%A1pyspark%E6%80%A7%E8%83%BD%E6%8F%90%E5%8D%87np.frombuffer%E7%9A%84%E4%BD%BF%E7%94%A8/><div class=article-details><h2 class=article-title>记一次pyspark性能提升，np.frombuffer的使用</h2></div></a></article><article><a href=/blog/p/pyspark%E4%B8%AD%E7%9A%84hbaseconverters/><div class=article-details><h2 class=article-title>pyspark中的HBaseConverters</h2></div></a></article><article><a href=/blog/p/hadoop-ha%E5%AE%89%E8%A3%85%E4%B8%89zookeeper%E7%9A%84%E5%AE%89%E8%A3%85/><div class=article-details><h2 class=article-title>Hadoop HA安装三：zookeeper的安装</h2></div></a></article><article><a href=/blog/p/hadoop-ha%E5%AE%89%E8%A3%85%E4%BA%8Cmysql%E5%8F%8C%E6%9C%BA%E7%83%AD%E5%A4%87/><div class=article-details><h2 class=article-title>Hadoop HA安装二：MySQL双机热备</h2></div></a></article><article><a href=/blog/p/hadoop-ha%E5%AE%89%E8%A3%85%E4%B8%80%E5%9C%A8linux%E4%B8%AD%E5%AE%89%E8%A3%85%E5%92%8C%E9%85%8D%E7%BD%AEntpssh%E5%92%8Cjdk/><div class=article-details><h2 class=article-title>Hadoop HA安装一：在Linux中安装和配置ntp，ssh和jdk</h2></div></a></article></div></div></aside><footer class=site-footer><section class=copyright>&copy;
+2020 -
+2026 Davidham的博客</section><section class=powerby>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.30.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/blog/ts/main.1e9a3bafd846ced4c345d084b355fb8c7bae75701c338f8a1f8a82c780137826.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

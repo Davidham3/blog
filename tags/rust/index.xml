@@ -1,0 +1,363 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Rust on Davidham的博客</title><link>https://davidham3.github.io/blog/tags/rust/</link><description>Recent content in Rust on Davidham的博客</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Sun, 08 Feb 2026 23:18:49 +0000</lastBuildDate><atom:link href="https://davidham3.github.io/blog/tags/rust/index.xml" rel="self" type="application/rss+xml"/><item><title>性能提升10倍！我用Rust重写Python轨迹距离计算库的实践分享</title><link>https://davidham3.github.io/blog/p/%E6%80%A7%E8%83%BD%E6%8F%90%E5%8D%8710%E5%80%8D%E6%88%91%E7%94%A8rust%E9%87%8D%E5%86%99python%E8%BD%A8%E8%BF%B9%E8%B7%9D%E7%A6%BB%E8%AE%A1%E7%AE%97%E5%BA%93%E7%9A%84%E5%AE%9E%E8%B7%B5%E5%88%86%E4%BA%AB/</link><pubDate>Sun, 08 Feb 2026 23:18:49 +0000</pubDate><guid>https://davidham3.github.io/blog/p/%E6%80%A7%E8%83%BD%E6%8F%90%E5%8D%8710%E5%80%8D%E6%88%91%E7%94%A8rust%E9%87%8D%E5%86%99python%E8%BD%A8%E8%BF%B9%E8%B7%9D%E7%A6%BB%E8%AE%A1%E7%AE%97%E5%BA%93%E7%9A%84%E5%AE%9E%E8%B7%B5%E5%88%86%E4%BA%AB/</guid><description>&lt;p&gt;最近在做轨迹数据分析相关的项目，需要计算轨迹之间的距离。一开始用的是 &lt;code&gt;traj-dist&lt;/code&gt; 这个 Python 包，它提供了多种轨迹距离算法的实现，速度很快，因为是通过Cython加速的。但是这个包有点太老了，安装起来很麻烦。&lt;/p&gt;
+&lt;p&gt;于是我想着能不能用 Rust 重写一遍，一是为了适配更新的python版本，二是为了尝试“用rust重写一切”。&lt;/p&gt;
+&lt;p&gt;实现完了之后测试了一下性能，吓了一跳：相比 &lt;code&gt;traj-dist&lt;/code&gt; 的 Python 实现，性能提升了 389 倍，相比 Cython 实现也提升了 10 倍。本文我会分享一下这个项目的一些经验和踩过的坑。&lt;/p&gt;
+&lt;h2 id="一为什么要重写"&gt;一、为什么要重写
+&lt;/h2&gt;&lt;p&gt;&lt;code&gt;traj-dist&lt;/code&gt; 是一个挺不错的包，提供了多种主流的轨迹距离算法：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;SSPD（对称段路径距离）&lt;/li&gt;
+&lt;li&gt;DTW（动态时间规整）&lt;/li&gt;
+&lt;li&gt;Hausdorff 距离&lt;/li&gt;
+&lt;li&gt;LCSS（最长公共子序列）&lt;/li&gt;
+&lt;li&gt;EDR（实数序列编辑距离）&lt;/li&gt;
+&lt;li&gt;ERP（带实数惩罚的编辑距离）&lt;/li&gt;
+&lt;li&gt;Discret Fréchet 距离&lt;/li&gt;
+&lt;li&gt;还有很多，我还没有重写&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;支持欧几里得距离和球面距离（Haversine），API 设计得很简单。&lt;/p&gt;
+&lt;p&gt;但是，核心痛点是这个包的安装比较麻烦，我尝试过在python3.12上安装，但是发现它的依赖太老。而且每次安装都需要编译Cython代码。为此我希望有一个安装简单，而且依赖比较少的包出现。&lt;/p&gt;
+&lt;h2 id="二重写思路"&gt;二、重写思路
+&lt;/h2&gt;&lt;p&gt;我先说一下我的重写思路：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;确定需要重写的算法：首先我在&lt;code&gt;traj-dist&lt;/code&gt;里面挑选了一些简单的算法：
+&lt;ul&gt;
+&lt;li&gt;LCSS、DTW、discrete frechet、EDR、ERP，这些都是动态规划算法&lt;/li&gt;
+&lt;li&gt;hausdorff，sspd，这两个算法是非动态规划的算法，实现起来相对简单&lt;/li&gt;
+&lt;li&gt;其他算法的实现稍微复杂了一些，就留在后面的版本了&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;以&lt;code&gt;traj-dist&lt;/code&gt;为ground truth：我发现作者在代码仓库里面提供了一个很小的轨迹数据集，并且作者自己在上面进行了性能测试，那我们可以利用这个数据集，使用&lt;code&gt;traj-dist&lt;/code&gt;在上面完成上面7个算法的计算，记录结果与耗时。&lt;/li&gt;
+&lt;li&gt;使用rust重写上述7个算法，rust里面使用trait表示经纬度点和轨迹，为其他人使用这个包提供扩展性。同时为rust编写单元测试用例，保证其API都是可用的。&lt;/li&gt;
+&lt;li&gt;为rust的算法和trait定义python相关的类型和算法，暴露给python。同时为python部分编写测试用例，一方面保证API可用，另一方面与上面的ground truth做对比，确保每个算法的计算结果与ground truth的结果偏差值在1e-8以内。&lt;/li&gt;
+&lt;li&gt;由于ground truth里面带了&lt;code&gt;traj-dist&lt;/code&gt;的性能，因此&lt;code&gt;traj-dist-rs&lt;/code&gt;也可以很轻松地做出性能对比，得到rust相对于python和cython的性能提升比例。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2 id="三性能测试结果"&gt;三、性能测试结果
+&lt;/h2&gt;&lt;p&gt;性能测试这里，首先随机选1000个轨迹pair，每个样本预热10次，正式测量50次，记录这50次的明细时间，并统计中位数、Coefficient of Variation等值。&lt;/p&gt;
+&lt;p&gt;因此会用&lt;code&gt;traj-dist&lt;/code&gt;的python版本、cython版本，&lt;code&gt;traj-dist-rs&lt;/code&gt;的python版本运行相同的测试用例，记录均值、标准差、CV值。&lt;/p&gt;
+&lt;p&gt;下面是具体的提升效果：&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;EUCLIDEAN 距离&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Rust vs Cython&lt;/strong&gt;: 平均提升 9.99x (范围: 6.06x - 16.13x)&lt;/li&gt;
+&lt;li&gt;Rust vs Python: 平均提升 389.07x (范围: 187.20x - 594.74x)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;最佳性能提升算法&lt;/strong&gt;: sspd (16.13x)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;SPHERICAL 距离&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Rust vs Cython&lt;/strong&gt;: 平均提升 2.66x (范围: 1.62x - 5.24x)&lt;/li&gt;
+&lt;li&gt;Rust vs Python: 平均提升 75.67x (范围: 41.13x - 167.14x)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;最佳性能提升算法&lt;/strong&gt;: erp (5.24x)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;这个结果比我预期的要好很多。相比 Python 实现提升 389 倍，这主要是因为 Rust 没有解释器开销，像动态规划算法这种需要双重for循环的算法，python一定是非常慢的，而且rust的编译器能做很多优化。相比 Cython 实现提升 10 倍，这部分主要是数据拷贝带来的，rust的实现中使用了numpy+零拷贝的方案，避免了数据复制，论计算性能来说，rust和cython生成的c代码，本质上应该不会有太大区别。&lt;/p&gt;
+&lt;p&gt;至于欧氏距离上的性能提升远大于球面距离的提升，这是因为欧氏距离的计算太简单，&amp;ldquo;语言效率&amp;quot;成为瓶颈，Rust 优势明显；球面距离的计算太复杂，&amp;ldquo;数学计算&amp;quot;成为瓶颈，Rust 优势被稀释。&lt;/p&gt;
+&lt;h2 id="四架构设计"&gt;四、架构设计
+&lt;/h2&gt;&lt;p&gt;接下来说一下架构的设计，核心有几个内容吧：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;rust接口设计&lt;/li&gt;
+&lt;li&gt;动态规划算法优化&lt;/li&gt;
+&lt;li&gt;rust与python的双接口设计&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3 id="41-rust接口设计"&gt;4.1 rust接口设计
+&lt;/h3&gt;&lt;p&gt;rust设计了几个关键的Trait：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-rust" data-lang="rust"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;pub&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;trait&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;AsCoord&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="sd"&gt;/// Get the x-coordinate (longitude or easting)
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="sd"&gt;///
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="sd"&gt;/// Returns the x-coordinate value of the point.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;fn&lt;/span&gt; &lt;span class="nf"&gt;x&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;-&amp;gt; &lt;span class="kt"&gt;f64&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="sd"&gt;/// Get the y-coordinate (latitude or northing)
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="sd"&gt;///
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="sd"&gt;/// Returns the y-coordinate value of the point.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;fn&lt;/span&gt; &lt;span class="nf"&gt;y&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;-&amp;gt; &lt;span class="kt"&gt;f64&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;这个AsCoord用来表示一个经纬度点，因为肯定要计算经纬度点之间的距离，那么用这样一个trait抽象，不论用户是用&lt;code&gt;&amp;amp;[f64]&lt;/code&gt;还是&lt;code&gt;vec&lt;/code&gt;，都可以轻松支持，并且保证很好的性能。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;span class="lnt"&gt;21
+&lt;/span&gt;&lt;span class="lnt"&gt;22
+&lt;/span&gt;&lt;span class="lnt"&gt;23
+&lt;/span&gt;&lt;span class="lnt"&gt;24
+&lt;/span&gt;&lt;span class="lnt"&gt;25
+&lt;/span&gt;&lt;span class="lnt"&gt;26
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-rust" data-lang="rust"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;pub&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;trait&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;CoordSequence&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="sd"&gt;/// The type of coordinate in this sequence
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;type&lt;/span&gt; &lt;span class="nc"&gt;Coord&lt;/span&gt;: &lt;span class="nc"&gt;AsCoord&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="sd"&gt;/// Get the number of coordinates in the sequence
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="sd"&gt;///
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="sd"&gt;/// Returns the total number of coordinate points in the sequence.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;fn&lt;/span&gt; &lt;span class="nf"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;-&amp;gt; &lt;span class="kt"&gt;usize&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="sd"&gt;/// Check if the sequence is empty
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="sd"&gt;///
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="sd"&gt;/// Returns `true` if the sequence contains no coordinates, `false` otherwise.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="sd"&gt;/// This is implemented as `self.len() == 0` by default.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;fn&lt;/span&gt; &lt;span class="nf"&gt;is_empty&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;-&amp;gt; &lt;span class="kt"&gt;bool&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;len&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;==&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="sd"&gt;/// Get the i-th coordinate in the sequence
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="sd"&gt;///
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="sd"&gt;/// Returns a copy of the coordinate at the specified index.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="sd"&gt;///
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="sd"&gt;/// # Panics
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="sd"&gt;///
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="sd"&gt;/// This method may panic if the index is out of bounds.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;fn&lt;/span&gt; &lt;span class="nf"&gt;get&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;: &lt;span class="kt"&gt;usize&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;-&amp;gt; &lt;span class="nc"&gt;Self&lt;/span&gt;::&lt;span class="n"&gt;Coord&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;这个trait表示轨迹，也就是经纬度序列。因此只要用户将自己的数据类型实现这个trait的接口，就可以调用&lt;code&gt;traj-dist-rs&lt;/code&gt;里面的距离计算函数了。&lt;/p&gt;
+&lt;h3 id="42-动态规划算法优化"&gt;4.2 动态规划算法优化
+&lt;/h3&gt;&lt;h4 id="421-动态规划算法的类型抽象"&gt;4.2.1 动态规划算法的类型抽象
+&lt;/h4&gt;&lt;p&gt;对于动态规划算法来说，一般只需要计算任意两个点之间的距离。考虑到用户需要使用的距离计算方法&lt;code&gt;traj-dist-rs&lt;/code&gt;不支持，比如导航距离。因此需要给用户提供一个类似scikit-learn的方案：用户可用预先计算好任意两点之间的距离，然后传入这个“预计算距离矩阵”。&lt;/p&gt;
+&lt;p&gt;因此对于动态规划类的算法，&lt;code&gt;traj-dist-rs&lt;/code&gt;提供两种接口形式：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;用户可用传入2条原始的经纬度序列。&lt;/li&gt;
+&lt;li&gt;用户提供一个预计算距离矩阵。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;针对这两种类型，我定义了一个叫&lt;code&gt;DistanceCalculator&lt;/code&gt;的trait。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-rust" data-lang="rust"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;pub&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;trait&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;DistanceCalculator&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="sd"&gt;/// Calculate the distance between corresponding elements in two sequences
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;fn&lt;/span&gt; &lt;span class="nf"&gt;dis_between&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;seq_a_idx&lt;/span&gt;: &lt;span class="kt"&gt;usize&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;seq_b_idx&lt;/span&gt;: &lt;span class="kt"&gt;usize&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;-&amp;gt; &lt;span class="kt"&gt;f64&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="sd"&gt;/// Calculate the distance between a point in a sequence and an external &amp;#34;anchor&amp;#34; point
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;fn&lt;/span&gt; &lt;span class="nf"&gt;compute_dis_for_extra_point&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;C&lt;/span&gt;: &lt;span class="nc"&gt;AsCoord&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;seq_id&lt;/span&gt;: &lt;span class="kt"&gt;usize&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;point_idx&lt;/span&gt;: &lt;span class="kt"&gt;usize&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;anchor&lt;/span&gt;: &lt;span class="nb"&gt;Option&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;C&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;-&amp;gt; &lt;span class="kt"&gt;f64&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="sd"&gt;/// Length of sequence 1
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;fn&lt;/span&gt; &lt;span class="nf"&gt;len_seq1&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;-&amp;gt; &lt;span class="kt"&gt;usize&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="sd"&gt;/// Length of sequence 2
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;fn&lt;/span&gt; &lt;span class="nf"&gt;len_seq2&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;-&amp;gt; &lt;span class="kt"&gt;usize&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;动态规划算法完全可以通过这个trait的泛型，取出任意两点之间的距离，完成动态规划算法的计算。&lt;/p&gt;
+&lt;p&gt;当然，&lt;code&gt;traj-dist-rs&lt;/code&gt;里面提供了两个具体的类型实现了这个trait。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-rust" data-lang="rust"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;pub&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;TrajectoryCalculator&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="na"&gt;&amp;#39;a&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;T&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;U&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;where&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;T&lt;/span&gt;: &lt;span class="nc"&gt;CoordSequence&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="na"&gt;&amp;#39;a&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;U&lt;/span&gt;: &lt;span class="nc"&gt;CoordSequence&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="na"&gt;&amp;#39;a&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;traj1&lt;/span&gt;: &lt;span class="kp"&gt;&amp;amp;&lt;/span&gt;&lt;span class="na"&gt;&amp;#39;a&lt;/span&gt; &lt;span class="nc"&gt;T&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;traj2&lt;/span&gt;: &lt;span class="kp"&gt;&amp;amp;&lt;/span&gt;&lt;span class="na"&gt;&amp;#39;a&lt;/span&gt; &lt;span class="nc"&gt;U&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;metric&lt;/span&gt;: &lt;span class="nc"&gt;DistanceType&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;pub&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;PrecomputedDistanceCalculator&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="na"&gt;&amp;#39;a&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;distance_matrix&lt;/span&gt;: &lt;span class="kp"&gt;&amp;amp;&lt;/span&gt;&lt;span class="na"&gt;&amp;#39;a&lt;/span&gt; &lt;span class="nb"&gt;Vec&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nb"&gt;Vec&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="kt"&gt;f64&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;seq1_extra_dists&lt;/span&gt;: &lt;span class="nb"&gt;Option&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&amp;amp;&lt;/span&gt;&lt;span class="na"&gt;&amp;#39;a&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nb"&gt;Vec&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="kt"&gt;f64&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;seq2_extra_dists&lt;/span&gt;: &lt;span class="nb"&gt;Option&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&amp;amp;&lt;/span&gt;&lt;span class="na"&gt;&amp;#39;a&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nb"&gt;Vec&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="kt"&gt;f64&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;ol&gt;
+&lt;li&gt;&lt;code&gt;TrajectoryCalculator&lt;/code&gt;：直接访问轨迹数据，按需计算距离&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;PrecomputedDistanceCalculator&lt;/code&gt;：使用预计算的距离矩阵&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;这样的好处是算法逻辑和距离计算逻辑解耦，如果将来要支持其他距离计算方式，只需要实现新的 Calculator 就可以了。比如用户需要实时调用接口获取两点之间的导航距离，那么用户自己实现这个trait就可以使用动态规划算法了。&lt;/p&gt;
+&lt;p&gt;下面的代码是使用&lt;code&gt;traj-dist-rs&lt;/code&gt;提供的&lt;code&gt;TrajectoryCalculator&lt;/code&gt;调用动态规划算法的示例：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;span class="lnt"&gt;7
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-rust" data-lang="rust"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;use&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;traj_dist_rs&lt;/span&gt;::&lt;span class="n"&gt;distance&lt;/span&gt;::&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;base&lt;/span&gt;::&lt;span class="n"&gt;TrajectoryCalculator&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;distance_type&lt;/span&gt;::&lt;span class="n"&gt;DistanceType&lt;/span&gt;&lt;span class="p"&gt;};&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="kd"&gt;let&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;traj1&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="fm"&gt;vec!&lt;/span&gt;&lt;span class="p"&gt;[[&lt;/span&gt;&lt;span class="mf"&gt;0.0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mf"&gt;0.0&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mf"&gt;1.0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mf"&gt;1.0&lt;/span&gt;&lt;span class="p"&gt;]];&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="kd"&gt;let&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;traj2&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="fm"&gt;vec!&lt;/span&gt;&lt;span class="p"&gt;[[&lt;/span&gt;&lt;span class="mf"&gt;0.0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mf"&gt;1.0&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mf"&gt;1.0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mf"&gt;0.0&lt;/span&gt;&lt;span class="p"&gt;]];&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="kd"&gt;let&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;calculator&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;TrajectoryCalculator&lt;/span&gt;::&lt;span class="n"&gt;new&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;traj1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;traj2&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;DistanceType&lt;/span&gt;::&lt;span class="n"&gt;Euclidean&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="kd"&gt;let&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;dist&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;distance&lt;/span&gt;::&lt;span class="n"&gt;dtw&lt;/span&gt;::&lt;span class="n"&gt;dtw&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;calculator&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kc"&gt;false&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h4 id="422-动态规划算法内存优化"&gt;4.2.2 动态规划算法内存优化
+&lt;/h4&gt;&lt;p&gt;&lt;code&gt;traj-dist-rs&lt;/code&gt;针对动态规划算法还做了一个内存上的优化：对于大部分动态规划算法，当我们不需要回溯动态规划算法的路径的时候，其空间复杂度可以缩减到&lt;code&gt;O(MN) -&amp;gt; O(min{M, N})&lt;/code&gt;，这里的M和N是2条序列的长度。&lt;code&gt;traj-dist-rs&lt;/code&gt;会默认使用这种算法记录动态规划算法的中间值，实现内存使用的下降。&lt;/p&gt;
+&lt;h3 id="43-双接口支持"&gt;4.3 双接口支持
+&lt;/h3&gt;&lt;p&gt;这个项目同时提供了 Rust API 和 Python 绑定。因为据我了解计算轨迹距离，大家基本都是python实现，而且学术界用得更多，因为轨迹表示学习之后的度量方式，很多论文会使用更传统的metrics，比如DTW，frechet等。&lt;/p&gt;
+&lt;p&gt;因此如果要用python做的话，cython这个加速方案有点老了，而且需要学习cython代码；pybind11与c++的方案也可以，但是不如pyo3+rust的方案。&lt;/p&gt;
+&lt;p&gt;如果是这样，我还不希望这个包只服务python用户，应该也能服务rust用户。这样就要求rust的代码应该更简单、抽象、内聚，在此基础上添加python的binding。&lt;/p&gt;
+&lt;p&gt;Python 绑定通过 PyO3 实现，API 设计尽量保持和 traj-dist 一致：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-python" data-lang="python"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;traj_dist_rs&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;numpy&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;np&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;traj1&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;array&lt;/span&gt;&lt;span class="p"&gt;([[&lt;/span&gt;&lt;span class="mf"&gt;0.0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mf"&gt;0.0&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mf"&gt;1.0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mf"&gt;1.0&lt;/span&gt;&lt;span class="p"&gt;]])&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;traj2&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;array&lt;/span&gt;&lt;span class="p"&gt;([[&lt;/span&gt;&lt;span class="mf"&gt;0.0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mf"&gt;1.0&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mf"&gt;1.0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mf"&gt;0.0&lt;/span&gt;&lt;span class="p"&gt;]])&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;# 使用方式几乎和 traj-dist 一样&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;dist&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;traj_dist_rs&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;dtw&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;traj1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;traj2&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;euclidean&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;dist&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;traj_dist_rs&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;lcss&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;traj1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;traj2&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;euclidean&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;eps&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mf"&gt;0.5&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;# ERP 有两个版本&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;dist_standard&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;traj_dist_rs&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;erp_standard&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;traj1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;traj2&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;euclidean&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;g&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mf"&gt;0.0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mf"&gt;0.0&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;dist_compat&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;traj_dist_rs&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;erp_compat_traj_dist&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;traj1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;traj2&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;euclidean&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;g&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mf"&gt;0.0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mf"&gt;0.0&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;考虑到大部分数据都是在python中读取的，那么如何让rust通过零拷贝的方式读取是提升性能的一个关键。因为传统方式里面，当 Python 调用 C/C++/Cython 模块时，往往需要先把这箱货物“卸下”（从Python内存），再“搬运”并“重新打包”（复制到C/C++/Cython能理解的内存结构中）。这个过程是有开销的。&lt;/p&gt;
+&lt;p&gt;我这里利用了numpy的c-contiguous特性，当numpy.ndarray的数据在内存中是连续存储的时候，可以不需要“搬运”和“打包”操作，直接在原地打开货物。也就是说：rust可以直接读取python中的numpy.ndarray的数据，而不是复制一份。这里rust拿到的是一个&lt;code&gt;&amp;amp;[f64]&lt;/code&gt;的切片。接下来只要把这个切片实现上面介绍的&lt;code&gt;CoordSequence&lt;/code&gt;接口，就可以适配各个算法了。rust的零成本抽象可以直接让各个算法操作这块内存中的数据，以此实现性能提升，同时也避免了数据的拷贝，这也是rust性能超越cython的核心原因。&lt;/p&gt;
+&lt;h2 id="五踩过的坑"&gt;五、踩过的坑
+&lt;/h2&gt;&lt;p&gt;做这个项目的过程中，也发现了一些问题。&lt;/p&gt;
+&lt;h3 id="51-球面距离的精度问题"&gt;5.1 球面距离的精度问题
+&lt;/h3&gt;&lt;p&gt;一开始测试的时候，我发现球面距离计算的结果和 &lt;code&gt;traj-dist&lt;/code&gt; 的结果对不上。排查了很久，最后发现问题出在 &lt;code&gt;traj-dist&lt;/code&gt; 的 Cython 实现上。&lt;/p&gt;
+&lt;p&gt;traj-dist 的 Cython 代码中，球面距离计算使用的是 &lt;code&gt;float&lt;/code&gt;（32 位浮点数），而且 PI 值是硬编码的截断值：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-cython" data-lang="cython"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;cdef&lt;/span&gt; &lt;span class="kt"&gt;double&lt;/span&gt; &lt;span class="nf"&gt;pi&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mf"&gt;3.14159265&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;这个精度显然不够。为了和 &lt;code&gt;traj-dist&lt;/code&gt; 的结果对比，我fork并修改了&lt;code&gt;traj-dist&lt;/code&gt;的源码，把 &lt;code&gt;float&lt;/code&gt; 改成 &lt;code&gt;double&lt;/code&gt;，使用 &lt;code&gt;M_PI&lt;/code&gt; 常量：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-cython" data-lang="cython"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;cdef&lt;/span&gt; &lt;span class="kt"&gt;double&lt;/span&gt; &lt;span class="nf"&gt;pi&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;M_PI&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;修复后，Rust 实现和 traj-dist 的结果就对上了。&lt;/p&gt;
+&lt;h3 id="52-erp-算法的实现问题"&gt;5.2 ERP 算法的实现问题
+&lt;/h3&gt;&lt;p&gt;在测试过程中，我发现 traj-dist 的 ERP 算法实现有问题。&lt;/p&gt;
+&lt;p&gt;ERP算法是典型的动态规划算法，在初始化动态规划矩阵的边界值的时候，也就是&lt;code&gt;C[0,:]&lt;/code&gt;和&lt;code&gt;C[:,0]&lt;/code&gt;，&lt;code&gt;traj-dist&lt;/code&gt;使用了错误的方法，给每个值都初始化成了相同的值，这里的正确实现应该是不同的值。&lt;/p&gt;
+&lt;p&gt;这里我纠结了半天，考虑到这个包已经被很多人用了，直接修改 API 会破坏兼容性。&lt;/p&gt;
+&lt;p&gt;于是我想了个折中的方案：提供两个版本&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;erp_standard&lt;/code&gt;：按照正确的算法实现&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;erp_compat_traj_dist&lt;/code&gt;：按照 &lt;code&gt;traj-dist&lt;/code&gt; 的问题版本实现，保持兼容性。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;这样，新用户可以用正确的实现，老用户如果需要和原来保持一致，也可以用兼容版本。&lt;/p&gt;
+&lt;h2 id="六精度保证"&gt;六、精度保证
+&lt;/h2&gt;&lt;p&gt;&lt;code&gt;traj-dist-rs&lt;/code&gt;的实现，以&lt;code&gt;traj-dist&lt;/code&gt;为基准，因此需要两者跑出来的结果尽可能一致。&lt;/p&gt;
+&lt;p&gt;这里我做了两件事：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;首先修改&lt;code&gt;traj-dist&lt;/code&gt;的球面距离计算代码，将所有的float部分替换为double，并且修改PI的值为M_PI，以获得更高的精度。&lt;/li&gt;
+&lt;li&gt;因为&lt;code&gt;traj-dist&lt;/code&gt;的erp算法实现有误，为了保证结果的一致性，我这里测量的是&lt;code&gt;traj-dist-rs&lt;/code&gt;的&lt;code&gt;erp_compat_traj_dist&lt;/code&gt;与&lt;code&gt;traj-dist&lt;/code&gt;的erp算法之间的误差。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;测算下来误差远远小于我期望的1e-8的阈值，说明&lt;code&gt;traj-dist-rs&lt;/code&gt;实现了算法的正确实现。&lt;/p&gt;
+&lt;h2 id="七总结"&gt;七、总结
+&lt;/h2&gt;&lt;p&gt;&lt;code&gt;traj-dist-rs&lt;/code&gt;的实现我觉得有几个亮点：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;使用rust重写&lt;/li&gt;
+&lt;li&gt;与python的绑定中考虑了零拷贝的问题&lt;/li&gt;
+&lt;li&gt;rust层面做了比较好的抽象，不论是&lt;code&gt;CoordSequence&lt;/code&gt;还是&lt;code&gt;DistanceCalculator&lt;/code&gt;。&lt;/li&gt;
+&lt;li&gt;所有动态规划算法提供了节省内存的实现。&lt;/li&gt;
+&lt;li&gt;确实实现了性能的显著提升。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;如果你也在做轨迹数据分析，或者对 Rust 性能优化感兴趣，欢迎试试 &lt;code&gt;traj-dist-rs&lt;/code&gt;。项目地址在：&lt;a class="link" href="https://github.com/Davidham3/traj-dist-rs" target="_blank" rel="noopener"
+&gt;traj-dist-rs&lt;/a&gt;。目前alpha版本已经发布在crates.io和pypi，同时也支持context7。&lt;/p&gt;
+&lt;p&gt;有任何问题或建议，欢迎交流！&lt;/p&gt;
+&lt;h2 id="附录"&gt;附录
+&lt;/h2&gt;&lt;ol&gt;
+&lt;li&gt;修复球面距离精度的：&lt;a class="link" href="https://github.com/Davidham3/traj-dist" target="_blank" rel="noopener"
+&gt;traj-dist&lt;/a&gt;。&lt;/li&gt;
+&lt;li&gt;完整的性能测试记录：&lt;a class="link" href="https://github.com/Davidham3/traj-dist-rs/blob/v0.1.0-alpha.3/docs/performance.md" target="_blank" rel="noopener"
+&gt;performance.md&lt;/a&gt;。&lt;/li&gt;
+&lt;/ol&gt;</description></item></channel></rss>
