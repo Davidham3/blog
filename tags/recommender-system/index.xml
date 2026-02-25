@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Recommender System on Davidham的博客</title><link>https://davidham3.github.io/blog/tags/recommender-system/</link><description>Recent content in Recommender System on Davidham的博客</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Wed, 13 May 2020 17:07:14 +0000</lastBuildDate><atom:link href="https://davidham3.github.io/blog/tags/recommender-system/index.xml" rel="self" type="application/rss+xml"/><item><title>Neural Collaborative Filtering</title><link>https://davidham3.github.io/blog/p/neural-collaborative-filtering/</link><pubDate>Wed, 13 May 2020 17:07:14 +0000</pubDate><guid>https://davidham3.github.io/blog/p/neural-collaborative-filtering/</guid><description>&lt;p&gt;《Neural Collaborative Filtering》WWW 2017。这篇论文使用全连接神经网络实现了一个矩阵分解的推荐系统。给定一个user的特征表示，给定一个item的特征表示，通过神经网络输出用户对这个item感兴趣的分数。原文链接：&lt;a class="link" href="https://arxiv.org/abs/1708.05031" target="_blank" rel="noopener"
+&gt;Neural Collaborative Filtering&lt;/a&gt;。&lt;/p&gt;
+&lt;p&gt;最近看了看推荐系统，这篇论文提出了一个 NeuMF 的模型，基于全连接层的一个模型。&lt;/p&gt;
+&lt;p&gt;模型很简单，主要分两个部分，一个GMF部分，一个MLP部分。&lt;/p&gt;
+&lt;h1 id="generalized-matrix-factorization-gmf"&gt;Generalized Matrix Factorization (GMF)
+&lt;/h1&gt;&lt;p&gt;这个部分是 user 的特征向量与 item 的特征向量做 element-wise product。&lt;/p&gt;
+&lt;h1 id="multi-layer-perceptron-mlp"&gt;Multi-Layer Perceptron (MLP)
+&lt;/h1&gt;&lt;p&gt;多层感知机部分就是将 user 和 item 的特征向量拼接，然后放到多层全连接里面。&lt;/p&gt;
+&lt;h1 id="neumf"&gt;NeuMF
+&lt;/h1&gt;&lt;p&gt;最后将这两个模块的输出拼接，然后丢到一个全连接层里面，映射到目标的分数，0到1，然后使用对数损失，训练即可。&lt;/p&gt;
+&lt;h1 id="experiments"&gt;Experiments
+&lt;/h1&gt;&lt;p&gt;实验部分，数据集的划分是，拿到用户所有的正例后，对每个用户，随机取一个作为测试集要预测的正例。然后取一定数量的负样本作为测试集的负例。&lt;/p&gt;
+&lt;p&gt;其他的正例作为训练集的正例，训练的时候通过采样的方式取负样本丢到网络中训练。&lt;/p&gt;
+&lt;p&gt;评价指标有两个：Hit Ratio 和 Normalized Discounted Cumulative Gain。&lt;/p&gt;
+&lt;p&gt;测试的时候，我们上述的“一定数量的负样本作为测试集的负例”，这个“一定数量”取999，那么测试集里面每个用户就有1000个样本，因为还要加那一个正例。让模型对这1000个样本进行预测，预测出1000个分数，取 top10。如果这最大的10个分数对应的 item 中，有那个正例，说明我们的模型在1000个 item 中，预测出的前十名里面成功命中那个正例了，那这个用户的 hit rate 就为1，否则为0，然后算所有用户的平均值即可，就是 hit ratio。&lt;/p&gt;
+&lt;p&gt;NDCG 的指标计算我还没有研究，等研究后再写。模型的代码看了 mxnet 官方提供的 example：&lt;a class="link" href="https://github.com/apache/incubator-mxnet/tree/master/example/neural_collaborative_filtering" target="_blank" rel="noopener"
+&gt;NeuMF&lt;/a&gt;，速度很快。&lt;/p&gt;
+&lt;p&gt;具体的实验结果，我在我自己用爬虫抓的一个数据集上看，效果没有 implicit 这个库里面的 als 效果好。ALS 的 HR@10 能跑到51%，我自己实现的 NeuMF 只能跑到48%，我使用的是 user 和 item 的 id 作为特征。但是 NeuMF 相比 ALS 的一个优势是可以加入 user 和 item 的其他特征信息，效果可能会更好一点，还需要进一步实验论证。&lt;/p&gt;</description></item><item><title>Pixie: A System for Recommending 3+ Billion Items to 200+ Million Users in Real-Time</title><link>https://davidham3.github.io/blog/p/pixie-a-system-for-recommending-3-billion-items-to-200-million-users-in-real-time/</link><pubDate>Fri, 21 Sep 2018 10:46:01 +0000</pubDate><guid>https://davidham3.github.io/blog/p/pixie-a-system-for-recommending-3-billion-items-to-200-million-users-in-real-time/</guid><description>&lt;p&gt;WWW 2018. 对随机游走进行了改进，提出了Pixie随机游走，实际上就是一个有偏的随机游走，根据相似度进行偏离，从而实现个性化推荐，而且使用了早停策略。原文链接：&lt;a class="link" href="https://arxiv.org/abs/1711.07601" target="_blank" rel="noopener"
+&gt;Pixie: A System for Recommending 3+ Billion Items to 200+ Million Users in Real-Time&lt;/a&gt;&lt;/p&gt;
+&lt;h1 id="abstract"&gt;Abstract
+&lt;/h1&gt;&lt;p&gt;现代内容挖掘应用中，用户体验依赖于高质量的个性化推荐。但是构建一个能提供这种推荐的系统由于商品和用户的数量太大，以及推荐结果需要对用户的实时操作进行响应等问题变得比较困难。我们提出了Pixie，一个基于图的，可扩展的实时推荐系统，部署在了Pinterest上。给定一组用户指定的pins作为查询，Pixie会实时地从十亿个可能的pins中选择那些与查询的query最相关的pins。我们使用Pixie随机游走算法，利用Pinterest图中的30亿个顶点以及170亿条边来生成推荐。实验表明，我们的算法对比之前基于hadoop的推荐系统，提升了50%以上的user engagement。此外，我们使用一种图剪枝策略使得推荐性能提升了58%。最后，我们在系统层面上讨论了Pixie，单台服务器每秒在延时60毫秒的情况下可以处理1200个推荐请求。现在，这个系统为Pinterest提供了超过80%的贡献。&lt;/p&gt;
+&lt;h1 id="related-work"&gt;Related Work
+&lt;/h1&gt;&lt;p&gt;推荐系统是一个大且经充分研究的研究领域。我们总结了以下相关工作，聚焦于大规模的工业界推荐系统。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Web-scale recommender systems.&lt;/strong&gt; 一些基于web的生产系统刚才已经提到了[1, 7, 21]。不像Pixie，他们不是实时的，他们的推荐结果都是提前计算出来的。实际中，响应时间小于100毫秒的就可以算作是实时，因为这样的系统可以和实时的服务流相结合。举个例子，如果我们推荐一个结果需要1秒钟，用户就得等太长的时间了。这些系统的推荐结果都是提前计算出来的，比如提前一天，然后存储成key-value对。但老旧的推荐系统都不怎么好。实时推荐系统因为它能对用户的反应实时的反应，所以变得很重要。对用户行为的实时反应可以提供更好的推荐结果。我们的实验表明实时推荐系统表现的比需要几天或几个小时才能更新的推荐系统好30-50%。&lt;/p&gt;
+&lt;p&gt;其他的实时推荐系统包括新闻推荐[9, 26]。然而，这样的系统只推荐最新的内容。我们这里的主要差别是规模，Pinterest的目录比传统的推荐系统多了1000倍。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Random-walk-based approaches.&lt;/strong&gt; 很多算法使用随机游走利用图结构进行推荐[2, 3, 28]。或许，我们的工作和Twiiter的&amp;quot;who to follow&amp;quot;系统最相近[14, 15]，它们的系统将整个图放到一台机器中，运行一个个性化的SALSA算法[19]。这些蒙特卡洛方法考虑了一个顶点相对于其他顶点的重要性，推荐结果会根据这些分数生成[13]。我们开发了一种新的随机游走方法，更快，效果更好。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Traditional collaborative filtering approaches.&lt;/strong&gt; 更一般地来讲，我们的方法与协同过滤相关，协同过滤通过挖掘用户图和商品图之间的交集部分，匹配用户与相似的商品偏好来生成推荐结果。系统过滤依赖于用户-商品矩阵的矩阵分解，生成表示用户和商品的隐向量[16, 17, 25, 30]。然而，基于矩阵分解的协同过滤算法的时间与空间复杂度最低是用户-商品图中顶点数的线性关系，使得使用这些算法在数十亿的商品以及百亿用户的问题上变得很有挑战。相比之下，我们的随机游走推荐算法与数据集的大小无关。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Content-based methods.&lt;/strong&gt; 在纯基于内容的推荐系统中，对商品的表示只依赖于它们的内容特征[24]。许多先进的大规模推荐系统是基于内容的，经常使用深度神经网络[6, 8, 11, 29]。尽管这些算法凭借着参数空间的维度只依赖于特征空间的维度，能扩展到大的数据集上，这些方法并不能利用图结构的信息，而这点（图结构信息）对Pinterest很重要。&lt;/p&gt;
+&lt;h1 id="3-proposed-method"&gt;3. Proposed Method
+&lt;/h1&gt;&lt;p&gt;Pinterest是一个用户与pins交互的平台。用户可以保存相关的pins到board中。这些board是相似pins的集合体。举个例子，一个用户可以创建一个关于食谱的board，将食物相关的pins放进去。Pinterest可以看作是一些boards，每个board是一组pins，每个pin又组成了成千上万不同的boards。形式化来说，Pinterest可以组成一个无向二分图 $G = (P, B, E)^2$ 。其中，$P$ 表示一组pins，$B$ 表示boards的集合。集合 $P \cup B$是 $G$ 的顶点集。如果用户 $p$ 保存了 $b$，那么在pin $p \in P$ 与 board $b \in B$ 之间就有一条边 $e \in E$。我们使用 $E(p)$ 表示连接到pin $p$ 的board顶点，$E(b)$ 表示连接到 $b$ 的pins。我们认为图 $G$ 是连通的，在实际中也是这样的。&lt;/p&gt;
+&lt;p&gt;Pixie接受的输入是一组带权的pins $Q = \lbrace (q, w_q) \rbrace$，其中 $q$ 是查询的pin，$w_q$是在查询集合中的重要度。查询集合 $Q$ 是用户指定的，并且在每次用户的行为后动态生成的，最近操作的pins有高的权重，随着时间的增长，权重会降低。给定查询 $Q$ Pixie会通过模拟新式的有重启的有偏随机游走来生成推荐结果。&lt;/p&gt;
+&lt;h1 id="31-pixie-random-walk"&gt;3.1 Pixie Random Walk
+&lt;/h1&gt;&lt;p&gt;为了更好的解释Pixie，我们首先解释最简单的随机游走，然后讨论如何将它扩展到Pixes使用的新的随机游走算法上。所有基于基本随机游走的创新对于Pixie提升性能来说都是至关重要的。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Basic Random Walk.&lt;/strong&gt; 考虑一个简单的例子，用户指定了查询 $Q$，包含一个pin $q$。给定一个输入pin $q$，可以在 $G$ 上模拟出很多短的随机游走，都是从 $q$ 开始的，记录每个pin $p$ 的访问次数(visit count)，表示随机游走访问到 $p$ 的次数。如果一个pin被访问的次数越多，那么这个 $q$ 就和它越相关。&lt;/p&gt;
+&lt;p&gt;我们在算法1中描述了最基本的随机游走 $\rm BASICRANDOMWALK$ [28]。每个随机游走生成了一个 &lt;em&gt;steps&lt;/em&gt; 的序列。每个 step 由3个操作组成。首先，给定当前pin $p$，(初始为 $q$ )，我们从 $E(p)$ 中选择一条连接 $q$ 和 $b$ 的边 $e$。然后我们通过从 $E(b)$ 中采样一条连接 $b$ 和 $p&amp;rsquo;$ 的一条边，得到pin $pin&amp;rsquo;$。第三步，当前的pin更新到 $p&amp;rsquo;$，然后重复之前的步骤。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://davidham3.github.io/blog/images/pixie-a-system-for-recommending-3-billion-items-to-200-million-users-in-real-time/Alg1.JPG"
+loading="lazy"
+alt="Algorithm1"
+&gt;&lt;/p&gt;
+&lt;p&gt;游走的长度由参数 $\alpha$ 决定。所有的 这样的随机游走的 steps 的数量决定了这个步骤的时间复杂度，我们用 $N$ 表示这个和。我们维护一个 &lt;em&gt;counter&lt;/em&gt; $V$ 用来映射 pin 和访问次数。为了获得推荐的pins，我们可以从返回的 counter 提取访问次数最高的pins，将它们返回作为推荐结果。这个过程的时间复杂度是固定的，与图的大小无关。&lt;/p&gt;
+&lt;p&gt;Pixie随机游走算法由算法2和算法3组成，在基础随机游走上有以下提升：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;对用户指定的pin的有偏随机游走&lt;/li&gt;
+&lt;li&gt;多个查询的pin，每个都有不同的权重&lt;/li&gt;
+&lt;li&gt;multi-hit booster对多个查询pins的增强&lt;/li&gt;
+&lt;li&gt;在保持预测性能的情况下使用早停减少随机游走的步数&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;&lt;img src="https://davidham3.github.io/blog/images/pixie-a-system-for-recommending-3-billion-items-to-200-million-users-in-real-time/Alg2.JPG"
+loading="lazy"
+alt="Algorithm2"
+&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://davidham3.github.io/blog/images/pixie-a-system-for-recommending-3-billion-items-to-200-million-users-in-real-time/Alg3.JPG"
+loading="lazy"
+alt="Algorithm3"
+&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;(1)Biasing the Pixie Random Walk.&lt;/strong&gt; 针对用户对随机游走进行偏离很重要。对于同样的查询集合 $Q$，推荐结果对于不同的用户应该不同。举个例子，Pinterest图包含了不同语言、不同主题，以及不同兴趣的用户的pins和boards，给用户使用的语言以及他们兴趣相关的推荐是非常重要的。&lt;/p&gt;
+&lt;p&gt;我们通过使用基于用户特征的随机的边选择方法解决了有偏随机游走的问题。随机游走倾向于遍历和用户相关的边。可以看作这些边对于图中的其他边有更高的权重/重要性。我们将随机游走在图的一个特定区域内进行偏离，使得它可以专注于pins的一个子集。这个修改在提高个性化、质量、以及推荐内容的话题性上的提升很重要，得到了更高的用户满意度。&lt;/p&gt;
+&lt;p&gt;Pixie算法使用一组用户特征 $U$ 作为特征（算法2）。注意，不同的Pixie调用不同的用户和查询，我们可以使用动态基于用户和边的特征的有偏边选择方法，这种方法可以提高Pixie推荐结果的灵活性。特别地， $\rm PIXIERANDOMWALK$ 使用 $\rm PersonalizedNeighbor(E, U)$ 选择对用户 $U$ 重要的边。这能使边匹配用户的特征/偏好，比如语言或话题。从概念上来看，这使得我们在针对用户进行游走偏离时可以获得最小的存储以及计算开销。本质上来看，可以将这种方法看作是针对每个用户，使用一个不同的图，这个图的边权重是针对这个用户定制的（但是不需要存储起来）。在实际情况中，由于性能原因，我们将权重限制在了一个可能值组成的离散集合内。我们避免了在内存中存储相似语言和话题的的边导致的开销，因此 $\rm PersonalizedNeighbor(E, U)$ 是一个子范围操作器。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;(2) Multiple Query Pins with Weights.&lt;/strong&gt; 为了全面地对用户建模，基于给定用户的全部历史信息是很重要的。我们通过基于多个pins，而不是一个pin的查询方式完成了这个要求。查询集合 $Q$ 中的每个pin $q$ 被分配了一个不同的权重 $w_q$。权重基于用户对这个pin进行操作之后的时间，以及这个操作的类型。我们使用以下方法生成一组查询 $Q$ 的推荐结果。我们对 $q \in Q$ 使用Pixie Random Walk（算法2），使用相互独立的计数器，如 pin $p$ 的计数器 $V_q[p]$ 对每个查询 pin $q$ 进行记录。最后，通过使用一会儿要提到的新的公式融合访问次数。&lt;/p&gt;
+&lt;p&gt;这里有个重要的见解，获取有意义的访问次数需要的steps的数量依赖于pin的度。从一个高度的pin，也就是出现在很多boards中的pin的推荐结果需要的步数要远多于从一个低度的pin。因此，我们给每个pin分配的步数正比于它的度。但是，如果我们线性的分配步数给每个pin，那最后有可能给低度的pin连一步都分配不了。&lt;/p&gt;
+&lt;p&gt;我们基于一个根据度数亚线性增长的函数来分配步数，通过一个缩放因子 $s_q$ 给每个pin的权重 $w_q$进行缩放。我们给每个 pin 构建如下的缩放因子：&lt;/p&gt;
+$$\tag{1}
+s\_q = \vert E(q) \vert \cdot (C - \log{\vert E(q) \vert})
+$$&lt;p&gt;其中 $s_q$ 是 pin $q \in Q$ 的缩放因子，$\vert E(q) \vert$ 是 $q$ 的度，$C = max_{p \in P}(E(p))$ 是 pin 度的最大值。这个函数不会不成比例地给流行的pins高的权重。我们通过下面的公式分配步数：&lt;/p&gt;
+$$\tag{2}
+N\_q = w\_q N \frac{s\_q}{\sum\_{r \in Q} s\_r}
+$$&lt;p&gt;其中，$N_q$是分配给从pin $q$ 起始的随机游走的总步数。这个分布有我们想要的性质：给高度数的pins更多的步数，给低度数的pin充分的步数。我们在算法3的第二行实现了这个。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;(3) Multi-hit Booster.&lt;/strong&gt; Pixie算法的另一个创新是，通常来说对于查询集合 $Q$，我们想要的推荐结果是与 $Q$ 中的多个 pins 相关的结果。直观上来看，候选的查询与越多的 pins 相关，那么这个候选项与整个查询就越相关。换句话说，从多个 pins 得来的具有高访问次数的候选项比从单一 pin 得来的具有很高的访问次数的候选项对于这个查询更相关。&lt;/p&gt;
+&lt;p&gt;这里我们的见解是：让Pixie增强从多个查询 pins 得到的候选 pins 的分数。我们通过一种新的方法聚合一个给定的 pin $p$ 的访问次数 $V_q[p]$。而不是简单的对所有的查询 pins $q \in Q$，加和给定 pin $p$ 的访问次数 $V_q[p]$，我们将他们变换，这种方式会奖励那些从多个不同的查询 pins $q$ 多次访问的 pins：&lt;/p&gt;
+$$\tag{3}
+V[p] = ( \sum\_{q \in Q} \sqrt{V\_q[p]})^2
+$$&lt;p&gt;其中，$V[p]$ 是 pin $p$合并后的访问次数。注意，当一个候选 pin $p$通过游走从一个单独的查询 pin $q$ 起始后访问到时，访问次数是不变的。但是，如果候选 pin 从多个查询 pins 访问到，那么这个值就会增强。就会导致，选择计数器 $V$ 得到的最高的访问 pins 时，multi-hit pins 的比例会更高。我们在算法3的第5行实现了这个。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;(4) Early Stopping.&lt;/strong&gt; 我们刚才描述的步骤会跑一个固定 steps 个数 $N_q$ 的随机游走。然而，因为 Pixie 的运行时间依赖于 steps 的个数，我们希望跑尽可能少的步数。这里我们可以通过对查询 $q$ 调整步数 $N_q$，而不是对所有的查询使用固定的 $N_q$ 来减少运行时间。&lt;/p&gt;
+&lt;p&gt;我们的解决方案是一旦前几个候选项稳定后就停止游走。因为 Pixie 推荐几千个
+pins，如果朴素地实现，这个监控（判断候选项变不变）会比随机游走本身还费时。我们的方法通过两个实数 $n_p$ 和 $n_v$ 克服了这个困难。至少 $n_p$ 个候选项被访问了至少 $n_v$ 次就停止游走。这个监控简单而且高效，因为我们只需要一个计数器来追踪候选项是否被访问了 $n_v$ 即可（算法2的12到15行）。&lt;/p&gt;
+&lt;p&gt;我们在4.2节展示了早停策略与长的随机游走差不多的结果，但是差不多少了一般的步数，加速了一倍左右。&lt;/p&gt;
+&lt;h2 id="32-graph-pruning"&gt;3.2 Graph Pruning
+&lt;/h2&gt;&lt;p&gt;另一个重要的创新是图的清理与剪枝。图剪枝提升了推荐质量，也减少了图的尺寸，所以这个算法可以在更小的图、更便宜的机器上，提供更好的缓存表现。&lt;/p&gt;
+&lt;p&gt;原始的Pinterest图有70亿个顶点和超过1000亿条边。但是，不是所有的 boards 都是有主题的。大的多样的boards会让游走向多个方向扩散，使得推荐结果质量下降。相似地，很多 pins 被错误的分到其他的 boards 中。图剪枝过程会清理图，并且让它变得主题更专一。另一个好处是，图剪枝也会让图变小，可以放到单台机器的内存中。不需要将图分布到多台机器上就可以得到很好的性能，因为随机游走不需要在不同的机器上“跳跃”。&lt;/p&gt;
+&lt;p&gt;步骤如下：首先，通过计算 boards 的主题分布的熵，量化每个 board 的内容多样性。然后在每个 pin 的描述上使用LDA主题模型获取概率主题向量。使用加入到 board 中最新的 pins 的主题向量作为输入信号，计算 board 的熵。删除掉有很大的熵的 boards 以及他们的边。&lt;/p&gt;
+&lt;p&gt;另一个挑战是，真实环境的数据集有很偏的长尾分布。在 Pinterest中，意味着一些 pins 非常流行，有可能被存入了几百万个 boards 中。对于这样的顶点，随机游走需要运行很多步，因为它需要在一个有大量邻居的网络中扩散。我们通过有系统性地丢弃高度 pins 的边解决这个问题。我们丢弃了那种 pin 的主题不属于那个 board 的边，而不是随机地丢弃边。我们使用和上面同样的主题向量，使用特征向量的余弦相似度计算一个 pin 对于一个 board 的相似度，然后只保留具有高相似度的边。实际上，剪枝的程度取决于 $pruning \ factor \ \delta$。我们将每个 pin $p$ 的度更新为 $\vert E(p) \vert ^ \delta$，丢弃连接 $p$ 和 与 $p$ 相似度低的 boards 的边。&lt;/p&gt;
+&lt;p&gt;在剪枝后，图包含了10亿个 boards，20亿个 pins，170亿条边。比较有意思的是，我们发现剪枝有两个优点：1. 图的大小减小了6倍（内存开销）；2. 得到了58%的相关推荐结果。&lt;/p&gt;</description></item><item><title>Graph Convolutional Neural Networks for Web-Scale Recommender Systems</title><link>https://davidham3.github.io/blog/p/graph-convolutional-neural-networks-for-web-scale-recommender-systems/</link><pubDate>Sun, 17 Jun 2018 21:24:48 +0000</pubDate><guid>https://davidham3.github.io/blog/p/graph-convolutional-neural-networks-for-web-scale-recommender-systems/</guid><description>&lt;p&gt;KDD 2018。使用图卷积对顶点进行表示，学习顶点的 embedding ，通过卷积将该顶点的邻居信息融入到向量中。原文链接：&lt;a class="link" href="https://arxiv.org/abs/1806.01973v1" target="_blank" rel="noopener"
+&gt;Graph Convolutional Neural Networks for Web-Scale Recommender Systems&lt;/a&gt;。&lt;/p&gt;
+&lt;h1 id="abstract"&gt;ABSTRACT
+&lt;/h1&gt;&lt;p&gt;最近在图数据上的深度神经网络在推荐系统上表现的很好。然而，把这些算法应用到数十亿的物品和数百亿的用户上仍然是个挑战。&lt;/p&gt;
+&lt;p&gt;我们提出了一种在 Pinterest 上的大规模深度推荐引擎，开发了一种高效的图卷积算法 PinSage，融合了随机游走和图卷积，来生成顶点（物品）的表示，同时整合了顶点信息和图结构。对比之前的 GCN 方法，我们研究的模型基于高效的随机游走来结构化卷积操作，而且还设计了一个新型的训练策略，这个策略依赖于 harder-and-harder 训练样本，来提高模型的鲁棒性和收敛能力。&lt;/p&gt;
+&lt;p&gt;我们的 PinSage 在 Pinterest 上面的75亿个样本上进行训练，图上有30亿个顶点表示 &lt;em&gt;pins&lt;/em&gt; 和 &lt;em&gt;boards&lt;/em&gt;，180亿条边。根据离线指标、用户研究和 A/B 测试，PinSage 生成了相比其他深度学习和基于图的方法更高质量的推荐结果。据我们所知，这是深度图表示目前规模最大的应用，并且为新一代基于图卷积结构的大规模推荐系统奠定了基础。&lt;/p&gt;
+&lt;h1 id="1-introduction"&gt;1 INTRODUCTION
+&lt;/h1&gt;&lt;p&gt;深度学习方法在推荐系统中越来越重要，用来学习图像、文本、甚至是用户的有效的低维表示。使用深度学习学习到的表示可以用来补充、或是替换像协同过滤这样传统的推荐算法。这些表示很有用，因为他们可以在各种推荐任务中重复使用。举个例子，使用深度模型学习得到的物品的表示，可以用来做 “物品-物品” 推荐，也可以来按主题推荐（比如，歌单、或是 Feed流的内容）。&lt;/p&gt;
+&lt;p&gt;近些年可以看到这个领域的很多重要的发展，尤其是新的可以学习图结构的深度学习方法的发展，是一些推荐应用的基础（比如在用户-物品网络上或社交网络上推荐）。&lt;/p&gt;
+&lt;p&gt;在这些成功的深度学习框架中比较重要的是图卷积网络（GCN）。核心的原理是学习如何迭代地使用神经网络从局部图邻居中聚合特征信息（图1）。这里，一个简单的卷积操作从一步邻居中变换并聚合特征信息，并且通过堆叠多个这样的卷积，信息可以传播到图中很广的地方。不像纯基于内容的深度模型（如 RNN ），GCN 利用内容信息和图结构。基于 GCN 的模型的方法已经在无数推荐系统中形成了新的标准（参见[19]的综述）。然而，这些b enchmark 上面获得的提升，还没有被转换到真实环境的应用中去。&lt;/p&gt;
+&lt;p&gt;主要挑战是要将训练和基于 GCN 的顶点表示在数十亿的顶点和数百亿的边的图中进行。扩展 GCN 很困难，因为很多在大数据环境中，很多基于这些 GCN 设计的假设都不成立了。比如，所有的基于 GCN 的推荐系统需要在训练时使用图的拉普拉斯矩阵，但是当顶点数很大的时候，这就不现实了，因为算不出来。&lt;/p&gt;
+&lt;h1 id="3-method"&gt;3 METHOD
+&lt;/h1&gt;&lt;p&gt;在这部分，我们将描述 PinSage 的结构和训练的技术细节，也会讲一下使用训练好的 PinSage 模型来高效地生成 embedding 的MapReduce pipeline。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://davidham3.github.io/blog/images/graph-convolutional-neural-networks-for-web-scale-recommender-systems/Fig1.PNG"
+loading="lazy"
+alt="Figure1"
+&gt;&lt;/p&gt;
+&lt;p&gt;我们方法的计算关键在于局部图卷积的表示(notion)。我们使用多个卷积模块来聚合一个顶点局部的邻域特征信息（图1），来生成这个顶点的 embedding（比如一个物品）。每个模块学习如何从一个小的图邻域中聚合信息，并且通过堆叠多个这样的模块，我们的方法可以获得局部网络的拓扑结构信息。更重要的是，这些局部卷积模块的参数对所有的顶点来说是共享的，这使得我们的方法的参数的计算复杂度与输入的图的大小无关。&lt;/p&gt;
+&lt;h1 id="31-problem-setup"&gt;3.1 Problem Setup
+&lt;/h1&gt;&lt;p&gt;Pinterest 是一个内容挖掘应用，在这里用户与 &lt;em&gt;pins&lt;/em&gt; 进行交互，这些 &lt;em&gt;pins&lt;/em&gt; 是在线内容的可见标签（比如用户做饭时的食谱，或者他们想买的衣服）。用户用 &lt;em&gt;boards&lt;/em&gt; 将 &lt;em&gt;pins&lt;/em&gt; 组织起来，&lt;em&gt;boards&lt;/em&gt; 里面包含了 &lt;em&gt;pins&lt;/em&gt; 组成的集合，这些 &lt;em&gt;pins&lt;/em&gt; 在用户看来是主题相关的。Pinterest 组成的图包含了 20 亿的 &lt;em&gt;pins&lt;/em&gt;，10 亿的 &lt;em&gt;boards&lt;/em&gt;，超过 180 亿的边（也就是 &lt;em&gt;pins&lt;/em&gt; 对应 &lt;em&gt;boards&lt;/em&gt; 的关系）。&lt;/p&gt;
+&lt;p&gt;我们的任务是生成可以用于推荐的高质量的 embedding 或 &lt;em&gt;pins&lt;/em&gt; 的表示（比如，使用最近邻来查找 &lt;em&gt;pin&lt;/em&gt; 的推荐，或是使用下游的再评分系统进行推荐）。为了学习这些 embedding，我们对 Pinterest 环境进行建模，得到一个二部图，顶点分为两个不相交的集合，$\mathcal{I}$ 表示 &lt;em&gt;pins&lt;/em&gt;，$\mathcal{C}$ 表示 &lt;em&gt;boards&lt;/em&gt;。当然，我们的方法是可以泛化到其他方面的，比如 $\mathcal{I}$ 看作是物品，$\mathcal{C}$ 看作是用户定义的环境或收藏品集合等。&lt;/p&gt;
+&lt;p&gt;再来说说图结构，我们假设 &lt;em&gt;pins/items&lt;/em&gt; $u \in \mathcal{I}$ 与特征 $x_u \in \mathbb{R}^d$ 相关。通常来说，这些特征可能是物品的元数据或上下文信息，在 Pinterest 的例子中，&lt;em&gt;pins&lt;/em&gt; 是和富文本与图片特征相关的。我们的目标是利用这些输入特征，也利用二部图的图结构性质来生成高质量的 embedding。这些 embedding 可以用于推荐系统，通过最近邻查找来生成推荐，或是作为用评分来推荐的机器学习系统的特征。&lt;/p&gt;
+&lt;p&gt;为了符号的简洁，我们使用 $\mathcal{V} = \mathcal{I} \cup \mathcal{C}$ 来表示图中的顶点集，没有特殊需要不区分 &lt;em&gt;pin&lt;/em&gt; 和 &lt;em&gt;board&lt;/em&gt; 顶点，一律使用 &lt;em&gt;node&lt;/em&gt; 来表示顶点。&lt;/p&gt;
+&lt;h2 id="32-model-architecture"&gt;3.2 Model Architecture
+&lt;/h2&gt;&lt;p&gt;我们使用局部卷积模块对顶点生成 embeddings。首先输入顶点的特征，然后学习神经网络，神经网络会变换并聚合整个图上的特征来计算顶点的 embeddings（图1）。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Forward propagation algorithm.&lt;/strong&gt; 考虑对顶点 $u$ 生成 embedding $z_u$ 的任务，需要依赖顶点的输入特征和这个顶点周围的图结构。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://davidham3.github.io/blog/images/graph-convolutional-neural-networks-for-web-scale-recommender-systems/algo1.PNG"
+loading="lazy"
+alt="“Algorithm 1”"
+&gt;&lt;/p&gt;
+&lt;p&gt;我们的 PinSage 算法是一个局部卷积操作，我们可以通过这个局部卷积操作学到如何从 $u$ 的邻居聚合信息（图1）。这个步骤在算法1 CONVOLVE 中有所描述。从本质上来说，我们通过一个全连接神经网络对 $\forall{v} \in \mathcal{N}(u)$，也就是 $u$ 的邻居的表示 $z_v$ 进行了变换，之后在结果向量集合上用一个聚合/池化函数（例如：一个 element-wise mean 或是加权求和，表示为 $\gamma$）（Line 1）。这个聚合步骤生成了一个 $u$ 的邻居$\mathcal{N}(u)$ 的表示 $n_u$。之后我们将这个聚集邻居向量 $n_u$ 和 $u$ 的当前表示向量进行拼接后，输入到一个全连接神经网络做变换（Line 2）。通过实验我们发现使用拼接操作会获得比平均操作[21]好很多的结果。除此以外，第三行的 normalization 使训练更稳定，而且对近似最近邻搜索来说归一化的 embeddings 更高效（Section 3.5）。算法的输出是集成了 $u$ 自身和他的局部邻域信息的表示。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Importance-based neighborhoods.&lt;/strong&gt; 我们方法中的一个重要创新是如何定义的顶点邻居 $\mathcal{N}(u)$，也就是我们在算法1中是如何选择卷积的邻居集合。尽管之前的 GCN 方法简单地检验了 k-hop 邻居，在 PinSage 中我们定义了基于重要性的邻域，顶点 $u$ 的邻居定义为 $T$ 个顶点，这 $T$ 个顶点对 $u$ 是最有影响力的。具体来说，我们模拟了从顶点 $u$ 开始的随机游走，并且计算了通过随机游走&lt;a class="link" href="https://arxiv.org/abs/1711.07601" target="_blank" rel="noopener"
+&gt;[14]&lt;/a&gt;对顶点的访问次数的 $L_1$ 归一化值。$u$ 的邻居因此定义为针对顶点 $u$ 来说 $T$ 个最高的归一化的访问数量的顶点。&lt;/p&gt;
+&lt;p&gt;这个基于重要性的邻域定义的优点有两点。第一点是选择一个固定数量的邻居顶点来聚集可以在训练过程中控制内存开销[18]。第二，在算法1中聚集邻居的向量表示时可以考虑邻居的重要性。特别地，我们在算法1中实现的 $\gamma$ 是一个加权求均值的操作，权重就是 $L_1$ 归一化访问次数。我们将这个新的方法称为重要度池化(&lt;em&gt;importance pooling&lt;/em&gt;)。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Stacking convolutions.&lt;/strong&gt; 每次使用算法1的 CONVOLVE 操作都会得到一个顶点的新的表示，我们可以在每个顶点上堆叠卷积来获得更多表示顶点 $u$ 的局部邻域结构的信息。特别地，我们使用多层卷积，其中对第 $k$ 层卷积的输入依赖于 $k-1$ 层的输出（图1），最初的表示（&amp;ldquo;layer 0&amp;rdquo;）等价于顶点的输入特征。需要注意的是，算法1中的模型参数（$Q$, $q$, $W$ 和 $w$）在顶点间是共享的，但层与层之间不共享。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://davidham3.github.io/blog/images/graph-convolutional-neural-networks-for-web-scale-recommender-systems/algo2.PNG"
+loading="lazy"
+&gt;&lt;/p&gt;
+&lt;p&gt;算法2详细描述了如何堆叠卷积操作，针对一个 minibatch 的顶点 $\mathcal{M}$ 生成 embeddings。首先计算每个顶点的邻居，然后使用 $K$ 个卷积迭代来生成目标顶点的 K 层表示。最后一层卷积层的输出之后会输入到一个全连接神经网络来生成最后的 embedding $z_u$，$\forall{u} \in \mathcal{M}$。&lt;/p&gt;
+&lt;p&gt;模型需要学习的参数有：每个卷积层的权重和偏置（$Q^{(k)}$，$q^{(k)}$，$W^{(k)}$，$w^{(k)}$，$\forall{k} \in \lbrace 1,&amp;hellip;,K\rbrace $），还有最后的全连接网络中的参数 $G_1$，$G_2$，$g$。算法1的第一行的每层输出的维度（也就是 $Q$ 的列空间的维度）设为 $m$。为了简单起见，我们将所有卷积层（算法1的第三行的输出）的输出都设为同一个数，表示为 $d$。模型最后的输出（算法2第18行之后）也设为 $d$。&lt;/p&gt;
+&lt;h2 id="33-model-training"&gt;3.3 Model Training
+&lt;/h2&gt;&lt;p&gt;我们使用 max-margin ranking loss 来训练 PinSage。在这步，假设我们有了一组标记的物品对 $\mathcal{L}$，$(q,i) \in \mathcal{L}$ 认为是相关的，也就是当查询 $q$ 时，物品 $i$ 是一个好的推荐候选项。训练阶段的目标是优化 PinSage 的参数，使得物品对 $(q,i) \in \mathcal{L}$ 的 embedding 在标记集合中尽可能的接近。&lt;/p&gt;
+&lt;p&gt;我们先来看看 margin-based loss function。首先我们来看看我们使用的可以高效地计算并且使 PinSage 快速收敛的一些技术，这些技术可以让我们训练包含数十亿级别的顶点的图，以及数十亿训练样本。最后，我们描述我们的 curriculum-training scheme，这个方法可以全方位的提升我们的推荐质量。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Loss function.&lt;/strong&gt; 为了训练模型的参数，我们使用了一个基于最大边界的损失函数。基本的思想是我们希望最大化正例之间的内积，也就是说，查询物品的 embedding 和对应的相关物品的 embedding 之间的内积。与此同时我们还想确保负例之间的内积，也就是查询物品的 embedding 和那些不相关物品 embedding 之间的内积要小于通过提前定义好的边界划分出的正例的内积。对于单个顶点对 embeddings $(z_q, z_i):(q, i) \in \mathcal{L}$ 的损失函数是：&lt;/p&gt;
+$$
+J\_{\mathcal{G}}(z\_qz\_i) = \mathbb{E}\_{n\_k \thicksim p\_n(q)}\max\lbrace 0, z\_q \cdot z\_{n\_k}-z\_q \cdot z\_i + \Delta\rbrace
+$$&lt;p&gt;其中，$P_n(q)$ 表示物品 $q$ 的负样本分布，$\Delta$ 表示 margin 超参数。一会儿会讲负样本采样。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Multi-GPU training with large minibatches.&lt;/strong&gt; 为了在训练中充分利用单台机器的多个 GPU，我们以一种 multi-tower 的方法运行前向和反向传播。我们首先将每个 minibatch（图1底部）分成相等大小的部分。每个 GPU 获得 minibatch 的一部分，使用同一组参数来运算。在反向传播之后，所有 GPU 上的针对每个参数的梯度进行汇集，然后使用一个同步的 SGD。由于训练需要极大数量的样本，我们在运行时使用了很大的 batch size，范围从 512 到 4096。&lt;/p&gt;
+&lt;p&gt;我们使用与 Goyal et al.[16] 提出的相似的技术来确保快速收敛，而且在处理大 batch size 时训练的稳定和泛化精度。我们在第一轮训练的时候根据线性缩放原则使用一个 gradual warmup procedure，使学习率从小增大到一个峰值。之后学习率以指数级减小。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Producer-consumer minibatch construction.&lt;/strong&gt; 在训练的过程中，由于邻接表和特征矩阵有数十亿的顶点，所以放在了 CPU 内存中。然而，在训练 PinSage 的 CONVOLVE 步骤时，每个 GPU 需要处理邻居和顶点邻居的特征信息。从 GPU 访问 CPU 内存中的数据时会有很大的开销。为了解决这个问题，我们使用了一个 &lt;em&gt;re-indexing&lt;/em&gt; 的方法创建包含了顶点和他们的邻居的子图 $G&amp;rsquo; = (V&amp;rsquo;, E&amp;rsquo;)$，在当前的 minibatch 中会被加入到计算中。只包含当前 minibatch 计算的顶点特征信息的小的特征矩阵会被抽取出来，顺序与 $G&amp;rsquo;$ 中顶点的 index 一致。$G&amp;rsquo;$ 的邻接表和小的特征矩阵会在每个 minibatch 迭代时输入到 GPU 中，这样就没有了 GPU 和 CPU 间的通信开销了，极大的提高了 GPU 的利用率。&lt;/p&gt;
+&lt;p&gt;训练过程改变了 CPU 和 GPU 的使用方式。模型计算是在 GPU，特征抽取、re-indexing、负样本采样是在 CPU 上运算的。使用 multi-tower 训练的 GPU 并行和 CPU 计算使用了 OpenMP[25]，我们设计了一个生产者消费者模式在当前迭代中使用 GPU 计算，在下一轮使用 CPU 计算，两者并行进行。差不多减少了一半的时间。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Sampling negative items.&lt;/strong&gt; 负样本采样在我们的损失函数中作为 edge likelihood[23] 的归一化系数的近似值。为了提升 batch size 较大时的训练效率，我们采样了 500 个负样本作为一组，每个 minibatch 的训练样本共同使用这一组。相比于对每个顶点在训练时都进行负样本采样，这极大地减少了每次训练时需要计算的 embeddings 的数量。从实验上来看，我们发现这两种方法在表现上没什么特别大的差异。&lt;/p&gt;
+&lt;p&gt;在最简单的情况中，我们从整个样本集中使用均匀分布的抽样方式。然而，确保正例($(q, i)$)的内积大于 $q$ 和 500 个负样本中每个样本的内积是非常简单的，而且这样做不能提供给系统足够学习的分辨率。我们的推荐算法应该能从 200 亿个商品中找到对于物品 $q$ 来说最相关的 1000 个物品。换句话说，我们的模型应该能从超过 2 千万的物品中区分/辨别出 1 件物品。但是通过随机采样的 500 件物品，模型的分辨率只是 $\frac{1}{500}$。因此，如果我们从 200 亿物品中随机抽取 500 个物品，这些物品中的任意一个于当前这件查询的物品相关的几率都很小。因此，模型通过训练不能获得好的参数，同时也不能对相关的物品进行区分的概率很大。为了解决上述问题，对于每个正训练样本（物品对$(q, i)$），我们加入了&amp;quot;hard&amp;quot;负例，也就是那些与查询物品 $q$ 有某种关联的物品，但是又不与物品 $i$ 有关联。我们称这些样本为&amp;quot;hard negative items&amp;quot;。通过在图中根据他们对查询物品 $q$ 的个性化 PageRank 分数来生成[14]。排名在 2000-5000 的物品会被随机采样为 hard negative items。如图2所示，hard negative examples 相比于随机采样的负样本更相似于查询物品，因此对模型来说挑战是排名，迫使模型学会在一个好的粒度上分辨物品。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://davidham3.github.io/blog/images/graph-convolutional-neural-networks-for-web-scale-recommender-systems/Fig2.PNG"
+loading="lazy"
+&gt;&lt;/p&gt;
+&lt;p&gt;使用 hard negative items 会让能使模型收敛的训练轮数翻倍。为了帮助模型收敛，我们使用了 curriculum training scheme[4]。在训练的第一轮，不适用 hard negative items，这样算法可以快速地找到 loss 相对较小的参数空间。之后我们在后续的训练中加入了 hard negative items，专注于让模型学习如何从弱关系中区分高度关联的pins。在第 $n$ 轮，我们对每个物品的负样本集中加入了 $n-1$ 个 hard negative items。&lt;/p&gt;
+&lt;h2 id="34-node-embeddings-via-mapreduce"&gt;3.4 Node Embeddings via MapReduce
+&lt;/h2&gt;&lt;p&gt;在模型训练结束后，对于所有的物品（包括那些在训练中未见过的物品）直接用训练好的模型生成 embeddings 还是有挑战的。使用算法2对顶点直接计算 embedding 的方法会导致重复计算，这是由顶点的K-hop 邻居导致的。如图1所示，很多顶点在针对不同的目标顶点生成 embedding 的时候被很多层重复计算多次。为了确保推算的有效性，我们使用了一种 MapReduce 架构来避免在使用模型进行推算的时候的重复计算问题。&lt;/p&gt;
+&lt;p&gt;我们发现顶点的 embedding 在推算的时候会很好的将其自身带入到 MR 计算模型中。图3详细地表述了 pin-to-board Pinterest 二部图上的数据流，我们假设输入（&amp;ldquo;layer-0&amp;rdquo;）顶点是 pins/items（layer-1 顶点是 boards/contexts）。MR pipeline 有两个关键的组成部分：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;一个 MapReduce 任务将所有的 pins 投影到一个低维隐空间中，在这个空间中会进行聚合操作（算法1，第一行）&lt;/li&gt;
+&lt;li&gt;另一个 MR 任务是将结果的 pins 表示和他们出现在的 boards 的 id 进行连接，然后通过 board 的邻居特征的池化来计算 board 的 embedding。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;注意，我们的方法避免了冗余的计算，对于每个顶点的隐向量只计算一次。在获得 boards 的 embedding 之后，我们使用两个以上的 MR 任务，用同样的方法计算第二层 pins 的 embedding，这个步骤也是可以迭代的（直到 K 个卷积层）。&lt;/p&gt;
+&lt;h3 id="35-efficient-nearest-neighbor-lookups"&gt;3.5 Efficient nearest-neighbor lookups
+&lt;/h3&gt;&lt;p&gt;由 PinSage 生成的 embeddings 可以用在很多下游推荐任务上，在很多场景中我们可以直接使用这些 embeddings 来做推荐，通过在学习到的嵌入空间中使用最近邻查找。也就是，给定一个查询物品 $q$，我们使用 K-近邻的方式来查找查询物品 embedding 的 K 个邻居的嵌入。通过局部敏感哈希[2]的近似 K 近邻算法很高效。在哈希函数计算出后，查找物品可以通过一个基于 Weak AND 操作[5]的两阶段查询实现。PinSage 模型是离线计算的并且所有节点的表示通过 MR 计算后存放到数据库中，高效的最近邻查找方法可以使系统在线提供推荐结果。&lt;/p&gt;</description></item><item><title>Collaborative Filtering for Implicit Feedback Datasets</title><link>https://davidham3.github.io/blog/p/collaborative-filtering-for-implicit-feedback-datasets/</link><pubDate>Thu, 18 Jan 2018 18:58:25 +0000</pubDate><guid>https://davidham3.github.io/blog/p/collaborative-filtering-for-implicit-feedback-datasets/</guid><description>&lt;p&gt;ICDM 2008. 推荐系统：协同过滤在隐反馈数据上的应用，这个算法在GitHub上有人实现了，性能很强。这是我的阅读笔记，把论文当中的主要部分抽出来了。原文链接：&lt;a class="link" href="https://ieeexplore.ieee.org/abstract/document/4781121/" target="_blank" rel="noopener"
+&gt;Collaborative Filtering for Implicit Feedback Datasets&lt;/a&gt;&lt;/p&gt;
+&lt;h1 id="introduction"&gt;Introduction
+&lt;/h1&gt;&lt;p&gt;In this part, this paper introduce 4 important characteristics for implicit feedback:&lt;/p&gt;
+&lt;h2 id="no-negative-feedback"&gt;No negative feedback
+&lt;/h2&gt;&lt;p&gt;For example, a user that did not watch a certain show might have done so because she dislikes the show or was not availale to watch it. So by observing the users behavior, we can infer which items they probably like and thus chose to consume. However, it&amp;rsquo;s hard to reliably infer which item a user did not like.&lt;/p&gt;
+&lt;h2 id="implicit-feedback-is-inherently-noise"&gt;Implicit feedback is inherently noise
+&lt;/h2&gt;&lt;p&gt;For example, we may view purchases behavior for an individual, but this does not necessarily indicate a positive view of thhe product. The item may have been purchased as a gift. Or a television is on a particular channel and a particular time, but the viewer might be asleep.&lt;/p&gt;
+&lt;h2 id="the-numerical-value-of-explicit-feedback-indicate-preference-whereas-the-numerical-value-of-implicit-feedback-indicates-confidence"&gt;The numerical value of explicit feedback indicate preference, whereas the numerical value of implicit feedback indicates confidence
+&lt;/h2&gt;&lt;p&gt;Numerical values of implicit feedback describe the frequency of actions, e.g., how much time the user watched a certain show, how frequently a user is buying a certain item, etc. A larger value is not indicating a higher preference.&lt;/p&gt;
+&lt;h2 id="evaluation-of-implicit-feedback-recommender-requires-appropriate-measures"&gt;Evaluation of implicit-feedback recommender requires appropriate measures
+&lt;/h2&gt;&lt;p&gt;For example, if we gather data on television viewing, it&amp;rsquo;s unclear how to evaluate a show that has been watched more than once, or how to compare two shows that are on at the same time, and hence cannot both be watched by the user.&lt;/p&gt;
+&lt;h1 id="preliminaries"&gt;preliminaries
+&lt;/h1&gt;&lt;p&gt;notions:
+users $u, v$
+items $i, j$
+observations $r_{ui}$, associate users and items. For explicit feedback datasets, those values would be ratings that indicate the preference by user $u$ and item $i$. For implicit datasets, $r_{ui}$ can indicate observations for user actions. For example, $r_{ui}$ can indicate the number of times $u$ purchased item $i$ or the time $u$ spent on webpage $i$.&lt;/p&gt;
+&lt;h1 id="previous-work"&gt;previous work
+&lt;/h1&gt;&lt;h2 id="neighborhood-models"&gt;Neighborhood models
+&lt;/h2&gt;&lt;p&gt;Its original form is user-oriented, see [1] for a good analysis.
+Later, an analogous item-oriented approach [2,3] became popular. In those methods, a rating is estimated using known ratings made by the same user on similar items. In addition, item-oriented methods are more amenable to explaining the reasoning behind predictions. This is because users are familiar with items previously preferred by them, but usually do not know those allegedly like minded users.
+Central to most item-oriented approaches is a similarity measure between items, where $s_{ij}$ denotes the similarity of $i$ and $j$. Frequently, it is based on the Pearson correlation coeffcient. Our goal is to predict $r_{ui}$--the unobserved value by user $u$ for item $i$. Using the similarity maesure, we identify the $k$ items rated by $u$, which are most similar to $i$. This set of $k$ neighbors is denoted by $S^k(i;u)$. The predicted value of $r_{ui}$ is taken as a weighted average of the ratings for neighboring items:
+&lt;/p&gt;
+$$\hat{r}\_{ui} = \frac{\sum\_{j\in S^k(i;u)}s\_{ij}r\_{uj}}{\sum\_{j\in S^k(i;u)}s\_{ij}}$$&lt;p&gt;
+Some enhancements of this scheme are well practiced for explicit feedback, such as correcting for biases caused by varying mean ratings of different users and items.
+All item-oriented models share a disadvantage in regards to implicit feedback - they do not provide the flexibility to make a distinction between user preferences and thhe confidence we might have in those preferences.&lt;/p&gt;
+&lt;h2 id="latent-factor-models"&gt;Latent factor models
+&lt;/h2&gt;&lt;p&gt;Latent factor models comprise an alternative approach to CF with the more holistic goal to uncover latent features that explain observed ratings; example include pLSA\cite{ref4}, neural networks\cite{ref5}, and Latent Dirichlet Allocation\cite{ref6}. We will focus on models that are induced by Singular Value Decomposition(SVD) of the user-item observations matrix. Many of the recent works, applied to explicit feedback datasets, suggested modeling directly only the observed ratings, while avoiding overfitting through an adequate regularized model, such as:
+&lt;/p&gt;
+$$\min \limits\_{x\_*,y\_*} \sum \limits\_{r\_{w,i}is known} (r\_{ui}-x^T\_uy\_i)^2+\lambda (\lVert x\_u\rVert^2+\lVert y\_i \rVert^2)$$&lt;p&gt;
+Here, $\lambda$ is used for regularizing the model. Parameters are often learnt by stochastic gradient descent;&lt;/p&gt;
+&lt;h1 id="our-model"&gt;Our model
+&lt;/h1&gt;&lt;p&gt;First, we need to formalize the notion of confidence which the $r_{ui}$ variables measure. To this end, let us introduce a set of binary variables $p_{ui}$, which indicates the preference of user $u$ to item $i$. The $p_{ui}$ values are derived by binarizing the $r_{ui}$ values:
+&lt;/p&gt;
+$$p\_{ui}=
+\begin{cases}
+1 &amp; r\_{ui}&gt;0\\
+0 &amp; r\_{ui}=0
+\end{cases}$$&lt;p&gt;
+In other words, if a user $u$ consumed item $i$($r_{ui}&amp;gt;0$), then we have an indication that $u$ likes $i$($p_{ui}=1$). On the other hand, if $u$ never comsumed $i$, we believe no preference($p_{ui}=0$).
+We will have different confidence levels also among items that are indicated to be preferred by the user. In general, as $r_{ui}$ grows, we have a stronger indication that the user indeed like thhe item. Consequently, we introduce a set of variables, $c_{ui}$, which measure our confidence in observing $p_{ui}$. A plausible choice for $c_{ui}$ would be:
+&lt;/p&gt;
+$$c\_{ui} = 1 + \alpha r\_{ui}$$&lt;p&gt;
+This way, we have some minimal confidence in $p_{ui}$ for every user-item pair, but as we observe more evidence for positive preference, our confidence in $p_{ui}=1$ increases accordingly. The rate of increase is controlled by the constant $\alpha$. In our experiments, setting $\alpha = 40$ was found to produce good results.
+Our goal is to find a vector $x_u\in \mathbb{R}^f$ for each user $u$, and a vector $y_i\in \mathbb{R}^f$ for each item $i$ that will factor user preferences. These vectors will be known as the user-factors and the item-factors, respectively. Preferences are assumed to be the inner products: $p_{ui}=x^T_uy_i$. Essentially, the vectors strive to map users and items into a common latent vector space where they can be directly compared. This is similar to matrix factorization techniques which are popular for explicit feedback data, with two important distinction: (1) We need to account for the varying confidence levels, (2) Optimization should account for all possible $u, i$ pairs, rather than only these corresponding to observed data. Accordingly, factors are computed by minimizing the following cost function:
+&lt;/p&gt;
+$$\min \limits\_{x\_*, y\_*}\sum \limits\_{u,i}c\_{ui}(p\_{ui}-x^T\_uy\_i)^2+\lambda(\sum\limits\_{u}\lVert x\_u\rVert^2+\sum\limits\_{i}\lVert y\_i\rVert^2)$$&lt;p&gt;
+The $\lambda(\sum\limits_{u}\lVert x_u\rVert^2+\sum\limits_{i}\lVert y_i\rVert^2)$ term is necessary for regularizing the model such that it will not overfit the training data.&lt;/p&gt;
+&lt;p&gt;[1]. Herlocker J L, Konstan J A, Borchers A, et al. An algorithmic framework for performing collaborative filtering[C]. international acm sigir conference on research and development in information retrieval, 1999: 230-237.
+[2]. Linden G, Smith B, York J C, et al. Amazon.com recommendations: item-to-item collaborative filtering[J]. IEEE Internet Computing, 2003, 7(1): 76-80.
+[3]. Sarwar B M, Karypis G, Konstan J A, et al. Item-based collaborative filtering recommendation algorithms[J]. international world wide web conferences, 2001: 285-295.
+[4]. Hofmann T. Latent semantic models for collaborative filtering[J]. ACM Transactions on Information Systems, 2004, 22(1): 89-115.
+[5]. Salakhutdinov R, Mnih A, Hinton G E, et al. Restricted Boltzmann machines for collaborative filtering[C]. international conference on machine learning, 2007: 791-798.
+[6]. Blei D M, Ng A Y, Jordan M I, et al. Latent Dirichlet Allocation[C]. neural information processing systems, 2002, 3(0): 601-608.&lt;/p&gt;</description></item></channel></rss>
