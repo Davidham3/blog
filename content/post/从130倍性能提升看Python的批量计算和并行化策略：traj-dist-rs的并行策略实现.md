@@ -349,12 +349,12 @@ pub fn __dp_result_from_pickle(
 
 我创建了一个4核8G的pod，对这7000条轨迹进行dtw计算，测试下来的效果如下：
 
-|tool        |running time(s)|speedup  |
-|------------|---------------|---------|
-|traj-dist   |3111.451s      | 1x      |
-|traj-dist-rs|165.745s       | 18.773x |
+|tool        |running time(s)|speedup      | Peak Memory (MB) |
+|------------|---------------|-------------|------------------|
+|traj-dist   |2932.84s       | 1x          | 1061.68 MB       |
+|traj-dist-rs|92.21s         | **31.81x**  | **642.11 MB**    |
 
-使用`traj-dist-rs`的`pdist`函数，可以让之前的数据预处理部分性能提升18.8倍，效果提升很明显。
+使用`traj-dist-rs`的`pdist`函数，可以让之前的数据预处理部分性能提升31.8倍，效果提升很明显，而且内存用量明显更少。
 
 下面是`traj-dist-rs`测试用的源码：
 
@@ -386,22 +386,23 @@ import time
 import math
 import multiprocessing as mp
 from typing import List
-import pandas as pd
+import numpy as np
 import polars as pl
 import traj_dist.distance as tdist
 
-
-def _simi_matrix(fn, df) -> List[List[float]]:
-    length = df.shape[0]
+# 优化 1：直接接收 List[np.ndarray]，抛弃 Pandas DataFrame
+def _simi_matrix(fn, trajs: List[np.ndarray]) -> List[List[float]]:
+    length = len(trajs)
     batch_size = 50
     assert length % batch_size == 0
 
     tasks = []
     for i in range(math.ceil(length / batch_size)):
         if i < math.ceil(length / batch_size) - 1:
-            tasks.append((fn, df, list(range(batch_size * i, batch_size * (i + 1)))))
+            # 优化 2：把原本传 DataFrame 改为传 trajs 列表
+            tasks.append((fn, trajs, list(range(batch_size * i, batch_size * (i + 1)))))
         else:
-            tasks.append((fn, df, list(range(batch_size * i, length))))
+            tasks.append((fn, trajs, list(range(batch_size * i, length))))
 
     num_cores = int(mp.cpu_count())
 
@@ -411,33 +412,30 @@ def _simi_matrix(fn, df) -> List[List[float]]:
 
     return lst_simi
 
-
-def _simi_comp_operator(fn, df_trajs: pd.DataFrame, sub_idx: List[int]):
+def _simi_comp_operator(fn, trajs: List[np.ndarray], sub_idx: List[int]):
     simi = []
-    length = df_trajs.shape[0]
+    length = len(trajs)
     for _i in sub_idx:
-        t_i = df_trajs.iloc[_i].seq
+        t_i = trajs[_i]  # 优化 3：直接 List 索引，O(1) 且极快，干掉 .iloc
         simi_row = []
         for _j in range(_i + 1, length):
-            t_j = df_trajs.iloc[_j].seq
+            t_j = trajs[_j] # 同上
             simi_row.append(fn(t_i, t_j))
         simi.append(simi_row)
     return simi
 
-
-def get_train_df():
+def get_trajs():
+    # 统一使用 polars 读取，保证数据准备阶段绝对公平
     df = pl.read_parquet("trajcl_samples.parquet")
     start_idx, end_idx = 0, 7000
     trajs = [df["seq"][idx].to_numpy() for idx in range(start_idx, end_idx)]
-    df = pd.DataFrame(trajs, columns=["seq"])
-    return df
-
+    return trajs
 
 if __name__ == "__main__":
-    df = get_train_df()
-    t = time.time()
-    _simi_matrix(tdist.dtw, df)
-    print(time.time() - t)
+    trajs = get_trajs()
+    t = time.time() # 计时开始（不包含数据读取部分）
+    _simi_matrix(tdist.dtw, trajs)
+    print(f"Optimized Baseline Time: {time.time() - t}s")
 ```
 
 ## 七、总结
