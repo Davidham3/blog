@@ -1,0 +1,407 @@
+<!doctype html><html lang=en-us dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="在上一篇文章中，我分享了如何用 Rust 重写 traj-dist，实现了单次距离计算的性能提升。但是，当面对大规模轨迹数据集时，单次调用并不是最优雅的解决方案。\n举个例子，如果我们要做轨迹序列的聚类，那么就一定要计算任意两条轨迹之间的距离。以动态规划类算法为例，时间复杂度是O(NM)。假如有 1000 条轨迹，需要计算它们之间的所有距离对。那就是 $1000 \\times 1000 \\times MN$，假设轨迹平均长度是1000，那至少有1000^4的复杂度。那如果要算10万条轨迹之间的距离呢？1000万呢？这将是非常大的计算量（肯定要上分布式了）。\n在这篇文章中，我会分享 traj-dist-rs 的批量计算接口和并行化策略，以及如何通过正确的技术路线实现超过130倍的性能提升。\n"><title>从130倍性能提升看Python的批量计算和并行化策略：traj-dist-rs的并行策略实现</title><link rel=canonical href=https://davidham3.github.io/blog/p/%E4%BB%8E130%E5%80%8D%E6%80%A7%E8%83%BD%E6%8F%90%E5%8D%87%E7%9C%8Bpython%E7%9A%84%E6%89%B9%E9%87%8F%E8%AE%A1%E7%AE%97%E5%92%8C%E5%B9%B6%E8%A1%8C%E5%8C%96%E7%AD%96%E7%95%A5traj-dist-rs%E7%9A%84%E5%B9%B6%E8%A1%8C%E7%AD%96%E7%95%A5%E5%AE%9E%E7%8E%B0/><link rel=stylesheet href=/blog/scss/style.min.6a692fd055deae459f2a9767f57f3855ba80cafd5041317f24f7360f6ca47cdf.css><meta property='og:title' content="从130倍性能提升看Python的批量计算和并行化策略：traj-dist-rs的并行策略实现"><meta property='og:description' content="在上一篇文章中，我分享了如何用 Rust 重写 traj-dist，实现了单次距离计算的性能提升。但是，当面对大规模轨迹数据集时，单次调用并不是最优雅的解决方案。\n举个例子，如果我们要做轨迹序列的聚类，那么就一定要计算任意两条轨迹之间的距离。以动态规划类算法为例，时间复杂度是O(NM)。假如有 1000 条轨迹，需要计算它们之间的所有距离对。那就是 $1000 \\times 1000 \\times MN$，假设轨迹平均长度是1000，那至少有1000^4的复杂度。那如果要算10万条轨迹之间的距离呢？1000万呢？这将是非常大的计算量（肯定要上分布式了）。\n在这篇文章中，我会分享 traj-dist-rs 的批量计算接口和并行化策略，以及如何通过正确的技术路线实现超过130倍的性能提升。\n"><meta property='og:url' content='https://davidham3.github.io/blog/p/%E4%BB%8E130%E5%80%8D%E6%80%A7%E8%83%BD%E6%8F%90%E5%8D%87%E7%9C%8Bpython%E7%9A%84%E6%89%B9%E9%87%8F%E8%AE%A1%E7%AE%97%E5%92%8C%E5%B9%B6%E8%A1%8C%E5%8C%96%E7%AD%96%E7%95%A5traj-dist-rs%E7%9A%84%E5%B9%B6%E8%A1%8C%E7%AD%96%E7%95%A5%E5%AE%9E%E7%8E%B0/'><meta property='og:site_name' content='Davidham的博客'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='trajectory'><meta property='article:tag' content='rust'><meta property='article:tag' content='parallel'><meta property='article:published_time' content='2026-02-24T00:00:00+00:00'><meta property='article:modified_time' content='2026-02-24T00:00:00+00:00'><meta name=twitter:title content="从130倍性能提升看Python的批量计算和并行化策略：traj-dist-rs的并行策略实现"><meta name=twitter:description content="在上一篇文章中，我分享了如何用 Rust 重写 traj-dist，实现了单次距离计算的性能提升。但是，当面对大规模轨迹数据集时，单次调用并不是最优雅的解决方案。\n举个例子，如果我们要做轨迹序列的聚类，那么就一定要计算任意两条轨迹之间的距离。以动态规划类算法为例，时间复杂度是O(NM)。假如有 1000 条轨迹，需要计算它们之间的所有距离对。那就是 $1000 \\times 1000 \\times MN$，假设轨迹平均长度是1000，那至少有1000^4的复杂度。那如果要算10万条轨迹之间的距离呢？1000万呢？这将是非常大的计算量（肯定要上分布式了）。\n在这篇文章中，我会分享 traj-dist-rs 的批量计算接口和并行化策略，以及如何通过正确的技术路线实现超过130倍的性能提升。\n"><link rel="shortcut icon" href=/favicon.png></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/blog/><img src=/blog/img/avatar_hu_a95981f1fc190aef.png width=300 height=300 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>🚀</span></figure><div class=site-meta><h1 class=site-name><a href=/blog>Davidham的博客</a></h1><h2 class=site-description>随便写写</h2></div></header><ol class=menu-social><li><a href=https://github.com/Davidham3 target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/blog/><svg class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><polyline points="5 12 3 12 12 3 21 12 19 12"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/><path d="M9 21v-6a2 2 0 012-2h2a2 2 0 012 2v6"/></svg>
+<span>Home</span></a></li><li><a href=/blog/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>Archives</span></a></li><li><a href=/blog/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>Search</span></a></li><li><a href=/blog/links/><svg class="icon icon-tabler icon-tabler-link" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M10 14a3.5 3.5.0 005 0l4-4a3.5 3.5.0 00-5-5l-.5.5"/><path d="M14 10a3.5 3.5.0 00-5 0l-4 4a3.5 3.5.0 005 5l.5-.5"/></svg>
+<span>Links</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>暗色模式</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#一基准测试传统方案的性能瓶颈>一、基准测试：传统方案的性能瓶颈</a></li><li><a href=#二第一层加速零拷贝与rust的降维打击>二、第一层加速：零拷贝与Rust的降维打击</a></li><li><a href=#三并行方案构想>三、并行方案构想</a><ol><li><a href=#31-python多进程并行>3.1 Python多进程并行</a><ol><li><a href=#1-初始化开销>1. 初始化开销</a></li><li><a href=#2-通信开销>2. 通信开销</a></li><li><a href=#3-调度与负载均衡开销>3. 调度与负载均衡开销</a></li></ol></li><li><a href=#32-rustrayon的并行加速方案>3.2 Rust+Rayon的并行加速方案</a></li></ol></li><li><a href=#四巅峰对决130倍性能提升>四、巅峰对决：130倍性能提升</a><ol><li><a href=#41-高计算负载轨迹长度1000>4.1 高计算负载：轨迹长度=1000</a></li><li><a href=#42-低计算负载轨迹长度10>4.2 低计算负载：轨迹长度=10</a></li></ol></li><li><a href=#五具体实现traj-dist-rs的性能魔法>五、具体实现：traj-dist-rs的性能魔法</a><ol><li><a href=#51-rayon一行代码解锁并行>5.1 Rayon：一行代码解锁并行</a></li><li><a href=#52-bincode为pickle序列化加速>5.2 Bincode：为Pickle序列化加速</a></li></ol></li><li><a href=#六实战traj-dist-rs提升trajcl的数据预处理性能>六、实战：<code>traj-dist-rs</code>提升<code>TrajCL</code>的数据预处理性能</a></li><li><a href=#七总结>七、总结</a></li></ol></nav></div></section></aside><main class="main full-width"><article class=main-article><header class=article-header><div class=article-details><div class=article-title-wrapper><h2 class=article-title><a href=/blog/p/%E4%BB%8E130%E5%80%8D%E6%80%A7%E8%83%BD%E6%8F%90%E5%8D%87%E7%9C%8Bpython%E7%9A%84%E6%89%B9%E9%87%8F%E8%AE%A1%E7%AE%97%E5%92%8C%E5%B9%B6%E8%A1%8C%E5%8C%96%E7%AD%96%E7%95%A5traj-dist-rs%E7%9A%84%E5%B9%B6%E8%A1%8C%E7%AD%96%E7%95%A5%E5%AE%9E%E7%8E%B0/>从130倍性能提升看Python的批量计算和并行化策略：traj-dist-rs的并行策略实现</a></h2></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published>Feb 24, 2026</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>阅读时长: 14 分钟</time></div></footer></div></header><section class=article-content><p>在上一篇文章中，我分享了如何用 Rust 重写 <code>traj-dist</code>，实现了单次距离计算的性能提升。但是，当面对大规模轨迹数据集时，单次调用并不是最优雅的解决方案。</p><p>举个例子，如果我们要做轨迹序列的聚类，那么就一定要计算任意两条轨迹之间的距离。以动态规划类算法为例，时间复杂度是<code>O(NM)</code>。假如有 1000 条轨迹，需要计算它们之间的所有距离对。那就是 $1000 \times 1000 \times MN$，假设轨迹平均长度是1000，那至少有1000^4的复杂度。那如果要算10万条轨迹之间的距离呢？1000万呢？这将是非常大的计算量（肯定要上分布式了）。</p><p>在这篇文章中，我会分享 <code>traj-dist-rs</code> 的批量计算接口和并行化策略，以及如何通过正确的技术路线实现超过<strong>130倍</strong>的性能提升。</p><p>对于轨迹序列聚类、knn等算法，需要计算所有轨迹之间的距离。</p><p>问题定义：</p><p>给定K条轨迹（<code>List[np.ndarray]</code>），计算它们两两之间的距离，最终得到一个<code>(K, K)</code>的距离矩阵。为避免冗余计算，我们只计算矩阵的上三角部分。</p><p>我们还是以<code>traj-dist</code>作为我们实验的基线。</p><h2 id=一基准测试传统方案的性能瓶颈>一、基准测试：传统方案的性能瓶颈</h2><p>给定20条轨迹，每条轨迹的长度为1000，计算距离矩阵的上三角部分，距离使用DTW。因此一共需要计算190次（对角线不计算）。</p><p>解决这个问题，有3种简单的解决思路：</p><ol><li>使用双重for循环。</li><li>使用<code>traj-dist</code>提供的pdist函数。</li><li>使用双重for循环+joblib。</li></ol><p>示例代码如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=kn>import</span> <span class=nn>time</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>numpy</span> <span class=k>as</span> <span class=nn>np</span>
+</span></span><span class=line><span class=cl><span class=kn>from</span> <span class=nn>joblib</span> <span class=kn>import</span> <span class=n>Parallel</span><span class=p>,</span> <span class=n>delayed</span>
+</span></span><span class=line><span class=cl><span class=kn>from</span> <span class=nn>tqdm</span> <span class=kn>import</span> <span class=n>trange</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>traj_dist.distance</span> <span class=k>as</span> <span class=nn>tdist</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>NUM_TRAJECTORIES</span> <span class=o>=</span> <span class=mi>20</span>
+</span></span><span class=line><span class=cl><span class=n>TRAJS</span> <span class=o>=</span> <span class=p>[</span><span class=n>np</span><span class=o>.</span><span class=n>random</span><span class=o>.</span><span class=n>uniform</span><span class=p>(</span><span class=n>size</span><span class=o>=</span><span class=p>(</span><span class=mi>1000</span><span class=p>,</span> <span class=mi>2</span><span class=p>))</span> <span class=k>for</span> <span class=n>_</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=n>NUM_TRAJECTORIES</span><span class=p>)]</span>
+</span></span><span class=line><span class=cl><span class=n>WARMUP_RUNS</span> <span class=o>=</span> <span class=mi>1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>test_func</span><span class=p>(</span><span class=n>func</span><span class=p>,</span> <span class=n>num_runs</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=c1># Warmup</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=n>_</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=n>WARMUP_RUNS</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=n>_</span> <span class=o>=</span> <span class=n>func</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># Measure time</span>
+</span></span><span class=line><span class=cl>    <span class=n>times</span> <span class=o>=</span> <span class=p>[]</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=n>_</span> <span class=ow>in</span> <span class=n>trange</span><span class=p>(</span><span class=n>num_runs</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=n>start</span> <span class=o>=</span> <span class=n>time</span><span class=o>.</span><span class=n>perf_counter</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>        <span class=n>_</span> <span class=o>=</span> <span class=n>func</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>        <span class=n>end</span> <span class=o>=</span> <span class=n>time</span><span class=o>.</span><span class=n>perf_counter</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>        <span class=n>times</span><span class=o>.</span><span class=n>append</span><span class=p>(</span><span class=n>end</span> <span class=o>-</span> <span class=n>start</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=n>np</span><span class=o>.</span><span class=n>median</span><span class=p>(</span><span class=n>times</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>if</span> <span class=vm>__name__</span> <span class=o>==</span> <span class=s2>&#34;__main__&#34;</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=nf>test1</span><span class=p>():</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=n>i</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=n>NUM_TRAJECTORIES</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>            <span class=k>for</span> <span class=n>j</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=n>i</span> <span class=o>+</span> <span class=mi>1</span><span class=p>,</span> <span class=n>NUM_TRAJECTORIES</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>                <span class=n>tdist</span><span class=o>.</span><span class=n>dtw</span><span class=p>(</span><span class=n>TRAJS</span><span class=p>[</span><span class=n>i</span><span class=p>],</span> <span class=n>TRAJS</span><span class=p>[</span><span class=n>j</span><span class=p>],</span> <span class=s2>&#34;euclidean&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=nf>test2</span><span class=p>():</span>
+</span></span><span class=line><span class=cl>        <span class=n>tdist</span><span class=o>.</span><span class=n>pdist</span><span class=p>(</span><span class=n>TRAJS</span><span class=p>,</span> <span class=n>metric</span><span class=o>=</span><span class=s2>&#34;dtw&#34;</span><span class=p>,</span> <span class=n>type_d</span><span class=o>=</span><span class=s2>&#34;euclidean&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=nf>test3</span><span class=p>():</span>
+</span></span><span class=line><span class=cl>        <span class=n>Parallel</span><span class=p>(</span><span class=n>n_jobs</span><span class=o>=-</span><span class=mi>1</span><span class=p>)(</span>
+</span></span><span class=line><span class=cl>            <span class=n>delayed</span><span class=p>(</span><span class=k>lambda</span> <span class=n>x</span><span class=p>,</span> <span class=n>y</span><span class=p>:</span> <span class=n>tdist</span><span class=o>.</span><span class=n>dtw</span><span class=p>(</span><span class=n>x</span><span class=p>,</span> <span class=n>y</span><span class=p>,</span> <span class=s2>&#34;euclidean&#34;</span><span class=p>))(</span><span class=n>TRAJS</span><span class=p>[</span><span class=n>i</span><span class=p>],</span> <span class=n>TRAJS</span><span class=p>[</span><span class=n>j</span><span class=p>])</span>
+</span></span><span class=line><span class=cl>            <span class=k>for</span> <span class=n>i</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=n>NUM_TRAJECTORIES</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>            <span class=k>for</span> <span class=n>j</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=n>i</span> <span class=o>+</span> <span class=mi>1</span><span class=p>,</span> <span class=n>NUM_TRAJECTORIES</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=nb>print</span><span class=p>(</span><span class=n>test_func</span><span class=p>(</span><span class=n>test1</span><span class=p>,</span> <span class=mi>5</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>    <span class=nb>print</span><span class=p>(</span><span class=n>test_func</span><span class=p>(</span><span class=n>test2</span><span class=p>,</span> <span class=mi>5</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>    <span class=nb>print</span><span class=p>(</span><span class=n>test_func</span><span class=p>(</span><span class=n>test3</span><span class=p>,</span> <span class=mi>5</span><span class=p>))</span>
+</span></span></code></pre></td></tr></table></div></div><p>跑出来的耗时如下：</p><div class=table-wrapper><table><thead><tr><th>tool</th><th>technique</th><th>running time(s)</th><th>speedup</th></tr></thead><tbody><tr><td>traj-dist</td><td><strong>Route 1</strong>: double for-loop</td><td>10.103s</td><td>1x</td></tr><tr><td>traj-dist</td><td><strong>Route 2</strong>: traj-dist pdist</td><td>10.088s</td><td>1.001x</td></tr><tr><td>traj-dist</td><td><strong>Route 3</strong>: joblib parallel</td><td>1.364s</td><td>7.407x</td></tr></tbody></table></div><p><code>traj-dist</code>的结果还是有点让人惊讶的，因为pdist相较于双重for循环几乎没有任何提升，说明pdist没有消除python解释器带来的不利。赶紧去看了一下源码，才发现pdist居然是在python里面通过双重for循环实现的，没有用cython加速😂。那我们后续都不用考虑这个函数了。</p><p>joblib并行有比较明显的提升，因为joblib默认使用loky作为后端启动多进程，多个进程同时计算，我测试用的机器是20个CPU核心，joblib在设置<code>n_jobs=-1</code>的时候，会启动和CPU相同数量的进程数。</p><h2 id=二第一层加速零拷贝与rust的降维打击>二、第一层加速：零拷贝与Rust的降维打击</h2><p>我们使用<code>traj-dist-rs</code>完成相同的实验，看看效果：</p><div class=table-wrapper><table><thead><tr><th>tool</th><th>technique</th><th>running time(s)</th><th>speedup</th></tr></thead><tbody><tr><td>traj-dist-rs</td><td><strong>Route 1</strong>: double for-loop</td><td>0.631s</td><td>16.011x</td></tr><tr><td>traj-dist-rs</td><td><strong>Route 3</strong>: joblib parallel</td><td>0.105s</td><td>96.219x</td></tr></tbody></table></div><p>可以看到，双重for循环的方案比<code>traj-dist</code>快了16.011倍，如果使用Joblib，达到了96.219倍。</p><p>这个结果还是比较惊人的，在上一篇文章里面我们讲了，<code>traj-dist-rs</code>的核心提升在于引入零拷贝，让rust直接读取python中numpy.ndarray的底层数据。</p><p>这说明当前<code>traj-dist-rs</code>使用的零拷贝设计配合rust的高性能可以轻松超越<code>traj-dist</code>使用cython编写的加速代码。</p><p>但是，<code>traj-dist-rs</code>还没有实现<code>pdist</code>函数，考虑到python用户为了加速一定会使用多进程加速，那么<code>traj-dist-rs</code>的<code>pdist</code>函数在设计上就一定要考虑到并行能力。</p><h2 id=三并行方案构想>三、并行方案构想</h2><p>我们分别讨论python的多进程并行与rust的rayon并行。</p><h3 id=31-python多进程并行>3.1 Python多进程并行</h3><p>众所周知，GIL限制了Python的并行效率，只能通过多进程实现并行加速计算，可以使用python自带的多进程库，如multiprocessing，也可以使用类似joblib这样的库。本质上都是通过多进程实现并行。</p><p>然而，不论是哪种并行，一定会遇到下面的3个问题：</p><h4 id=1-初始化开销>1. 初始化开销</h4><p>本质是python主进程会启动多个子进程，这些子进程的启动是有一定的开销的。当计算量变大的时候，这个开销就可以忽略，但是计算量小的时候，进程的初始化反而会成为瓶颈。</p><h4 id=2-通信开销>2. 通信开销</h4><p>进程之间的数据是隔离的，不能共享，使用多进程的时候，大概会经历下面的步骤：</p><ol><li>参数和函数会以pickle的形式序列化，由主进程传递到另一个python进程（子进程）；</li><li>子进程反序列化，进行运算，运算结果通过pickle序列化传递到主进程；</li><li>主进程反序列化拿到最终结果，收集所有子进程的结果。</li></ol><p>可以看到一共是2次信息传递、2次序列化、2次反序列化。数据量越大，这个开销越大，当然也是有避开的方案的，比如使用共享内存：提前将数据写入共享内存，子进程从共享内存读取这部分数据。本文先不讨论这个方案。</p><h4 id=3-调度与负载均衡开销>3. 调度与负载均衡开销</h4><p>主要有2点：</p><ol><li>负载不均：如果1个进程执行的都是一些计算量比较大的工作，其他进程都是轻量的工作，那么其他进程完成任务后就会闲置，就像木桶原理一样。</li><li>任务调度开销：为了解决上面的问题，可以用一个队列维护任务，每个进程从队列里面拉取任务进行消费，但是单个任务的任务量需要设为多大？如果设置的小了，子进程会频繁拉取，每次拉取都有固定开销，造成总开销变大；设置的大了对内存压力又比较大，而且又有可能造成负载不均的问题。</li></ol><p>但是说了这么多，Python里面为了加速运算，多进程并行一定是避不开的一个方案，我个人还是喜欢共享内存的方案，尤其是结合pyarrow。</p><p>回到上面的实验，可以看到joblib确实可以显著提升性能，因此对于大部分场景来说，使用joblib只需要几行代码就可以快速提升性能，这是一个很不错的方案，相当于1行代码换取成倍提升。</p><p>不过这里也需要多讲一句，joblib的一大优势是为python用户提供了非常Pythonic的并行接口，通过简单的<code>Parallel(n_jobs=-1)(delayed(...))</code>实现多进程代码实现，这是非常优雅的。</p><h3 id=32-rustrayon的并行加速方案>3.2 Rust+Rayon的并行加速方案</h3><p>rust里面做并行，肯定避不开使用Rayon，Rayon已经成为rust生态中数据并行的事实标准。</p><p>Rayon自身的优势有几点：</p><ol><li>极致的易用性：像joblib一样提供了非常傻瓜的使用方式，改造成本极低。</li><li>无畏并发：编译时就可以保证安全，大部分情况无需加锁。</li><li>工作窃取：某个线程完成自己所有任务之后会去其他繁忙线程中窃取任务。</li></ol><p>相比上面的python多进程：</p><ol><li>初始化开销：rayon用线程，开销更低。</li><li>通信开销：数据跨线程共享。</li><li>调度与负载均衡开销：工作窃取。</li></ol><p>因此，<code>traj-dist-rs</code>的<code>pdist</code>一定会使用Rayon完成并行计算的工作，以实现最佳性能。</p><h2 id=四巅峰对决130倍性能提升>四、巅峰对决：130倍性能提升</h2><p>我们直接看通过rayon加速后的pdist的性能吧，后面再看具体实现。</p><p>我们在第一节的实验里面给出了3种路线：</p><ol><li>使用双重for循环。</li><li>使用<code>traj-dist</code>提供的pdist函数。（实际上这个和第一个一样）</li><li>使用双重for循环+joblib。</li></ol><p><code>traj-dist-rs</code>提供的pdist函数支持了串行和并行的选项可以选择，因此就形成了4条路线：</p><ol><li>使用双重for循环。</li><li>使用<code>traj-dist-rs</code>提供的pdist函数（串行）。</li><li>使用双重for循环+joblib。</li><li>使用<code>traj-dist-rs</code>提供的pdist函数（并行）。</li></ol><p>这里讲一下上面的4条技术路线：</p><div class=table-wrapper><table><thead><tr><th>技术路线</th><th>特点</th></tr></thead><tbody><tr><td>Route1: 双重for循环</td><td>这个方案调用的dtw是traj-dist-rs优化过的，t1与t2从python转移到rust的时候是零拷贝，性能很好。但是双重for循环在python里面会比较慢，因为cpython的解释操作会拖累这里的性能。</td></tr><tr><td>Route2: rust串行</td><td>rust可以通过零拷贝直接读取TRAJS里面的数据，内部也是通过双重for循环调用dtw函数进行计算，但是这个for循环会比cpython快多了。</td></tr><tr><td>Route3: joblib并行</td><td>通过joblib实现多进程并行（默认是loky后端），虽然调用的是traj-dist-rs的dtw，但是t1和t2要从主进程转移到子进程，这里会发生数据序列化与反序列化，就相当于输入数据复制了两次；而返回值也是要做一次序列化和反序列化，因此也是两次。但是对于python来说，是个不错的并行方案。</td></tr><tr><td>Route4: rayon并行</td><td>rust通过零拷贝读取TRAJS里面的数据，rayon通过多线程执行dtw，与上面的joblib类似，不过没有跨进程数据传输、进程维护开销。</td></tr></tbody></table></div><p>下面有两个测试结果，仍然取20条轨迹，每次都是取5次测量的中位数。</p><h3 id=41-高计算负载轨迹长度1000>4.1 高计算负载：轨迹长度=1000</h3><div class=table-wrapper><table><thead><tr><th>tool</th><th>technique</th><th>running time(s)</th><th>speedup</th></tr></thead><tbody><tr><td>traj-dist</td><td><strong>Route 1</strong>: double for-loop</td><td>10.103s</td><td>1x</td></tr><tr><td>traj-dist</td><td><strong>Route 3</strong>: joblib parallel</td><td>1.364s</td><td>7.407x</td></tr><tr><td>traj-dist-rs</td><td><strong>Route 1</strong>: double for-loop</td><td>0.631s</td><td>16.011x</td></tr><tr><td>traj-dist-rs</td><td><strong>Route 2</strong>: rust serial (pdist)</td><td>0.628s</td><td>16.088x</td></tr><tr><td>traj-dist-rs</td><td><strong>Route 3</strong>: joblib parallel</td><td>0.105s</td><td>96.219x</td></tr><tr><td>traj-dist-rs</td><td><strong>Route 4</strong>: rayon parallel (pdist)</td><td>0.078s</td><td>129.526x</td></tr></tbody></table></div><p>结果分析：</p><ol><li>Python循环开销 vs Rust循环开销：<code>traj-dist-rs</code>的Python循环（0.631s）和Rust串行pdist（0.628s）耗时几乎相同。这说明在高计算负载下，DTW算法本身的耗时占据主导，Python循环的开销显得不那么重要。</li><li>多进程 vs 多线程：Rayon并行（0.078s）明显优于Joblib（0.105s），这得益于其更低的开销和更高效的线程间协作。</li><li>最终的胜利：<code>traj-dist-rs</code>的原生并行 pdist 接口，相较于最初的<code>traj-dist</code>基准，实现了近<strong>130倍</strong>的性能飞跃！这正是我们追求的更高性能。</li></ol><h3 id=42-低计算负载轨迹长度10>4.2 低计算负载：轨迹长度=10</h3><div class=table-wrapper><table><thead><tr><th>tool</th><th>technique</th><th>running time(s)</th><th>speedup</th></tr></thead><tbody><tr><td>traj-dist</td><td><strong>Route 1</strong>: double for-loop</td><td>0.00186s</td><td>1x</td></tr><tr><td>traj-dist</td><td><strong>Route 3</strong>: joblib parallel</td><td>0.0653s</td><td>0.028x</td></tr><tr><td>traj-dist-rs</td><td><strong>Route 1</strong>: double for-loop</td><td>0.000139s</td><td>13.381x</td></tr><tr><td>traj-dist-rs</td><td><strong>Route 2</strong>: rust serial (pdist)</td><td>0.0000711s</td><td>26.160x</td></tr><tr><td>traj-dist-rs</td><td><strong>Route 3</strong>: joblib parallel</td><td>0.0545s</td><td>0.034x</td></tr><tr><td>traj-dist-rs</td><td><strong>Route 4</strong>: rayon parallel (pdist)</td><td>0.00201s</td><td>0.925x</td></tr></tbody></table></div><p>结果分析：</p><ol><li>并行化的代价：所有并行方案（Joblib和Rayon）的性能都不如串行。Joblib的进程启动和数据序列化开销尤为巨大，导致性能下降了两个数量级。Rayon虽然开销小得多，但依然不敌最快的串行实现。</li><li>解释器开销的凸显：在低计算负载下，<code>traj-dist-rs</code>的Rust串行pdist比其Python循环快了近2倍。这说明当核心计算非常快时，Python解释器本身那微不足道的循环开销就成了主要瓶颈。</li><li>最佳策略：在这种场景下，最快的方案是调用<code>traj-dist-rs</code>的串行 pdist 函数。它既避免了Python的循环开销，也避免了并行的管理开销。</li></ol><h2 id=五具体实现traj-dist-rs的性能魔法>五、具体实现：traj-dist-rs的性能魔法</h2><p>说了这么多，核心还是要讲<code>traj-dist-rs</code>为了批量运算，做了哪些工作。</p><h3 id=51-rayon一行代码解锁并行>5.1 Rayon：一行代码解锁并行</h3><p>最核心的地方就在于rayon。因为<code>traj-dist-rs</code>已经支持了零拷贝读取python中的numpy.ndarray，那么只需要很简单的使用rayon做并行计算就好了。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=line><span class=cl><span class=k>fn</span> <span class=nf>compute_pdist_parallel</span><span class=o>&lt;</span><span class=n>T</span><span class=p>,</span><span class=w> </span><span class=n>D</span><span class=o>&gt;</span><span class=p>(</span><span class=n>trajectories</span>: <span class=kp>&amp;</span><span class=p>[</span><span class=n>T</span><span class=p>],</span><span class=w> </span><span class=n>calculator</span>: <span class=kp>&amp;</span><span class=nc>D</span><span class=p>)</span><span class=w> </span>-&gt; <span class=nb>Vec</span><span class=o>&lt;</span><span class=kt>f64</span><span class=o>&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=k>where</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>T</span>: <span class=nc>CoordSequence</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=nb>Sync</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>D</span>: <span class=nc>Distance</span><span class=o>&lt;</span><span class=n>T</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>n</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>trajectories</span><span class=p>.</span><span class=n>len</span><span class=p>();</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c1>// Create index pairs for all unique pairs (i, j) where i &lt; j
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>pairs</span>: <span class=nb>Vec</span><span class=o>&lt;</span><span class=p>(</span><span class=kt>usize</span><span class=p>,</span><span class=w> </span><span class=kt>usize</span><span class=p>)</span><span class=o>&gt;</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>(</span><span class=mi>0</span><span class=o>..</span><span class=n>n</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=p>.</span><span class=n>flat_map</span><span class=p>(</span><span class=o>|</span><span class=n>i</span><span class=o>|</span><span class=w> </span><span class=p>((</span><span class=n>i</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=mi>1</span><span class=p>)</span><span class=o>..</span><span class=n>n</span><span class=p>).</span><span class=n>map</span><span class=p>(</span><span class=k>move</span><span class=w> </span><span class=o>|</span><span class=n>j</span><span class=o>|</span><span class=w> </span><span class=p>(</span><span class=n>i</span><span class=p>,</span><span class=w> </span><span class=n>j</span><span class=p>)))</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=p>.</span><span class=n>collect</span><span class=p>();</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c1>// Compute distances in parallel using Rayon&#39;s global thread pool
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>pairs</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=p>.</span><span class=n>into_par_iter</span><span class=p>()</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=p>.</span><span class=n>map</span><span class=p>(</span><span class=o>|</span><span class=p>(</span><span class=n>i</span><span class=p>,</span><span class=w> </span><span class=n>j</span><span class=p>)</span><span class=o>|</span><span class=w> </span><span class=n>calculator</span><span class=p>.</span><span class=n>distance</span><span class=p>(</span><span class=o>&amp;</span><span class=n>trajectories</span><span class=p>[</span><span class=n>i</span><span class=p>],</span><span class=w> </span><span class=o>&amp;</span><span class=n>trajectories</span><span class=p>[</span><span class=n>j</span><span class=p>]))</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=p>.</span><span class=n>collect</span><span class=p>()</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=p>}</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>就这么简单，核心就是引入<code>into_par_iter</code>，然后就自动并行了。这里的<code>Distance</code>提供了一个叫distance的方法，用于计算两条轨迹之间的距离，比如dtw，edr等算法。</p><p>也就是说，我们从python里面传递给rust的是一个<code>List[np.ndarray]</code>，rust拿到之后将其转换为<code>&[CoordSequence]</code>对应的具体类型，就可以复用这个并行计算的pdist函数了。至于<code>np.ndarray</code>如何转<code>CoordSequence</code>，这个就是上次讲的，通过PyO3取出<code>ndarray</code>底层的切片，然后封装到一个实现了<code>CoordSequence</code>这个trait的struct里面就可以了。那<code>List</code>如何转<code>&[]</code>，这个就不用说了。</p><h3 id=52-bincode为pickle序列化加速>5.2 Bincode：为Pickle序列化加速</h3><p>因为<code>traj-dist-rs</code>支持python，所以一定要考虑类似上面通过multiprocessing或者joblib实现多进程并行的方案。那么对于用户来说，pickle序列化的性能就很关键。考虑到<code>traj-dist-rs</code>里面的动态规划算法返回的类型都是一个Rust定义的<code>PyDpResult</code>，那么对这个类型的序列化性能做提升就很重要。</p><p>先说一下这里是怎么设计的：</p><ol><li>考虑到动态规划算法的返回值有一个结果，还可能有完整的动态规划矩阵用于回溯路径，<code>traj-dist-rs</code>定义了一个<code>DpResult</code>的struct封装了这两个值。</li><li>考虑到<code>traj-dist-rs</code>是同时支持Rust和Python两种语言的，并且提供了<code>python-binding</code>这个feature，用于额外编译适配Python的函数和类型。因此直接将<code>DpResult</code>暴露给Python环境不合理，因此需要再定义一个<code>PyDpResult</code>的struct暴露给python，而它只有一个叫inner的属性，类型是<code>DpResult</code>，这样Rust用户用的是<code>DpResult</code>，而python用户用的是<code>PyDpResult</code>，两者互不干扰，充分解耦。</li><li>那么用户在python多进程环境中运行动态规划类算法的时候，就会面临返回值序列化和反序列化的问题，也就是<code>PyDpResult</code>的序列化和反序列化，这里很简单，实现<code>__reduce__</code>接口即可，那要把什么东西返回给python呢，其实就是把<code>DpResult</code>这个struct序列化为字节，传递给python，python拿到字节再反序列化为<code>DpResult</code>，然后创建一个<code>PyDpResult</code>将其封装即可。</li></ol><p>因此这里最大的开销就是对<code>DpResult</code>的序列化，这里使用bincode，将其序列化为字节，这是我找到的最快的方案，相比serde_json肯定是快很多的。如果大家有其他方案也可以和我交流。</p><p>下面的源码是<code>PyDpResult</code>的代码，省略了一些与本文无关的内容，展示了如何进行序列化和反序列化。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=line><span class=cl><span class=sd>/// Python wrapper for the Rust DpResult struct
+</span></span></span><span class=line><span class=cl><span class=sd>///
+</span></span></span><span class=line><span class=cl><span class=sd>/// This class wraps the Rust DpResult and provides Python-friendly access
+</span></span></span><span class=line><span class=cl><span class=sd>/// to the distance and optional matrix.
+</span></span></span><span class=line><span class=cl><span class=cp>#[cfg(feature = </span><span class=s>&#34;python-binding&#34;</span><span class=cp>)]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=cp>#[gen_stub_pyclass]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=cp>#[pyclass(name = </span><span class=s>&#34;DpResult&#34;</span><span class=cp>)]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=k>pub</span><span class=w> </span><span class=k>struct</span> <span class=nc>PyDpResult</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=sd>/// The inner Rust DpResult
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=n>inner</span>: <span class=nc>crate</span>::<span class=n>distance</span>::<span class=n>DpResult</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=cp>#[cfg(feature = </span><span class=s>&#34;python-binding&#34;</span><span class=cp>)]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=cp>#[gen_stub_pymethods]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=cp>#[pymethods]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=k>impl</span><span class=w> </span><span class=n>PyDpResult</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=sd>/// Pickle serialization support using __reduce__
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=sd>///
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=sd>/// Uses bincode to serialize the entire DpResult::inner as bytes for better performance.
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=sd>/// Returns a tuple (callable, args) that pickle can use to reconstruct the object.
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=k>fn</span> <span class=nf>__reduce__</span><span class=p>(</span><span class=o>&amp;</span><span class=bp>self</span><span class=p>,</span><span class=w> </span><span class=n>py</span>: <span class=nc>Python</span><span class=p>)</span><span class=w> </span>-&gt; <span class=nc>PyResult</span><span class=o>&lt;</span><span class=p>(</span><span class=n>Py</span><span class=o>&lt;</span><span class=n>PyAny</span><span class=o>&gt;</span><span class=p>,</span><span class=w> </span><span class=n>Py</span><span class=o>&lt;</span><span class=n>PyAny</span><span class=o>&gt;</span><span class=p>,</span><span class=w> </span><span class=n>Py</span><span class=o>&lt;</span><span class=n>PyAny</span><span class=o>&gt;</span><span class=p>)</span><span class=o>&gt;</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=k>use</span><span class=w> </span><span class=n>pyo3</span>::<span class=n>prelude</span>::<span class=o>*</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=k>use</span><span class=w> </span><span class=n>pyo3</span>::<span class=n>types</span>::<span class=p>{</span><span class=n>PyBytes</span><span class=p>,</span><span class=w> </span><span class=n>PyTuple</span><span class=p>};</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=c1>// Import the module and get the helper function
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>module</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>py</span><span class=p>.</span><span class=n>import</span><span class=p>(</span><span class=s>&#34;traj_dist_rs&#34;</span><span class=p>)</span><span class=o>?</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>helper_func</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>module</span><span class=p>.</span><span class=n>getattr</span><span class=p>(</span><span class=s>&#34;__dp_result_from_pickle&#34;</span><span class=p>)</span><span class=o>?</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=c1>// Serialize the entire DpResult using bincode
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>serialized</span><span class=w> </span><span class=o>=</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>bincode</span>::<span class=n>encode_to_vec</span><span class=p>(</span><span class=o>&amp;</span><span class=bp>self</span><span class=p>.</span><span class=n>inner</span><span class=p>,</span><span class=w> </span><span class=n>bincode</span>::<span class=n>config</span>::<span class=n>standard</span><span class=p>()).</span><span class=n>map_err</span><span class=p>(</span><span class=o>|</span><span class=n>e</span><span class=o>|</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=n>pyo3</span>::<span class=n>exceptions</span>::<span class=n>PyRuntimeError</span>::<span class=n>new_err</span><span class=p>(</span><span class=fm>format!</span><span class=p>(</span><span class=s>&#34;Serialization failed: </span><span class=si>{}</span><span class=s>&#34;</span><span class=p>,</span><span class=w> </span><span class=n>e</span><span class=p>))</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=p>})</span><span class=o>?</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=c1>// Create args tuple containing the serialized bytes
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>bytes_py</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>PyBytes</span>::<span class=n>new</span><span class=p>(</span><span class=n>py</span><span class=p>,</span><span class=w> </span><span class=o>&amp;</span><span class=n>serialized</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>args_tuple</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>PyTuple</span>::<span class=n>new</span><span class=p>(</span><span class=n>py</span><span class=p>,</span><span class=w> </span><span class=p>[</span><span class=n>bytes_py</span><span class=p>.</span><span class=n>as_any</span><span class=p>()])</span><span class=o>?</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=c1>// Return (helper_func, args, state) where state is None
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nb>Ok</span><span class=p>((</span><span class=n>helper_func</span><span class=p>.</span><span class=n>unbind</span><span class=p>(),</span><span class=w> </span><span class=n>args_tuple</span><span class=p>.</span><span class=n>unbind</span><span class=p>().</span><span class=n>into</span><span class=p>(),</span><span class=w> </span><span class=n>py</span><span class=p>.</span><span class=nb>None</span><span class=p>()))</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=sd>/// Helper function to create DpResult from pickle data
+</span></span></span><span class=line><span class=cl><span class=sd>///
+</span></span></span><span class=line><span class=cl><span class=sd>/// Deserializes the DpResult from bincode-encoded bytes.
+</span></span></span><span class=line><span class=cl><span class=cp>#[cfg(feature = </span><span class=s>&#34;python-binding&#34;</span><span class=cp>)]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=cp>#[gen_stub_pyfunction]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=cp>#[pyfunction]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>__dp_result_from_pickle</span><span class=p>(</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=cp>#[gen_stub(override_type(type_repr = </span><span class=s>&#34;bytes&#34;</span><span class=cp>))]</span><span class=w> </span><span class=n>data</span>: <span class=kp>&amp;</span><span class=p>[</span><span class=kt>u8</span><span class=p>],</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=p>)</span><span class=w> </span>-&gt; <span class=nc>PyResult</span><span class=o>&lt;</span><span class=n>PyDpResult</span><span class=o>&gt;</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>bincode</span>::<span class=n>decode_from_slice</span><span class=p>(</span><span class=n>data</span><span class=p>,</span><span class=w> </span><span class=n>bincode</span>::<span class=n>config</span>::<span class=n>standard</span><span class=p>())</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=p>.</span><span class=n>map</span><span class=p>(</span><span class=o>|</span><span class=p>(</span><span class=n>dp_result</span><span class=p>,</span><span class=w> </span><span class=n>_</span><span class=p>)</span><span class=o>|</span><span class=w> </span><span class=n>PyDpResult</span><span class=w> </span><span class=p>{</span><span class=w> </span><span class=n>inner</span>: <span class=nc>dp_result</span><span class=w> </span><span class=p>})</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=p>.</span><span class=n>map_err</span><span class=p>(</span><span class=o>|</span><span class=n>e</span><span class=o>|</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>pyo3</span>::<span class=n>exceptions</span>::<span class=n>PyRuntimeError</span>::<span class=n>new_err</span><span class=p>(</span><span class=fm>format!</span><span class=p>(</span><span class=s>&#34;Deserialization failed: </span><span class=si>{}</span><span class=s>&#34;</span><span class=p>,</span><span class=w> </span><span class=n>e</span><span class=p>))</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=p>})</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=p>}</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>这样实现的序列化接口，就可以使<code>PyDpResult</code>达到一个比较好的序列化性能了，这样也就可以帮助Python多进程环境下的性能提升了。</p><h2 id=六实战traj-dist-rs提升trajcl的数据预处理性能>六、实战：<code>traj-dist-rs</code>提升<code>TrajCL</code>的数据预处理性能</h2><p><code>TrajCL</code>是一个用于使用深度学习算法近似轨迹相似度的方法：&ldquo;TrajCL: Contrastive Trajectory Similarity Learning with Dual-Feature Attention&rdquo;。在论文作者的<a class=link href=https://github.com/changyanchuan/TrajCL/blob/master/utils/preprocessing_porto.py target=_blank rel=noopener>开源代码</a>里面，提供了对porto数据集中轨迹相似度的计算，使用<code>traj-dist</code>+python多进程完成。我们这里将作者的源代码取出并作轻量优化，与我们的<code>traj-dist-rs</code>的<code>pdist</code>并行版做性能对比。</p><p>作者从porto数据集中挑选了轨迹长度在20到200之间的序列，选出7000条作为训练集，计算这7000条矩阵之间的距离（上三角）。</p><p>我创建了一个4核8G的pod，对这7000条轨迹进行dtw计算，测试下来的效果如下：</p><div class=table-wrapper><table><thead><tr><th>tool</th><th>running time(s)</th><th>speedup</th><th>Peak Memory (MB)</th></tr></thead><tbody><tr><td>traj-dist</td><td>2932.84s</td><td>1x</td><td>1061.68 MB</td></tr><tr><td>traj-dist-rs</td><td>92.21s</td><td><strong>31.81x</strong></td><td><strong>642.11 MB</strong></td></tr></tbody></table></div><p>使用<code>traj-dist-rs</code>的<code>pdist</code>函数，可以让之前的数据预处理部分性能提升31.8倍，效果提升很明显，而且内存用量明显更少。</p><p>下面是<code>traj-dist-rs</code>测试用的源码：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=kn>import</span> <span class=nn>time</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>polars</span> <span class=k>as</span> <span class=nn>pl</span>
+</span></span><span class=line><span class=cl><span class=kn>from</span> <span class=nn>traj_dist_rs</span> <span class=kn>import</span> <span class=n>Metric</span><span class=p>,</span> <span class=n>pdist</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>get_trajs</span><span class=p>():</span>
+</span></span><span class=line><span class=cl>    <span class=n>df</span> <span class=o>=</span> <span class=n>pl</span><span class=o>.</span><span class=n>read_parquet</span><span class=p>(</span><span class=s2>&#34;trajcl_samples.parquet&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>start_idx</span><span class=p>,</span> <span class=n>end_idx</span> <span class=o>=</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>7000</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>trajs</span> <span class=o>=</span> <span class=p>[</span><span class=n>df</span><span class=p>[</span><span class=s2>&#34;seq&#34;</span><span class=p>][</span><span class=n>idx</span><span class=p>]</span><span class=o>.</span><span class=n>to_numpy</span><span class=p>()</span> <span class=k>for</span> <span class=n>idx</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=n>start_idx</span><span class=p>,</span> <span class=n>end_idx</span><span class=p>)]</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=n>trajs</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>if</span> <span class=vm>__name__</span> <span class=o>==</span> <span class=s2>&#34;__main__&#34;</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>trajs</span> <span class=o>=</span> <span class=n>get_trajs</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    <span class=n>t</span> <span class=o>=</span> <span class=n>time</span><span class=o>.</span><span class=n>time</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    <span class=n>pdist</span><span class=p>(</span><span class=n>trajs</span><span class=p>,</span> <span class=n>metric</span><span class=o>=</span><span class=n>Metric</span><span class=o>.</span><span class=n>dtw</span><span class=p>(),</span> <span class=n>parallel</span><span class=o>=</span><span class=kc>True</span><span class=p>)</span><span class=o>.</span><span class=n>shape</span>
+</span></span><span class=line><span class=cl>    <span class=nb>print</span><span class=p>(</span><span class=n>time</span><span class=o>.</span><span class=n>time</span><span class=p>()</span> <span class=o>-</span> <span class=n>t</span><span class=p>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>下面这是从论文作者代码中截取出来，并做了一些性能优化的代码：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=kn>import</span> <span class=nn>time</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>math</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>multiprocessing</span> <span class=k>as</span> <span class=nn>mp</span>
+</span></span><span class=line><span class=cl><span class=kn>from</span> <span class=nn>typing</span> <span class=kn>import</span> <span class=n>List</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>numpy</span> <span class=k>as</span> <span class=nn>np</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>polars</span> <span class=k>as</span> <span class=nn>pl</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>traj_dist.distance</span> <span class=k>as</span> <span class=nn>tdist</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 优化 1：直接接收 List[np.ndarray]，抛弃 Pandas DataFrame</span>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>_simi_matrix</span><span class=p>(</span><span class=n>fn</span><span class=p>,</span> <span class=n>trajs</span><span class=p>:</span> <span class=n>List</span><span class=p>[</span><span class=n>np</span><span class=o>.</span><span class=n>ndarray</span><span class=p>])</span> <span class=o>-&gt;</span> <span class=n>List</span><span class=p>[</span><span class=n>List</span><span class=p>[</span><span class=nb>float</span><span class=p>]]:</span>
+</span></span><span class=line><span class=cl>    <span class=n>length</span> <span class=o>=</span> <span class=nb>len</span><span class=p>(</span><span class=n>trajs</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>batch_size</span> <span class=o>=</span> <span class=mi>50</span>
+</span></span><span class=line><span class=cl>    <span class=k>assert</span> <span class=n>length</span> <span class=o>%</span> <span class=n>batch_size</span> <span class=o>==</span> <span class=mi>0</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>tasks</span> <span class=o>=</span> <span class=p>[]</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=n>i</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=n>math</span><span class=o>.</span><span class=n>ceil</span><span class=p>(</span><span class=n>length</span> <span class=o>/</span> <span class=n>batch_size</span><span class=p>)):</span>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=n>i</span> <span class=o>&lt;</span> <span class=n>math</span><span class=o>.</span><span class=n>ceil</span><span class=p>(</span><span class=n>length</span> <span class=o>/</span> <span class=n>batch_size</span><span class=p>)</span> <span class=o>-</span> <span class=mi>1</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=c1># 优化 2：把原本传 DataFrame 改为传 trajs 列表</span>
+</span></span><span class=line><span class=cl>            <span class=n>tasks</span><span class=o>.</span><span class=n>append</span><span class=p>((</span><span class=n>fn</span><span class=p>,</span> <span class=n>trajs</span><span class=p>,</span> <span class=nb>list</span><span class=p>(</span><span class=nb>range</span><span class=p>(</span><span class=n>batch_size</span> <span class=o>*</span> <span class=n>i</span><span class=p>,</span> <span class=n>batch_size</span> <span class=o>*</span> <span class=p>(</span><span class=n>i</span> <span class=o>+</span> <span class=mi>1</span><span class=p>)))))</span>
+</span></span><span class=line><span class=cl>        <span class=k>else</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=n>tasks</span><span class=o>.</span><span class=n>append</span><span class=p>((</span><span class=n>fn</span><span class=p>,</span> <span class=n>trajs</span><span class=p>,</span> <span class=nb>list</span><span class=p>(</span><span class=nb>range</span><span class=p>(</span><span class=n>batch_size</span> <span class=o>*</span> <span class=n>i</span><span class=p>,</span> <span class=n>length</span><span class=p>))))</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>num_cores</span> <span class=o>=</span> <span class=nb>int</span><span class=p>(</span><span class=n>mp</span><span class=o>.</span><span class=n>cpu_count</span><span class=p>())</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>pool</span> <span class=o>=</span> <span class=n>mp</span><span class=o>.</span><span class=n>Pool</span><span class=p>(</span><span class=n>num_cores</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>lst_simi</span> <span class=o>=</span> <span class=n>pool</span><span class=o>.</span><span class=n>starmap</span><span class=p>(</span><span class=n>_simi_comp_operator</span><span class=p>,</span> <span class=n>tasks</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>pool</span><span class=o>.</span><span class=n>close</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=n>lst_simi</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>_simi_comp_operator</span><span class=p>(</span><span class=n>fn</span><span class=p>,</span> <span class=n>trajs</span><span class=p>:</span> <span class=n>List</span><span class=p>[</span><span class=n>np</span><span class=o>.</span><span class=n>ndarray</span><span class=p>],</span> <span class=n>sub_idx</span><span class=p>:</span> <span class=n>List</span><span class=p>[</span><span class=nb>int</span><span class=p>]):</span>
+</span></span><span class=line><span class=cl>    <span class=n>simi</span> <span class=o>=</span> <span class=p>[]</span>
+</span></span><span class=line><span class=cl>    <span class=n>length</span> <span class=o>=</span> <span class=nb>len</span><span class=p>(</span><span class=n>trajs</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=n>_i</span> <span class=ow>in</span> <span class=n>sub_idx</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>        <span class=n>t_i</span> <span class=o>=</span> <span class=n>trajs</span><span class=p>[</span><span class=n>_i</span><span class=p>]</span>  <span class=c1># 优化 3：直接 List 索引，O(1) 且极快，干掉 .iloc</span>
+</span></span><span class=line><span class=cl>        <span class=n>simi_row</span> <span class=o>=</span> <span class=p>[]</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=n>_j</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=n>_i</span> <span class=o>+</span> <span class=mi>1</span><span class=p>,</span> <span class=n>length</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>            <span class=n>t_j</span> <span class=o>=</span> <span class=n>trajs</span><span class=p>[</span><span class=n>_j</span><span class=p>]</span> <span class=c1># 同上</span>
+</span></span><span class=line><span class=cl>            <span class=n>simi_row</span><span class=o>.</span><span class=n>append</span><span class=p>(</span><span class=n>fn</span><span class=p>(</span><span class=n>t_i</span><span class=p>,</span> <span class=n>t_j</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>        <span class=n>simi</span><span class=o>.</span><span class=n>append</span><span class=p>(</span><span class=n>simi_row</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=n>simi</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>get_trajs</span><span class=p>():</span>
+</span></span><span class=line><span class=cl>    <span class=c1># 统一使用 polars 读取，保证数据准备阶段绝对公平</span>
+</span></span><span class=line><span class=cl>    <span class=n>df</span> <span class=o>=</span> <span class=n>pl</span><span class=o>.</span><span class=n>read_parquet</span><span class=p>(</span><span class=s2>&#34;trajcl_samples.parquet&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>start_idx</span><span class=p>,</span> <span class=n>end_idx</span> <span class=o>=</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>7000</span>
+</span></span><span class=line><span class=cl>    <span class=n>trajs</span> <span class=o>=</span> <span class=p>[</span><span class=n>df</span><span class=p>[</span><span class=s2>&#34;seq&#34;</span><span class=p>][</span><span class=n>idx</span><span class=p>]</span><span class=o>.</span><span class=n>to_numpy</span><span class=p>()</span> <span class=k>for</span> <span class=n>idx</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=n>start_idx</span><span class=p>,</span> <span class=n>end_idx</span><span class=p>)]</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=n>trajs</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>if</span> <span class=vm>__name__</span> <span class=o>==</span> <span class=s2>&#34;__main__&#34;</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>trajs</span> <span class=o>=</span> <span class=n>get_trajs</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    <span class=n>t</span> <span class=o>=</span> <span class=n>time</span><span class=o>.</span><span class=n>time</span><span class=p>()</span> <span class=c1># 计时开始（不包含数据读取部分）</span>
+</span></span><span class=line><span class=cl>    <span class=n>_simi_matrix</span><span class=p>(</span><span class=n>tdist</span><span class=o>.</span><span class=n>dtw</span><span class=p>,</span> <span class=n>trajs</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=nb>print</span><span class=p>(</span><span class=sa>f</span><span class=s2>&#34;Optimized Baseline Time: </span><span class=si>{</span><span class=n>time</span><span class=o>.</span><span class=n>time</span><span class=p>()</span> <span class=o>-</span> <span class=n>t</span><span class=si>}</span><span class=s2>s&#34;</span><span class=p>)</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=七总结>七、总结</h2><p>这次批量计算的性能优化过程中，有几个宝贵的经验：</p><ol><li>瓶颈转移：优化完核心算法（Rust/Cython）后，瓶颈会转移到Python的调用层（循环、GIL、数据复制）。</li><li>“批处理”下沉：对于批量计算任务，最好的方式是设计一个能接收整个数据集的底层函数，将循环和调度完全下沉到高性能语言（Rust/C++）中。</li><li>并行模型的选择：在Rust中，基于共享内存的多线程并行通常更优于Python中基于序列化的多进程并行，尤其是在数据量大时。</li><li>并行化不是万金油：并行化有其自身开销。对于计算量极小的任务，串行就是最好的方案。在设计的时候就应该给用户提供串行和并行的接口，让用户自己选择。</li></ol></section><footer class=article-footer><section class=article-tags><a href=/blog/tags/trajectory/>Trajectory</a>
+<a href=/blog/tags/rust/>Rust</a>
+<a href=/blog/tags/parallel/>Parallel</a></section><section class=article-copyright><svg class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><path d="M14.5 9a3.5 4 0 100 6"/></svg>
+<span>Licensed under Apache License 2.0</span></section></footer><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css integrity=sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV crossorigin=anonymous><script src=https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js integrity=sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8 crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js integrity=sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05 crossorigin=anonymous defer></script><script>window.addEventListener("DOMContentLoaded",()=>{const e=document.querySelector(".main-article");renderMathInElement(e,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1},{left:"\\(",right:"\\)",display:!1},{left:"\\[",right:"\\]",display:!0}],ignoredClasses:["gist"]})})</script></article><aside class=related-content--wrapper><h2 class=section-title>相关文章</h2><div class=related-content><div class="flex article-list--tile"><article><a href=/blog/p/%E6%80%A7%E8%83%BD%E6%8F%90%E5%8D%8710%E5%80%8D%E6%88%91%E7%94%A8rust%E9%87%8D%E5%86%99python%E8%BD%A8%E8%BF%B9%E8%B7%9D%E7%A6%BB%E8%AE%A1%E7%AE%97%E5%BA%93%E7%9A%84%E5%AE%9E%E8%B7%B5%E5%88%86%E4%BA%AB/><div class=article-details><h2 class=article-title>性能提升10倍！我用Rust重写Python轨迹距离计算库的实践分享</h2></div></a></article></div></div></aside><footer class=site-footer><section class=copyright>&copy;
+2020 -
+2026 Davidham的博客</section><section class=powerby>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.30.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/blog/ts/main.1e9a3bafd846ced4c345d084b355fb8c7bae75701c338f8a1f8a82c780137826.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

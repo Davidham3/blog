@@ -1,0 +1,137 @@
+<!doctype html><html lang=en-us dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="Hadoop HA安装二：MySQL双机热备"><title>Hadoop HA安装二：MySQL双机热备</title><link rel=canonical href=https://davidham3.github.io/blog/p/hadoop-ha%E5%AE%89%E8%A3%85%E4%BA%8Cmysql%E5%8F%8C%E6%9C%BA%E7%83%AD%E5%A4%87/><link rel=stylesheet href=/blog/scss/style.min.6a692fd055deae459f2a9767f57f3855ba80cafd5041317f24f7360f6ca47cdf.css><meta property='og:title' content="Hadoop HA安装二：MySQL双机热备"><meta property='og:description' content="Hadoop HA安装二：MySQL双机热备"><meta property='og:url' content='https://davidham3.github.io/blog/p/hadoop-ha%E5%AE%89%E8%A3%85%E4%BA%8Cmysql%E5%8F%8C%E6%9C%BA%E7%83%AD%E5%A4%87/'><meta property='og:site_name' content='Davidham的博客'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='Hadoop'><meta property='article:tag' content='software'><meta property='article:published_time' content='2017-08-21T16:13:31+00:00'><meta property='article:modified_time' content='2017-08-21T16:13:31+00:00'><meta name=twitter:title content="Hadoop HA安装二：MySQL双机热备"><meta name=twitter:description content="Hadoop HA安装二：MySQL双机热备"><link rel="shortcut icon" href=/favicon.png></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/blog/><img src=/blog/img/avatar_hu_a95981f1fc190aef.png width=300 height=300 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>🚀</span></figure><div class=site-meta><h1 class=site-name><a href=/blog>Davidham的博客</a></h1><h2 class=site-description>随便写写</h2></div></header><ol class=menu-social><li><a href=https://github.com/Davidham3 target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/blog/><svg class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><polyline points="5 12 3 12 12 3 21 12 19 12"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/><path d="M9 21v-6a2 2 0 012-2h2a2 2 0 012 2v6"/></svg>
+<span>Home</span></a></li><li><a href=/blog/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>Archives</span></a></li><li><a href=/blog/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>Search</span></a></li><li><a href=/blog/links/><svg class="icon icon-tabler icon-tabler-link" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M10 14a3.5 3.5.0 005 0l4-4a3.5 3.5.0 00-5-5l-.5.5"/><path d="M14 10a3.5 3.5.0 00-5 0l-4 4a3.5 3.5.0 005 5l.5-.5"/></svg>
+<span>Links</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>暗色模式</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#安装mysql>安装MySQL</a></li><li><a href=#修改mysql的数据存储位置>修改MySQL的数据存储位置</a></li><li><a href=#高可用的mysql双机热备安装教程>高可用的MySQL双机热备安装教程</a></li><li><a href=#测试>测试</a></li></ol></nav></div></section></aside><main class="main full-width"><article class=main-article><header class=article-header><div class=article-details><header class=article-category><a href=/blog/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E5%B9%B3%E5%8F%B0/>分布式平台</a></header><div class=article-title-wrapper><h2 class=article-title><a href=/blog/p/hadoop-ha%E5%AE%89%E8%A3%85%E4%BA%8Cmysql%E5%8F%8C%E6%9C%BA%E7%83%AD%E5%A4%87/>Hadoop HA安装二：MySQL双机热备</a></h2><h3 class=article-subtitle>Hadoop HA安装二：MySQL双机热备</h3></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published>Aug 21, 2017</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>阅读时长: 4 分钟</time></div></footer></div></header><section class=article-content><p>Hadoop HA安装二：MySQL双机热备</p><h2 id=安装mysql>安装MySQL</h2><p>安装前先安装一下MySQL的依赖
+ubuntu:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># apt-get install libaio-dev
+</span></span></code></pre></td></tr></table></div></div><p>CentOS:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># yum install libaio
+</span></span></code></pre></td></tr></table></div></div><p>看了很多教程都不靠谱。。。还是官方教程最靠谱：
+<a class=link href=https://dev.mysql.com/doc/refman/5.6/en/binary-installation.html target=_blank rel=noopener>Installing MySQL on Unix/Linux Using Generic Binaries</a></p><p>下载mysql-5.6.37-linux-glibc2.12-x86_64
+<code># cp mysql-5.6.37-linux-glibc2.12-x86_64.tar.gz /usr/local/</code></p><p>解压到/usr/local/
+<code># tar -zxvf mysql-5.6.37-linux-glibc2.12-x86_64.tar.gz</code></p><p>改名为mysql
+<code># mv mysql-5.6.37-linux-glibc2.12-x86_64 mysql</code></p><p>删除安装包
+<code># rm mysql-5.6.37-linux-glibc2.12-x86_64.tar.gz</code></p><p>修改环境变量
+<code># vi /etc/profile</code>
+在最下面添加</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=k>export</span> <span class=n>MYSQL_HOME</span><span class=o>=/</span><span class=n>usr</span><span class=o>/</span><span class=n>local</span><span class=o>/</span><span class=n>mysql</span>
+</span></span><span class=line><span class=cl><span class=k>export</span> <span class=n>PATH</span><span class=o>=$</span><span class=n>MYSQL_HOME</span><span class=o>/</span><span class=n>bin</span><span class=p>:</span><span class=o>$</span><span class=n>PATH</span>
+</span></span></code></pre></td></tr></table></div></div><p>新建用户和用户组：mysql
+<code># groupadd mysql</code>
+<code># useradd -r -g mysql -s /bin/false mysql</code></p><p><code># cd /usr/local/mysql</code></p><p>修改目录的拥有者
+<code># chown -R mysql .</code>(<strong>重要！</strong>)
+<code># chgrp -R mysql .</code>(<strong>重要！</strong>)</p><p>安装MySQL
+<code># scripts/mysql_install_db --user=mysql</code></p><p>修改当前目录拥有者为root用户
+<code># chown -R root .</code></p><p>修改当前data目录拥有者为mysql用户
+<code># chown -R mysql data</code></p><p>启动MySQL进程
+<code># bin/mysqld_safe --user=mysql &</code></p><p>此时这个窗口会卡住，新建一个terminal，进入/usr/local/mysql中</p><p>进入mysql控制台
+<code># bin/mysql</code></p><p>退出
+<code>exit;</code></p><p>进行MySQL的root用户密码的修改等操作
+<code># ./bin/mysql_secure_installation</code>
+首先要求输入root密码，由于我们没有设置过root密码，括号里面说了，如果没有root密码就直接按回车。是否设定root密码，选y，设定密码为cluster，是否移除匿名用户：y。然后有个是否关闭root账户的远程登录，选n，删除test这个数据库？y，更新权限？y，然后ok。</p><p><code># cp support-files/mysql.server /etc/init.d/mysql.server</code></p><p>查看MySQL的进程号
+<code># ps -ef | grep mysql</code></p><p>如果有的话就kill掉，保证MySQL已经中断运行了，一般kill掉/usr/local/mysql/bin/mysqld开头的即可
+<code># kill 进程号</code></p><p>启动MySQL
+<code># /etc/init.d/mysql.server start -user=mysql</code>
+<code># exit</code></p><p>还需要配置一下访问权限：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>$ mysql -u root -p
+</span></span><span class=line><span class=cl>mysql&gt; GRANT ALL PRIVILEGES ON *.* TO &#39;root&#39;@&#39;%&#39; IDENTIFIED BY &#39;cluster&#39; WITH GRANT OPTION;
+</span></span><span class=line><span class=cl>mysql&gt; FLUSH PRIVILEGES;
+</span></span></code></pre></td></tr></table></div></div><p>这样就可以使用root用户在任意地点登陆，而不再限于localhost了
+关于服务的三个命令。
+启动mysql：<code># /etc/init.d/mysql.server start -user=mysql</code>
+停止mysql：<code># mysqladmin -u root -p shutdown</code></p><h2 id=修改mysql的数据存储位置>修改MySQL的数据存储位置</h2><p>在装系统进行分区的时候，有些时候会创建比较大的分区开存数据，我们可以将MySQL的数据存放到这个区内，假设这个区为/file0</p><p><code>$ su root</code></p><p>把MySQL服务进程停掉：
+<code># mysqladmin -u root -p shutdown</code></p><p>新建新的dataDir
+<code># mkdir /file0/mysql_data</code></p><p>把/usr/local/mysql/data里面的东西移到/file0/mysql_data下
+<code># cp /usr/local/mysql/data/* /file0/mysql_data</code></p><p>编辑MySQL的配置文件/etc/my.cnf
+如果没有的话，就把/usr/local/mysql里面的my.cnf复制过去
+<code># cp /usr/local/mysql/my.cnf /etc/</code>
+<code># vi /etc/my.cnf</code></p><p>把里面的basedir, datadir, port修改成下面的内容</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>basedir=/usr/local/mysql
+</span></span><span class=line><span class=cl>datadir=/file0/mysql_data
+</span></span><span class=line><span class=cl>port=3306
+</span></span></code></pre></td></tr></table></div></div><p>修改MySQL启动脚本/etc/init.d/mysql.server
+<code># vi /etc/init.d/mysql.server</code>
+把里面的basedir和datadir作如上修改</p><p>修改新目录的权限：
+<code># chown –R mysql /file0/mysql_data</code>
+<code># chgrp –R mysql /file0/mysql_data</code>
+退出root用户
+重新启动MySQL服务
+<code>$ /etc/init.d/mysql.server start –user=mysql</code></p><p>进入mysql
+<code>$ mysql –u root -p</code></p><p>查看目录是否已经更改
+<code>mysql> show variables like “datadir”;</code></p><h2 id=高可用的mysql双机热备安装教程>高可用的MySQL双机热备安装教程</h2><p>开启二进制日志，设置id
+<code># vi /etc/my.cnf</code></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>[mysqld]
+</span></span><span class=line><span class=cl>server-id = 1                                 #backup这台设置2
+</span></span><span class=line><span class=cl>log-bin = mysql-bin
+</span></span><span class=line><span class=cl>binlog-ignore-db = mysql,information_schema   #忽略写入binlog日志的库
+</span></span><span class=line><span class=cl>auto-increment-increment = 2                  #字段变化增量值
+</span></span><span class=line><span class=cl>auto-increment-offset = 1                     #初始字段ID为1
+</span></span><span class=line><span class=cl>slave-skip-errors = all                       #忽略所有复制产生的错误    
+</span></span></code></pre></td></tr></table></div></div><p>重启MySQL服务
+<code># mysqladmin -u root -p shutdown</code>
+<code># /etc/init.d/mysql.server start –user=mysql</code></p><p>先查看下log bin日志和pos值位置
+里面有个File和Position，分别是log_file和log_pos的值，一会儿要填
+<code>mysql> show master status;</code></p><p>master配置如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>mysql&gt; GRANT REPLICATION SLAVE ON *.* TO &#39;replication&#39;@&#39;192.168.1.%&#39; IDENTIFIED  BY &#39;replication&#39;;
+</span></span><span class=line><span class=cl>mysql&gt; flush privileges;
+</span></span><span class=line><span class=cl>mysql&gt; change master to
+</span></span><span class=line><span class=cl>    -&gt;  master_host=&#39;192.168.1.212&#39;,            # 此处输入slave的ip地址
+</span></span><span class=line><span class=cl>    -&gt;  master_user=&#39;replication&#39;,
+</span></span><span class=line><span class=cl>    -&gt;  master_password=&#39;replication&#39;,
+</span></span><span class=line><span class=cl>    -&gt;  master_log_file=&#39;mysql-bin.000001&#39;,
+</span></span><span class=line><span class=cl>    -&gt;  master_log_pos=120;                    #对端状态显示的值
+</span></span><span class=line><span class=cl>mysql&gt; start slave;                            #启动同步
+</span></span></code></pre></td></tr></table></div></div><p>backup配置如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>mysql&gt; GRANT REPLICATION SLAVE ON *.* TO &#39;replication&#39;@&#39;192.168.1.%&#39; IDENTIFIED BY &#39;replication&#39;;
+</span></span><span class=line><span class=cl>mysql&gt; flush privileges;
+</span></span><span class=line><span class=cl>mysql&gt; change master to
+</span></span><span class=line><span class=cl>    -&gt;  master_host=&#39;192.168.1.211&#39;,        # 此处输入master的ip地址
+</span></span><span class=line><span class=cl>    -&gt;  master_user=&#39;replication&#39;,
+</span></span><span class=line><span class=cl>    -&gt;  master_password=&#39;replication&#39;,
+</span></span><span class=line><span class=cl>    -&gt;  master_log_file=&#39;mysql-bin.000001&#39;,
+</span></span><span class=line><span class=cl>    -&gt;  master_log_pos=120;
+</span></span><span class=line><span class=cl>mysql&gt; start slave;
+</span></span></code></pre></td></tr></table></div></div><p>MySQL双击热备安装完成</p><h2 id=测试>测试</h2><p>在一台机器上建立一个数据库，创建一个表，在另一台机器上查询是有结果的，说明安装成功。</p></section><footer class=article-footer><section class=article-tags><a href=/blog/tags/hadoop/>Hadoop</a>
+<a href=/blog/tags/software/>Software</a></section><section class=article-copyright><svg class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><path d="M14.5 9a3.5 4 0 100 6"/></svg>
+<span>Licensed under Apache License 2.0</span></section></footer><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css integrity=sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV crossorigin=anonymous><script src=https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js integrity=sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8 crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js integrity=sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05 crossorigin=anonymous defer></script><script>window.addEventListener("DOMContentLoaded",()=>{const e=document.querySelector(".main-article");renderMathInElement(e,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1},{left:"\\(",right:"\\)",display:!1},{left:"\\[",right:"\\]",display:!0}],ignoredClasses:["gist"]})})</script></article><aside class=related-content--wrapper><h2 class=section-title>相关文章</h2><div class=related-content><div class="flex article-list--tile"><article><a href=/blog/p/hadoop-ha%E5%AE%89%E8%A3%85%E4%B8%89zookeeper%E7%9A%84%E5%AE%89%E8%A3%85/><div class=article-details><h2 class=article-title>Hadoop HA安装三：zookeeper的安装</h2></div></a></article><article><a href=/blog/p/hadoop-ha%E5%AE%89%E8%A3%85%E4%B8%80%E5%9C%A8linux%E4%B8%AD%E5%AE%89%E8%A3%85%E5%92%8C%E9%85%8D%E7%BD%AEntpssh%E5%92%8Cjdk/><div class=article-details><h2 class=article-title>Hadoop HA安装一：在Linux中安装和配置ntp，ssh和jdk</h2></div></a></article><article><a href=/blog/p/%E8%AE%B0%E4%B8%80%E6%AC%A1pyspark%E6%80%A7%E8%83%BD%E6%8F%90%E5%8D%87np.frombuffer%E7%9A%84%E4%BD%BF%E7%94%A8/><div class=article-details><h2 class=article-title>记一次pyspark性能提升，np.frombuffer的使用</h2></div></a></article><article><a href=/blog/p/pyspark%E8%AF%BB%E5%86%99hbase/><div class=article-details><h2 class=article-title>pyspark读写HBase</h2></div></a></article><article><a href=/blog/p/pyspark%E4%B8%AD%E7%9A%84hbaseconverters/><div class=article-details><h2 class=article-title>pyspark中的HBaseConverters</h2></div></a></article></div></div></aside><footer class=site-footer><section class=copyright>&copy;
+2020 -
+2026 Davidham的博客</section><section class=powerby>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.30.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/blog/ts/main.1e9a3bafd846ced4c345d084b355fb8c7bae75701c338f8a1f8a82c780137826.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

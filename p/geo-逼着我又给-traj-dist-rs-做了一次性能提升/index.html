@@ -1,0 +1,417 @@
+<!doctype html><html lang=en-us dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="最近一直在搞 traj-dist-rs，本来也没想拖这么久，早就应该发布 1.0.0，然后转去开发我另一个很重要的项目，但是总有些新发现，搞得我也有点头大。\n"><title>GEO 逼着我又给 Traj Dist Rs 做了一次性能提升</title><link rel=canonical href=https://davidham3.github.io/blog/p/geo-%E9%80%BC%E7%9D%80%E6%88%91%E5%8F%88%E7%BB%99-traj-dist-rs-%E5%81%9A%E4%BA%86%E4%B8%80%E6%AC%A1%E6%80%A7%E8%83%BD%E6%8F%90%E5%8D%87/><link rel=stylesheet href=/blog/scss/style.min.6a692fd055deae459f2a9767f57f3855ba80cafd5041317f24f7360f6ca47cdf.css><meta property='og:title' content="GEO 逼着我又给 Traj Dist Rs 做了一次性能提升"><meta property='og:description' content="最近一直在搞 traj-dist-rs，本来也没想拖这么久，早就应该发布 1.0.0，然后转去开发我另一个很重要的项目，但是总有些新发现，搞得我也有点头大。\n"><meta property='og:url' content='https://davidham3.github.io/blog/p/geo-%E9%80%BC%E7%9D%80%E6%88%91%E5%8F%88%E7%BB%99-traj-dist-rs-%E5%81%9A%E4%BA%86%E4%B8%80%E6%AC%A1%E6%80%A7%E8%83%BD%E6%8F%90%E5%8D%87/'><meta property='og:site_name' content='Davidham的博客'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:published_time' content='2026-03-31T14:29:23+00:00'><meta property='article:modified_time' content='2026-03-31T14:29:23+00:00'><meta name=twitter:title content="GEO 逼着我又给 Traj Dist Rs 做了一次性能提升"><meta name=twitter:description content="最近一直在搞 traj-dist-rs，本来也没想拖这么久，早就应该发布 1.0.0，然后转去开发我另一个很重要的项目，但是总有些新发现，搞得我也有点头大。\n"><link rel="shortcut icon" href=/favicon.png></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/blog/><img src=/blog/img/avatar_hu_a95981f1fc190aef.png width=300 height=300 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>🚀</span></figure><div class=site-meta><h1 class=site-name><a href=/blog>Davidham的博客</a></h1><h2 class=site-description>随便写写</h2></div></header><ol class=menu-social><li><a href=https://github.com/Davidham3 target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/blog/><svg class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><polyline points="5 12 3 12 12 3 21 12 19 12"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/><path d="M9 21v-6a2 2 0 012-2h2a2 2 0 012 2v6"/></svg>
+<span>Home</span></a></li><li><a href=/blog/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>Archives</span></a></li><li><a href=/blog/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>Search</span></a></li><li><a href=/blog/links/><svg class="icon icon-tabler icon-tabler-link" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M10 14a3.5 3.5.0 005 0l4-4a3.5 3.5.0 00-5-5l-.5.5"/><path d="M14 10a3.5 3.5.0 00-5 0l-4 4a3.5 3.5.0 005 5l.5-.5"/></svg>
+<span>Links</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>暗色模式</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ol><li><ol><li><ol><li><a href=#单对轨迹-benchmark>单对轨迹 benchmark</a></li><li><a href=#批量-benchmark并行版>批量 benchmark（并行版）</a></li></ol></li></ol></li><li><a href=#一haversine-的实现区别空间换时间>一、Haversine 的实现区别：空间换时间</a><ol><li><a href=#11-两点-haversine-到底算了什么>1.1 两点 Haversine 到底算了什么</a></li><li><a href=#12-在-traj-dist-rs-里实现这个优化>1.2 在 traj-dist-rs 里实现这个优化</a><ol><li><a href=#121-dp-算法的统一抽象>1.2.1 DP 算法的统一抽象</a></li><li><a href=#122-非-dp-算法的处理方式>1.2.2 非 DP 算法的处理方式</a></li></ol></li><li><a href=#13-优化后的-benchmark-结果>1.3 优化后的 benchmark 结果</a><ol><li><a href=#单对轨迹-benchmark-1>单对轨迹 benchmark</a></li><li><a href=#批量-benchmark并行版-1>批量 benchmark（并行版）</a></li></ol></li></ol></li><li><a href=#二discrete-frechet-和-hausdorff-的实现区别算法定义不一样>二、discrete Frechet 和 Hausdorff 的实现区别：算法定义不一样</a></li><li><a href=#三总结>三、总结</a></li><li><a href=#reference>Reference</a></li></ol></nav></div></section></aside><main class="main full-width"><article class=main-article><header class=article-header><div class=article-details><div class=article-title-wrapper><h2 class=article-title><a href=/blog/p/geo-%E9%80%BC%E7%9D%80%E6%88%91%E5%8F%88%E7%BB%99-traj-dist-rs-%E5%81%9A%E4%BA%86%E4%B8%80%E6%AC%A1%E6%80%A7%E8%83%BD%E6%8F%90%E5%8D%87/>GEO 逼着我又给 Traj Dist Rs 做了一次性能提升</a></h2></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published>Mar 31, 2026</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>阅读时长: 10 分钟</time></div></footer></div></header><section class=article-content><p>最近一直在搞 <code>traj-dist-rs</code>，本来也没想拖这么久，早就应该发布 <code>1.0.0</code>，然后转去开发我另一个很重要的项目，但是总有些新发现，搞得我也有点头大。</p><p>今天我吃饱了撑的，非得去 Google 搜索一下 <code>trajectory similarity rust</code>，结果 Google 的 Gemini 说目前这个领域有两个强大的库，一个就是我开发的 <code>traj-dist-rs</code>，另一个是 <code>rapidgeo</code>。</p><p>我把内容粘贴过来了：</p><blockquote><p>In Rust, the primary crates for calculating trajectory similarity or distance measures are traj-dist-rs and rapidgeo-similarity.</p><p><strong>Key Crates</strong></p><ul><li><p><strong>traj-dist-rs</strong>: This is a high-performance library providing a wide range of trajectory distance and similarity measures. It is designed for general-purpose trajectory analysis and includes Python bindings for interoperability.</p><ul><li>Algorithms included: Dynamic Time Warping (DTW), Longest Common Subsequence (LCSS), Edit Distance on Real Sequence (EDR), Edit Distance with Real Penalty (ERP), and others.</li><li>Use cases: Trajectory clustering, similarity search (kNN), anomaly detection, and mobility data analysis.</li><li>Similarity vs. Distance: The library primarily computes distances, which can be converted to similarity scores using functions like <code>Similarity = 1 / (1 + distance)</code> or Gaussian kernels.</li></ul></li><li><p><strong>rapidgeo-similarity</strong>: This crate focuses on fast similarity measures specifically for geographic polylines (GPS data).</p><ul><li>Algorithms included: Fréchet distance and Hausdorff distance, which are useful for geographic routes where point order is important.</li><li>Features: Includes batch processing and parallel computation capabilities.</li></ul></li></ul></blockquote><p>上面这里我干的事情，本质上就是利用最新的LLM与RAG系统，去搜索一个领域内的知识，而围绕着这个模式，现在有个叫<strong>Generative Engine Optimization</strong>的概念很火爆。</p><p>和传统 SEO 主要面向搜索引擎排序不同，GEO 关注的是：当用户直接向 Gemini、ChatGPT、Perplexity 这类生成式引擎提问时，一个项目会不会被提到、如何被描述，以及会和哪些项目一起被比较。</p><p>从这个角度看，开源项目现在不仅要面对 GitHub 上的 star、issue 和 benchmark，也要面对生成式引擎给出的“生态印象”。</p><p>我这次就是在 Google 搜索 <code>trajectory similarity rust</code> 时，看到了 Gemini 把 <code>traj-dist-rs</code> 和 <code>rapidgeo</code> 并列，才临时起意去做了一轮 benchmark，结果一路顺着排查到了这次的性能优化。</p><p>因为我还是希望把我做得这个东西做成这个领域最强的库，所以我就突然脑子一抽，决定去和 <code>rapidgeo</code> 比一比，看看谁厉害。我就让 openclaw 给我写了个两个库性能对比的 Rust 代码，这里我就不粘贴了，一共 300 行，粘贴过来也麻烦。</p><p>但本质上就是 openclaw 去研究后发现，<code>rapidgeo</code> 只支持 <code>discrete frechet</code> 和 <code>hausdorff</code> 这两个算法。前者是一个动态规划算法，后者是一个比较暴力的笛卡尔积算法。然后 <code>rapidgeo</code> 只支持了 <code>discrete frechet</code> 的并行计算，<code>hausdorff</code> 没支持，所以从功能上来看比 <code>traj-dist-rs</code> 要差很多。</p><p>但是我也没管这些事情，就直接比一下就好了。</p><h4 id=单对轨迹-benchmark>单对轨迹 benchmark</h4><div class=table-wrapper><table><thead><tr><th style=text-align:left>algorithm</th><th style=text-align:right>length</th><th style=text-align:right>traj-dist-rs (s)</th><th style=text-align:right>rapidgeo (s)</th><th style=text-align:right>speedup</th></tr></thead><tbody><tr><td style=text-align:left>discrete_frechet</td><td style=text-align:right>10</td><td style=text-align:right>1.3e-05</td><td style=text-align:right>1.3e-05</td><td style=text-align:right>1.0722</td></tr><tr><td style=text-align:left>discrete_frechet</td><td style=text-align:right>50</td><td style=text-align:right>0.000313</td><td style=text-align:right>0.000322</td><td style=text-align:right>1.02775</td></tr><tr><td style=text-align:left>discrete_frechet</td><td style=text-align:right>100</td><td style=text-align:right>0.001034</td><td style=text-align:right>0.001059</td><td style=text-align:right>1.02443</td></tr><tr><td style=text-align:left>discrete_frechet</td><td style=text-align:right>500</td><td style=text-align:right>0.030244</td><td style=text-align:right>0.031647</td><td style=text-align:right>1.04639</td></tr><tr><td style=text-align:left>hausdorff</td><td style=text-align:right>10</td><td style=text-align:right>6.5e-05</td><td style=text-align:right>2e-05</td><td style=text-align:right>0.305096</td></tr><tr><td style=text-align:left>hausdorff</td><td style=text-align:right>50</td><td style=text-align:right>0.001715</td><td style=text-align:right>0.000448</td><td style=text-align:right>0.261214</td></tr><tr><td style=text-align:left>hausdorff</td><td style=text-align:right>100</td><td style=text-align:right>0.007198</td><td style=text-align:right>0.001891</td><td style=text-align:right>0.262714</td></tr><tr><td style=text-align:left>hausdorff</td><td style=text-align:right>500</td><td style=text-align:right>0.189247</td><td style=text-align:right>0.048976</td><td style=text-align:right>0.258795</td></tr></tbody></table></div><h4 id=批量-benchmark并行版>批量 benchmark（并行版）</h4><div class=table-wrapper><table><thead><tr><th style=text-align:left>algorithm</th><th style=text-align:right>length</th><th style=text-align:right>traj-dist-rs par (s)</th><th style=text-align:right>rapidgeo (s)</th><th style=text-align:right>speedup</th></tr></thead><tbody><tr><td style=text-align:left>discrete_frechet</td><td style=text-align:right>10</td><td style=text-align:right>0.006438</td><td style=text-align:right>0.006031</td><td style=text-align:right>0.936887</td></tr><tr><td style=text-align:left>discrete_frechet</td><td style=text-align:right>50</td><td style=text-align:right>0.014179</td><td style=text-align:right>0.016481</td><td style=text-align:right>1.16233</td></tr><tr><td style=text-align:left>discrete_frechet</td><td style=text-align:right>100</td><td style=text-align:right>0.066931</td><td style=text-align:right>0.044106</td><td style=text-align:right>0.658983</td></tr><tr><td style=text-align:left>discrete_frechet</td><td style=text-align:right>500</td><td style=text-align:right>0.715868</td><td style=text-align:right>0.521216</td><td style=text-align:right>0.72809</td></tr><tr><td style=text-align:left>hausdorff</td><td style=text-align:right>10</td><td style=text-align:right>0.007766</td><td style=text-align:right>0.003832</td><td style=text-align:right>0.493439</td></tr><tr><td style=text-align:left>hausdorff</td><td style=text-align:right>50</td><td style=text-align:right>0.118687</td><td style=text-align:right>0.092206</td><td style=text-align:right>0.776887</td></tr><tr><td style=text-align:left>hausdorff</td><td style=text-align:right>100</td><td style=text-align:right>0.263854</td><td style=text-align:right>0.373953</td><td style=text-align:right>1.41727</td></tr><tr><td style=text-align:left>hausdorff</td><td style=text-align:right>500</td><td style=text-align:right>3.40011</td><td style=text-align:right>10.1613</td><td style=text-align:right>2.98851</td></tr></tbody></table></div><p>在单对轨迹 <code>discrete frechet</code> 的测试中，<code>traj-dist-rs</code> 在所有测试长度下都略快于 <code>rapidgeo</code>。</p><p>但在单对轨迹的 <code>Hausdorff</code> 测试中，<code>traj-dist-rs</code> 明显落后于 <code>rapidgeo</code>，差不多 3 到 4 倍。</p><p>在批量并行 <code>discrete frechet</code> 的测试中，两者表现比较接近，但优势并不稳定。<code>traj-dist-rs</code> 只在长度 50 的设置下略占优势，而在更长轨迹上 <code>rapidgeo</code> 仍然更快。</p><p>当然，这只是很简单地比了一下，都没有上很复杂、很全面的对比。这已经可以看出来，至少在 <code>hausdorff</code> 这个算法的效率上，<code>traj-dist-rs</code> 有点慢了，那就只能去看一下问题到底出在哪里了。</p><p>我大概按三个方向去排查：</p><ol><li>先看并行实现的区别</li><li>看 <code>discrete frechet</code> 和 <code>hausdorff</code> 的实现区别</li><li>看底层 <code>haversine</code> 算法的实现区别</li></ol><p>并行这里我去看了，没有太大区别，所以下面就不讲了，下面会针对最核心的算法实现讲解。</p><h2 id=一haversine-的实现区别空间换时间>一、Haversine 的实现区别：空间换时间</h2><p>这里我们先看 <code>haversine</code> 的实现区别。</p><p>深入研究后发现，<code>rapidgeo</code> 在计算 <code>haversine</code> 的时候，采用了空间换时间的策略。</p><p>我们从最朴素的 <code>lng1, lat1, lng2, lat2</code> 出发。</p><h3 id=11-两点-haversine-到底算了什么>1.1 两点 Haversine 到底算了什么</h3><p>先假设输入单位是“度”：</p><ul><li>点1：<code>(lng1, lat1)</code></li><li>点2：<code>(lng2, lat2)</code></li></ul><p>Haversine 常见写法：</p>$$
+\phi_1 = lat1 \cdot \pi/180,\quad \phi_2 = lat2 \cdot \pi/180
+$$$$
+\lambda_1 = lng1 \cdot \pi/180,\quad \lambda_2 = lng2 \cdot \pi/180
+$$$$
+\Delta \phi = \phi_2 - \phi_1,\quad \Delta \lambda = \lambda_2 - \lambda_1
+$$$$
+a=\sin^2(\Delta \phi /2)+\cos(\phi_1)\cos(\phi_2)\sin^2(\Delta \lambda /2)
+$$$$
+d = 2R\arcsin(\sqrt{a})
+$$<p>其中：</p><ul><li><code>lat -> φ</code></li><li><code>lng -> λ</code></li><li><code>R</code> 是地球半径</li></ul><p>假设现在只算<strong>这一对点一次</strong>，那其实看不出什么，因为每个量都只用一次。</p><p>但如果一个点会参与很多次比较，比如点1会和很多点比较，那就可以看出，我们需要对点1的经度和纬度反复做“度转弧度”，还有 <code>cos(纬度的弧度)</code>。做多少次呢？取决于点1到底要和多少个点比较，比较多少次，那就做多少次。</p><p>如果我们扩展到动态规划类算法，或者笛卡尔积算法，这类算法的时间复杂度一般是 <code>O(NM)</code>，也就是要做 <code>N</code> 个点与 <code>M</code> 个点之间的距离计算，那上面的“度转弧度”和 <code>cos(纬度的弧度)</code>，就要做 <code>N * M</code> 次。</p><p>那答案就显而易见了，我们做一下预计算就好了。也就是拿到两条轨迹后，先把 <code>lng_rad</code>、<code>lat_rad</code>、<code>cos(lat_rad)</code> 这三项算好。也就是给定两条经纬度序列（也就是 2 个矩阵），预处理的时候得到 6 个向量，后续所有球面距离的计算直接依赖这 6 个向量。这一部分的时间复杂度就从 <code>O(NM)</code> 下降到了 <code>O(N + M)</code>。</p><p>假设已经预处理好了：</p><ul><li>点1：<code>(lng1_rad, lat1_rad, cos_lat1)</code></li><li>点2：<code>(lng2_rad, lat2_rad, cos_lat2)</code></li></ul><p>那么距离计算只剩：</p>$$
+\Delta \phi = lat2\_rad - lat1\_rad
+$$$$
+\Delta \lambda = lng2\_rad - lng1\_rad
+$$$$
+a=\sin^2(\Delta \phi /2)+cos\_lat1 \cdot cos\_lat2 \cdot \sin^2(\Delta \lambda /2)
+$$$$
+d = 2R\arcsin(\sqrt{a})
+$$<p>也就是说，每次点对距离还需要算：</p><ul><li>2 次减法</li><li>2 次 <code>sin</code></li><li>1 次乘法链</li><li>1 次 <code>sqrt</code></li><li>1 次 <code>asin</code></li></ul><p>但不再需要：</p><ul><li>4 次度转弧度</li><li>2 次 <code>cos(lat_rad)</code></li></ul><p>而 <code>rapidgeo</code> 的性能秘诀也就在这里。它为经度和纬度预计算了弧度，<code>cos(lat_rad)</code> 没有算，但也比我当时的实现要快很多了。</p><h3 id=12-在-traj-dist-rs-里实现这个优化>1.2 在 traj-dist-rs 里实现这个优化</h3><p>那接下来就是在 <code>traj-dist-rs</code> 里面如何实现这个优化了。</p><p>实际上，架构设计永远是软件设计上的难题之一。</p><p>在当前的 <code>traj-dist-rs</code> 里面，支持 DP 算法和非 DP 算法，DP 算法抽象出了统一的框架。</p><h4 id=121-dp-算法的统一抽象>1.2.1 DP 算法的统一抽象</h4><p>我们先说 DP 的部分。对于 <code>traj-dist-rs</code> 里面的大部分 DP 算法，我们只需要一个计算器，提供一个 <code>dis_between(idx1: usize, idx2: usize) -> f64</code> 的方法，获得轨迹 A 中点 <code>idx1</code> 与轨迹 B 中点 <code>idx2</code> 之间的距离，然后实现对应 DP 算法的状态转移方程即可。</p><p>因此 <code>traj-dist-rs</code> 定义了这个 trait：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=line><span class=cl><span class=k>pub</span><span class=w> </span><span class=k>trait</span><span class=w> </span><span class=n>DistanceCalculator</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=sd>/// Calculate the distance between corresponding elements in two sequences
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=k>fn</span> <span class=nf>dis_between</span><span class=p>(</span><span class=o>&amp;</span><span class=bp>self</span><span class=p>,</span><span class=w> </span><span class=n>seq_a_idx</span>: <span class=kt>usize</span><span class=p>,</span><span class=w> </span><span class=n>seq_b_idx</span>: <span class=kt>usize</span><span class=p>)</span><span class=w> </span>-&gt; <span class=kt>f64</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=sd>/// Calculate the distance between a point in a sequence and an external &#34;anchor&#34; point
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=sd>/// seq_id: 0 indicates the first sequence, 1 indicates the second
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=k>fn</span> <span class=nf>compute_dis_for_extra_point</span><span class=o>&lt;</span><span class=n>C</span>: <span class=nc>AsCoord</span><span class=o>&gt;</span><span class=p>(</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=o>&amp;</span><span class=bp>self</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=n>seq_id</span>: <span class=kt>usize</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=n>point_idx</span>: <span class=kt>usize</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=n>anchor</span>: <span class=nb>Option</span><span class=o>&lt;&amp;</span><span class=n>C</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=p>)</span><span class=w> </span>-&gt; <span class=kt>f64</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=sd>/// Get the length of the first sequence
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=k>fn</span> <span class=nf>len_seq1</span><span class=p>(</span><span class=o>&amp;</span><span class=bp>self</span><span class=p>)</span><span class=w> </span>-&gt; <span class=kt>usize</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=sd>/// Get the length of the second sequence
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=k>fn</span> <span class=nf>len_seq2</span><span class=p>(</span><span class=o>&amp;</span><span class=bp>self</span><span class=p>)</span><span class=w> </span>-&gt; <span class=kt>usize</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=p>}</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>有了这个 trait，常见的 DP 算法都可以被轻松实现。而且用户想用 <code>euclidean</code> 还是 <code>haversine</code>，只要封装在 <code>dis_between</code> 这个方法里面就可以了（<code>compute_dis_for_extra_point</code> 同理）。</p><p><code>traj-dist-rs</code> 提供了对这个 trait 的一个具体实现：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>  1
+</span><span class=lnt>  2
+</span><span class=lnt>  3
+</span><span class=lnt>  4
+</span><span class=lnt>  5
+</span><span class=lnt>  6
+</span><span class=lnt>  7
+</span><span class=lnt>  8
+</span><span class=lnt>  9
+</span><span class=lnt> 10
+</span><span class=lnt> 11
+</span><span class=lnt> 12
+</span><span class=lnt> 13
+</span><span class=lnt> 14
+</span><span class=lnt> 15
+</span><span class=lnt> 16
+</span><span class=lnt> 17
+</span><span class=lnt> 18
+</span><span class=lnt> 19
+</span><span class=lnt> 20
+</span><span class=lnt> 21
+</span><span class=lnt> 22
+</span><span class=lnt> 23
+</span><span class=lnt> 24
+</span><span class=lnt> 25
+</span><span class=lnt> 26
+</span><span class=lnt> 27
+</span><span class=lnt> 28
+</span><span class=lnt> 29
+</span><span class=lnt> 30
+</span><span class=lnt> 31
+</span><span class=lnt> 32
+</span><span class=lnt> 33
+</span><span class=lnt> 34
+</span><span class=lnt> 35
+</span><span class=lnt> 36
+</span><span class=lnt> 37
+</span><span class=lnt> 38
+</span><span class=lnt> 39
+</span><span class=lnt> 40
+</span><span class=lnt> 41
+</span><span class=lnt> 42
+</span><span class=lnt> 43
+</span><span class=lnt> 44
+</span><span class=lnt> 45
+</span><span class=lnt> 46
+</span><span class=lnt> 47
+</span><span class=lnt> 48
+</span><span class=lnt> 49
+</span><span class=lnt> 50
+</span><span class=lnt> 51
+</span><span class=lnt> 52
+</span><span class=lnt> 53
+</span><span class=lnt> 54
+</span><span class=lnt> 55
+</span><span class=lnt> 56
+</span><span class=lnt> 57
+</span><span class=lnt> 58
+</span><span class=lnt> 59
+</span><span class=lnt> 60
+</span><span class=lnt> 61
+</span><span class=lnt> 62
+</span><span class=lnt> 63
+</span><span class=lnt> 64
+</span><span class=lnt> 65
+</span><span class=lnt> 66
+</span><span class=lnt> 67
+</span><span class=lnt> 68
+</span><span class=lnt> 69
+</span><span class=lnt> 70
+</span><span class=lnt> 71
+</span><span class=lnt> 72
+</span><span class=lnt> 73
+</span><span class=lnt> 74
+</span><span class=lnt> 75
+</span><span class=lnt> 76
+</span><span class=lnt> 77
+</span><span class=lnt> 78
+</span><span class=lnt> 79
+</span><span class=lnt> 80
+</span><span class=lnt> 81
+</span><span class=lnt> 82
+</span><span class=lnt> 83
+</span><span class=lnt> 84
+</span><span class=lnt> 85
+</span><span class=lnt> 86
+</span><span class=lnt> 87
+</span><span class=lnt> 88
+</span><span class=lnt> 89
+</span><span class=lnt> 90
+</span><span class=lnt> 91
+</span><span class=lnt> 92
+</span><span class=lnt> 93
+</span><span class=lnt> 94
+</span><span class=lnt> 95
+</span><span class=lnt> 96
+</span><span class=lnt> 97
+</span><span class=lnt> 98
+</span><span class=lnt> 99
+</span><span class=lnt>100
+</span><span class=lnt>101
+</span><span class=lnt>102
+</span><span class=lnt>103
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=line><span class=cl><span class=sd>/// Distance calculator based on trajectories
+</span></span></span><span class=line><span class=cl><span class=k>pub</span><span class=w> </span><span class=k>struct</span> <span class=nc>TrajectoryCalculator</span><span class=o>&lt;</span><span class=na>&#39;a</span><span class=p>,</span><span class=w> </span><span class=n>T</span><span class=p>,</span><span class=w> </span><span class=n>U</span><span class=o>&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=k>where</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>T</span>: <span class=nc>CoordSequence</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=na>&#39;a</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>U</span>: <span class=nc>CoordSequence</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=na>&#39;a</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>traj1</span>: <span class=kp>&amp;</span><span class=na>&#39;a</span> <span class=nc>T</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>traj2</span>: <span class=kp>&amp;</span><span class=na>&#39;a</span> <span class=nc>U</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>metric</span>: <span class=nc>DistanceType</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=sd>/// Cache for spherical distance calculations (only populated when metric == Spherical)
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>cache1</span>: <span class=nb>Option</span><span class=o>&lt;</span><span class=n>SphericalTrajectoryCache</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>cache2</span>: <span class=nb>Option</span><span class=o>&lt;</span><span class=n>SphericalTrajectoryCache</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=k>impl</span><span class=o>&lt;</span><span class=na>&#39;a</span><span class=p>,</span><span class=w> </span><span class=n>T</span><span class=p>,</span><span class=w> </span><span class=n>U</span><span class=o>&gt;</span><span class=w> </span><span class=n>TrajectoryCalculator</span><span class=o>&lt;</span><span class=na>&#39;a</span><span class=p>,</span><span class=w> </span><span class=n>T</span><span class=p>,</span><span class=w> </span><span class=n>U</span><span class=o>&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=k>where</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>T</span>: <span class=nc>CoordSequence</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=na>&#39;a</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>U</span>: <span class=nc>CoordSequence</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=na>&#39;a</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=sd>/// Create a new trajectory calculator
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=sd>///
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=sd>/// For spherical distance, this automatically precomputes intermediate values
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=sd>/// (lat/lon in radians and cos(lat)) to optimize subsequent distance calculations.
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>new</span><span class=p>(</span><span class=n>traj1</span>: <span class=kp>&amp;</span><span class=na>&#39;a</span> <span class=nc>T</span><span class=p>,</span><span class=w> </span><span class=n>traj2</span>: <span class=kp>&amp;</span><span class=na>&#39;a</span> <span class=nc>U</span><span class=p>,</span><span class=w> </span><span class=n>metric</span>: <span class=nc>DistanceType</span><span class=p>)</span><span class=w> </span>-&gt; <span class=nc>Self</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=k>where</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=n>T</span>::<span class=n>Coord</span>: <span class=nc>AsCoord</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=n>U</span>::<span class=n>Coord</span>: <span class=nc>AsCoord</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=p>(</span><span class=n>cache1</span><span class=p>,</span><span class=w> </span><span class=n>cache2</span><span class=p>)</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=k>match</span><span class=w> </span><span class=n>metric</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>DistanceType</span>::<span class=n>Spherical</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=p>(</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=nb>Some</span><span class=p>(</span><span class=n>SphericalTrajectoryCache</span>::<span class=n>from_trajectory</span><span class=p>(</span><span class=n>traj1</span><span class=p>)),</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=nb>Some</span><span class=p>(</span><span class=n>SphericalTrajectoryCache</span>::<span class=n>from_trajectory</span><span class=p>(</span><span class=n>traj2</span><span class=p>)),</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=p>),</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>DistanceType</span>::<span class=n>Euclidean</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=p>(</span><span class=nb>None</span><span class=p>,</span><span class=w> </span><span class=nb>None</span><span class=p>),</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=p>};</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=bp>Self</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>traj1</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>traj2</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>metric</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>cache1</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>cache2</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=k>impl</span><span class=o>&lt;</span><span class=na>&#39;a</span><span class=p>,</span><span class=w> </span><span class=n>T</span><span class=p>,</span><span class=w> </span><span class=n>U</span><span class=o>&gt;</span><span class=w> </span><span class=n>DistanceCalculator</span><span class=w> </span><span class=k>for</span><span class=w> </span><span class=n>TrajectoryCalculator</span><span class=o>&lt;</span><span class=na>&#39;a</span><span class=p>,</span><span class=w> </span><span class=n>T</span><span class=p>,</span><span class=w> </span><span class=n>U</span><span class=o>&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=k>where</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>T</span>: <span class=nc>CoordSequence</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=na>&#39;a</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>U</span>: <span class=nc>CoordSequence</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=na>&#39;a</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>T</span>::<span class=n>Coord</span>: <span class=nc>AsCoord</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>U</span>::<span class=n>Coord</span>: <span class=nc>AsCoord</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=k>fn</span> <span class=nf>dis_between</span><span class=p>(</span><span class=o>&amp;</span><span class=bp>self</span><span class=p>,</span><span class=w> </span><span class=n>idx1</span>: <span class=kt>usize</span><span class=p>,</span><span class=w> </span><span class=n>idx2</span>: <span class=kt>usize</span><span class=p>)</span><span class=w> </span>-&gt; <span class=kt>f64</span> <span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=k>match</span><span class=w> </span><span class=bp>self</span><span class=p>.</span><span class=n>metric</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>DistanceType</span>::<span class=n>Euclidean</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=kd>let</span><span class=w> </span><span class=n>p1</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=bp>self</span><span class=p>.</span><span class=n>traj1</span><span class=p>.</span><span class=n>get</span><span class=p>(</span><span class=n>idx1</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=kd>let</span><span class=w> </span><span class=n>p2</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=bp>self</span><span class=p>.</span><span class=n>traj2</span><span class=p>.</span><span class=n>get</span><span class=p>(</span><span class=n>idx2</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=n>euclidean_distance</span><span class=p>(</span><span class=o>&amp;</span><span class=n>p1</span><span class=p>,</span><span class=w> </span><span class=o>&amp;</span><span class=n>p2</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>DistanceType</span>::<span class=n>Spherical</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=c1>// Use cached values for optimal performance
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=kd>let</span><span class=w> </span><span class=n>cache1</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=bp>self</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                    </span><span class=p>.</span><span class=n>cache1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                    </span><span class=p>.</span><span class=n>as_ref</span><span class=p>()</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                    </span><span class=p>.</span><span class=n>expect</span><span class=p>(</span><span class=s>&#34;Spherical cache not initialized&#34;</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=kd>let</span><span class=w> </span><span class=n>cache2</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=bp>self</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                    </span><span class=p>.</span><span class=n>cache2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                    </span><span class=p>.</span><span class=n>as_ref</span><span class=p>()</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                    </span><span class=p>.</span><span class=n>expect</span><span class=p>(</span><span class=s>&#34;Spherical cache not initialized&#34;</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=n>great_circle_distance_cached</span><span class=p>(</span><span class=n>cache1</span><span class=p>,</span><span class=w> </span><span class=n>idx1</span><span class=p>,</span><span class=w> </span><span class=n>cache2</span><span class=p>,</span><span class=w> </span><span class=n>idx2</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=k>fn</span> <span class=nf>compute_dis_for_extra_point</span><span class=o>&lt;</span><span class=n>C</span>: <span class=nc>AsCoord</span><span class=o>&gt;</span><span class=p>(</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=o>&amp;</span><span class=bp>self</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=n>seq_id</span>: <span class=kt>usize</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=n>idx</span>: <span class=kt>usize</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=n>anchor</span>: <span class=nb>Option</span><span class=o>&lt;&amp;</span><span class=n>C</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=p>)</span><span class=w> </span>-&gt; <span class=kt>f64</span> <span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>anchor</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>anchor</span><span class=p>.</span><span class=n>expect</span><span class=p>(</span><span class=s>&#34;anchor must not be None&#34;</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=k>match</span><span class=w> </span><span class=n>seq_id</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=mi>0</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=kd>let</span><span class=w> </span><span class=n>p</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=bp>self</span><span class=p>.</span><span class=n>traj1</span><span class=p>.</span><span class=n>get</span><span class=p>(</span><span class=n>idx</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=bp>self</span><span class=p>.</span><span class=n>metric</span><span class=p>.</span><span class=n>distance</span><span class=p>(</span><span class=n>anchor</span><span class=p>,</span><span class=w> </span><span class=o>&amp;</span><span class=n>p</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=mi>1</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=kd>let</span><span class=w> </span><span class=n>p</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=bp>self</span><span class=p>.</span><span class=n>traj2</span><span class=p>.</span><span class=n>get</span><span class=p>(</span><span class=n>idx</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=bp>self</span><span class=p>.</span><span class=n>metric</span><span class=p>.</span><span class=n>distance</span><span class=p>(</span><span class=n>anchor</span><span class=p>,</span><span class=w> </span><span class=o>&amp;</span><span class=n>p</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>_</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=fm>panic!</span><span class=p>(</span><span class=s>&#34;Invalid seq_id&#34;</span><span class=p>),</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=k>fn</span> <span class=nf>len_seq1</span><span class=p>(</span><span class=o>&amp;</span><span class=bp>self</span><span class=p>)</span><span class=w> </span>-&gt; <span class=kt>usize</span> <span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=bp>self</span><span class=p>.</span><span class=n>traj1</span><span class=p>.</span><span class=n>len</span><span class=p>()</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=k>fn</span> <span class=nf>len_seq2</span><span class=p>(</span><span class=o>&amp;</span><span class=bp>self</span><span class=p>)</span><span class=w> </span>-&gt; <span class=kt>usize</span> <span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=bp>self</span><span class=p>.</span><span class=n>traj2</span><span class=p>.</span><span class=n>len</span><span class=p>()</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=p>}</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>可以看到，在这次升级中，增加了两个 <code>Option&lt;SphericalTrajectoryCache></code> 类型的 cache，这里面就包含了我们上文从算法层面讨论的 <code>lng_rad</code>、<code>lat_rad</code> 和 <code>cos(lat_rad)</code>。而 <code>dis_between</code> 方法只需要利用这两个类型的值，就可以轻松计算优化后的球面距离，以此实现性能提升。</p><h4 id=122-非-dp-算法的处理方式>1.2.2 非 DP 算法的处理方式</h4><p>那么对于非 DP 算法呢？</p><p>非 DP 算法因为有可能要计算轨迹 A 中某个点到轨迹 B 中某个线段的距离，所以没有强行使用上面的 <code>DistanceCalculator</code> 来统一接口。</p><p>因此非 DP 算法一般都是独立实现自身的计算过程。</p><p>也很简单：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=line><span class=cl><span class=k>pub</span><span class=w> </span><span class=k>struct</span> <span class=nc>SphericalTrajectoryCache</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=sd>/// Longitude in radians
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>lng_rad</span>: <span class=nb>Vec</span><span class=o>&lt;</span><span class=kt>f64</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=sd>/// Latitude in radians
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>lat_rad</span>: <span class=nb>Vec</span><span class=o>&lt;</span><span class=kt>f64</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=sd>/// cos(latitude in radians)
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>cos_lat</span>: <span class=nb>Vec</span><span class=o>&lt;</span><span class=kt>f64</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=k>impl</span><span class=w> </span><span class=n>SphericalTrajectoryCache</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=sd>/// Create a new cache from a trajectory
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=sd>///
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=sd>/// Precomputes all intermediate values needed for Haversine calculations.
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>from_trajectory</span><span class=o>&lt;</span><span class=n>T</span>: <span class=nc>CoordSequence</span><span class=o>&gt;</span><span class=p>(</span><span class=n>traj</span>: <span class=kp>&amp;</span><span class=nc>T</span><span class=p>)</span><span class=w> </span>-&gt; <span class=nc>Self</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=k>where</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=n>T</span>::<span class=n>Coord</span>: <span class=nc>AsCoord</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>n</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>traj</span><span class=p>.</span><span class=n>len</span><span class=p>();</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>lng_rad</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=nb>Vec</span>::<span class=n>with_capacity</span><span class=p>(</span><span class=n>n</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>lat_rad</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=nb>Vec</span>::<span class=n>with_capacity</span><span class=p>(</span><span class=n>n</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>cos_lat</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=nb>Vec</span>::<span class=n>with_capacity</span><span class=p>(</span><span class=n>n</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=k>for</span><span class=w> </span><span class=n>i</span><span class=w> </span><span class=k>in</span><span class=w> </span><span class=mi>0</span><span class=o>..</span><span class=n>n</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=kd>let</span><span class=w> </span><span class=n>p</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>traj</span><span class=p>.</span><span class=n>get</span><span class=p>(</span><span class=n>i</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=kd>let</span><span class=w> </span><span class=n>lat_r</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=no>RAD</span><span class=w> </span><span class=o>*</span><span class=w> </span><span class=n>p</span><span class=p>.</span><span class=n>y</span><span class=p>();</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>lng_rad</span><span class=p>.</span><span class=n>push</span><span class=p>(</span><span class=no>RAD</span><span class=w> </span><span class=o>*</span><span class=w> </span><span class=n>p</span><span class=p>.</span><span class=n>x</span><span class=p>());</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>lat_rad</span><span class=p>.</span><span class=n>push</span><span class=p>(</span><span class=n>lat_r</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>cos_lat</span><span class=p>.</span><span class=n>push</span><span class=p>(</span><span class=n>lat_r</span><span class=p>.</span><span class=n>cos</span><span class=p>());</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=bp>Self</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>lng_rad</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>lat_rad</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>cos_lat</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=sd>/// Get the length of the cached trajectory
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>len</span><span class=p>(</span><span class=o>&amp;</span><span class=bp>self</span><span class=p>)</span><span class=w> </span>-&gt; <span class=kt>usize</span> <span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=bp>self</span><span class=p>.</span><span class=n>lat_rad</span><span class=p>.</span><span class=n>len</span><span class=p>()</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=sd>/// Check if the cached trajectory is empty
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>is_empty</span><span class=p>(</span><span class=o>&amp;</span><span class=bp>self</span><span class=p>)</span><span class=w> </span>-&gt; <span class=kt>bool</span> <span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=bp>self</span><span class=p>.</span><span class=n>lat_rad</span><span class=p>.</span><span class=n>is_empty</span><span class=p>()</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=p>}</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>这是上面提到的 <code>SphericalTrajectoryCache</code> 的源码。通过 <code>from_trajectory</code> 直接从泛型的轨迹数据就可以构建出来，再配合下面优化后的球面距离计算公式，就搞定了。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=line><span class=cl><span class=cp>#[inline]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>great_circle_distance_cached</span><span class=p>(</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>cache1</span>: <span class=kp>&amp;</span><span class=nc>SphericalTrajectoryCache</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>i</span>: <span class=kt>usize</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>cache2</span>: <span class=kp>&amp;</span><span class=nc>SphericalTrajectoryCache</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>j</span>: <span class=kt>usize</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=p>)</span><span class=w> </span>-&gt; <span class=kt>f64</span> <span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>lat1</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>cache1</span><span class=p>.</span><span class=n>lat_rad</span><span class=p>[</span><span class=n>i</span><span class=p>];</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>lon1</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>cache1</span><span class=p>.</span><span class=n>lng_rad</span><span class=p>[</span><span class=n>i</span><span class=p>];</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>lat2</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>cache2</span><span class=p>.</span><span class=n>lat_rad</span><span class=p>[</span><span class=n>j</span><span class=p>];</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>lon2</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>cache2</span><span class=p>.</span><span class=n>lng_rad</span><span class=p>[</span><span class=n>j</span><span class=p>];</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>dlat</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>lat2</span><span class=w> </span><span class=o>-</span><span class=w> </span><span class=n>lat1</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>dlon</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>lon2</span><span class=w> </span><span class=o>-</span><span class=w> </span><span class=n>lon1</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>sin_dlat_half</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>(</span><span class=n>dlat</span><span class=w> </span><span class=o>*</span><span class=w> </span><span class=mf>0.5</span><span class=p>).</span><span class=n>sin</span><span class=p>();</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>sin_dlon_half</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>(</span><span class=n>dlon</span><span class=w> </span><span class=o>*</span><span class=w> </span><span class=mf>0.5</span><span class=p>).</span><span class=n>sin</span><span class=p>();</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>a</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>sin_dlat_half</span><span class=w> </span><span class=o>*</span><span class=w> </span><span class=n>sin_dlat_half</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=o>+</span><span class=w> </span><span class=n>cache1</span><span class=p>.</span><span class=n>cos_lat</span><span class=p>[</span><span class=n>i</span><span class=p>]</span><span class=w> </span><span class=o>*</span><span class=w> </span><span class=n>cache2</span><span class=p>.</span><span class=n>cos_lat</span><span class=p>[</span><span class=n>j</span><span class=p>]</span><span class=w> </span><span class=o>*</span><span class=w> </span><span class=n>sin_dlon_half</span><span class=w> </span><span class=o>*</span><span class=w> </span><span class=n>sin_dlon_half</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>c</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=mf>2.0</span><span class=w> </span><span class=o>*</span><span class=w> </span><span class=n>a</span><span class=p>.</span><span class=n>sqrt</span><span class=p>().</span><span class=n>atan2</span><span class=p>((</span><span class=mf>1.0</span><span class=w> </span><span class=o>-</span><span class=w> </span><span class=n>a</span><span class=p>).</span><span class=n>sqrt</span><span class=p>());</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>R</span><span class=w> </span><span class=o>*</span><span class=w> </span><span class=n>c</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=p>}</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>如果遇到再复杂一点的，也就是上面提到的轨迹 A 的点到轨迹 B 某个线段的距离计算，那就需要再下钻到每个细节的公式实现，比如点到线段的距离如何通过上面的缓存数据计算，这里就不展开介绍了。</p><h3 id=13-优化后的-benchmark-结果>1.3 优化后的 benchmark 结果</h3><p><code>traj-dist-rs</code> 在实现了上面的算法优化之后，确实在球面距离的计算上获得了比较明显的性能提升。</p><h4 id=单对轨迹-benchmark-1>单对轨迹 benchmark</h4><div class=table-wrapper><table><thead><tr><th style=text-align:left>algorithm</th><th style=text-align:right>length</th><th style=text-align:right>traj-dist-rs (s)</th><th style=text-align:right>rapidgeo (s)</th><th style=text-align:right>speedup</th></tr></thead><tbody><tr><td style=text-align:left>discrete_frechet</td><td style=text-align:right>10</td><td style=text-align:right>1e-05</td><td style=text-align:right>1.2e-05</td><td style=text-align:right>1.10626</td></tr><tr><td style=text-align:left>discrete_frechet</td><td style=text-align:right>50</td><td style=text-align:right>0.000258</td><td style=text-align:right>0.00029</td><td style=text-align:right>1.12185</td></tr><tr><td style=text-align:left>discrete_frechet</td><td style=text-align:right>100</td><td style=text-align:right>0.001013</td><td style=text-align:right>0.001105</td><td style=text-align:right>1.09074</td></tr><tr><td style=text-align:left>discrete_frechet</td><td style=text-align:right>500</td><td style=text-align:right>0.0223</td><td style=text-align:right>0.024643</td><td style=text-align:right>1.10508</td></tr><tr><td style=text-align:left>hausdorff</td><td style=text-align:right>10</td><td style=text-align:right>6.2e-05</td><td style=text-align:right>1.9e-05</td><td style=text-align:right>0.312021</td></tr><tr><td style=text-align:left>hausdorff</td><td style=text-align:right>50</td><td style=text-align:right>0.001583</td><td style=text-align:right>0.000443</td><td style=text-align:right>0.279739</td></tr><tr><td style=text-align:left>hausdorff</td><td style=text-align:right>100</td><td style=text-align:right>0.005792</td><td style=text-align:right>0.001451</td><td style=text-align:right>0.250445</td></tr><tr><td style=text-align:left>hausdorff</td><td style=text-align:right>500</td><td style=text-align:right>0.161288</td><td style=text-align:right>0.040726</td><td style=text-align:right>0.252505</td></tr></tbody></table></div><h4 id=批量-benchmark并行版-1>批量 benchmark（并行版）</h4><div class=table-wrapper><table><thead><tr><th style=text-align:left>algorithm</th><th style=text-align:right>length</th><th style=text-align:right>traj-dist-rs par (s)</th><th style=text-align:right>rapidgeo (s)</th><th style=text-align:right>speedup</th></tr></thead><tbody><tr><td style=text-align:left>discrete_frechet</td><td style=text-align:right>10</td><td style=text-align:right>0.00174</td><td style=text-align:right>0.001759</td><td style=text-align:right>1.01086</td></tr><tr><td style=text-align:left>discrete_frechet</td><td style=text-align:right>50</td><td style=text-align:right>0.005438</td><td style=text-align:right>0.006363</td><td style=text-align:right>1.17003</td></tr><tr><td style=text-align:left>discrete_frechet</td><td style=text-align:right>100</td><td style=text-align:right>0.018135</td><td style=text-align:right>0.020553</td><td style=text-align:right>1.13331</td></tr><tr><td style=text-align:left>discrete_frechet</td><td style=text-align:right>500</td><td style=text-align:right>0.403519</td><td style=text-align:right>0.473694</td><td style=text-align:right>1.17391</td></tr><tr><td style=text-align:left>hausdorff</td><td style=text-align:right>10</td><td style=text-align:right>0.001961</td><td style=text-align:right>0.00362</td><td style=text-align:right>1.84601</td></tr><tr><td style=text-align:left>hausdorff</td><td style=text-align:right>50</td><td style=text-align:right>0.03089</td><td style=text-align:right>0.083049</td><td style=text-align:right>2.68849</td></tr><tr><td style=text-align:left>hausdorff</td><td style=text-align:right>100</td><td style=text-align:right>0.117196</td><td style=text-align:right>0.343447</td><td style=text-align:right>2.93054</td></tr><tr><td style=text-align:left>hausdorff</td><td style=text-align:right>500</td><td style=text-align:right>3.06087</td><td style=text-align:right>7.87834</td><td style=text-align:right>2.57389</td></tr></tbody></table></div><p>可以看到，性能有了明显提升，<code>discrete frechet</code> 的性能基本上是追平了，并且更优；<code>hausdorff</code> 仍然有比较大的差距。</p><h2 id=二discrete-frechet-和-hausdorff-的实现区别算法定义不一样>二、discrete Frechet 和 Hausdorff 的实现区别：算法定义不一样</h2><p><code>traj-dist-rs</code> 的性能更优，实际上就是我们对 DP 算法做了抽象得到的。<code>traj-dist-rs</code> 里面所有的 DP 算法默认都用了压缩空间后的 DP 算法，也就是只使用 2 行来存储中间状态；<code>rapidgeo</code> 用的是完整的 DP 矩阵，性能差距就是这里带来的。</p><p>而 <code>hausdorff</code> 出现了不同。仔细看了源码后发现，<code>rapidgeo</code> 实现的是离散 <code>hausdorff</code>，也就是计算两条轨迹里面任意两个点之间的距离，然后用 Hausdorff 的算法，采用先取 <code>min</code>，再取 <code>max</code> 的思路。</p><p>而 <code>traj-dist-rs</code> 由于是复刻 <code>traj-dist</code>，采用的是轨迹 A 里面的点到轨迹 B 里面所有连续线段之间的距离，然后再取 <code>min</code> 和 <code>max</code>。</p><p>这就意味着，<code>traj-dist-rs</code> 的 <code>hausdorff</code> 计算量一定会比 <code>rapidgeo</code> 的更大，因为点到线段的距离计算肯定会涉及到投影等复杂运算。</p><p>这也注定了即便是优化了底层的 <code>haversine</code> 计算，<code>traj-dist-rs</code> 在 <code>hausdorff</code> 上的性能也很难超过 <code>rapidgeo</code>。在上面的表格里之所以看到并行计算时 <code>traj-dist-rs</code> 更快，那是因为 <code>rapidgeo</code> 没有给 <code>hausdorff</code> 设计并行计算的接口，这里是通过 <code>for</code> 循环实现的，所以完全不具备参考意义。</p><p>不过，<code>traj-dist-rs</code> 是可以支持像 <code>rapidgeo</code> 这样的离散 <code>hausdorff</code> 的。不过考虑到现在是 <code>1.0.0-rc.3</code> 的开发阶段，可以把这个内容留到 <code>1.1.0</code> 再做。</p><h2 id=三总结>三、总结</h2><p>一次简单的心血来潮，还是让我看到了新的东西。</p><p>我之前确实思考过 <code>haversine</code> 能不能优化，因为 <code>traj-dist-rs</code> 开发出来后发现 Euclidean 上的性能比 <code>traj-dist</code> 强很多，但是 <code>haversine</code> 就没有强很多。当时我认为，三角函数的计算必然是计算密集型任务，性能提升倍数没有那么多很正常，毕竟 <code>traj-dist</code> 的内核是 Cython，然后我就没再思考过这个问题了。</p><p>结果今天的一个简单对比，直接学到了针对这种 pair 对计算的场景，可以做预计算的优化思路。虽然这个思路并不深奥，而且我之前在其他场景也用到过，但这次确实是没想到。</p><p>然后就是发现了 <code>hausdorff</code> 的实现上确实有区别。实际上还是应该去看论文，看一下使用 <code>hausdorff</code> 衡量轨迹相似度的论文，到底用的是哪种实现。</p><p>当然，这次优化还是带来了显著的性能提升的，因为traj-dist-rs不像rapidgeo只支持2个算法，而是支持7个算法，因此1次在架构上的增强，直接让7个算法、连带整个并行模块都拿到了收益。</p><p>整体来看，traj-dist-rs在haversine的距离上比traj-dist的cython实现的性能提升从3.1倍提升到了3.6倍。</p><ul><li>DTW (spherical): 2.97x → 3.40x (+14%)</li><li>SSPD (spherical): 1.72x → 2.25x (+31%)</li><li>Hausdorff (spherical): 2.41x → 2.91x (+21%)</li><li>LCSS (spherical): 2.68x → 3.00x (+12%)</li><li>EDR (spherical): 2.58x → 3.32x (+29%)</li><li>ERP (spherical): 6.30x → 6.77x (+7%)</li></ul><p>每个独立的算法也有明显提升，这里没写discrete frechet是因为traj-dist不支持haversine距离的discrete frechet算法。</p><ul><li>Batch <code>cdist</code> spherical (length=1000): 7.73x → <strong>12.01x</strong> (+55%)</li><li>Batch <code>pdist</code> spherical (length=1000): 10.38x → <strong>17.81x</strong> (+72%)</li></ul><p>两个并行接口也有明显的性能提升，收益很大。</p><h2 id=reference>Reference</h2><ol><li><a class=link href=https://github.com/Davidham3/traj-dist-rs target=_blank rel=noopener>traj-dist-rs</a></li><li><a class=link href=https://github.com/gaker/rapidgeo target=_blank rel=noopener>rapidgeo</a></li></ol></section><footer class=article-footer><section class=article-copyright><svg class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><path d="M14.5 9a3.5 4 0 100 6"/></svg>
+<span>Licensed under Apache License 2.0</span></section></footer><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css integrity=sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV crossorigin=anonymous><script src=https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js integrity=sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8 crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js integrity=sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05 crossorigin=anonymous defer></script><script>window.addEventListener("DOMContentLoaded",()=>{const e=document.querySelector(".main-article");renderMathInElement(e,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1},{left:"\\(",right:"\\)",display:!1},{left:"\\[",right:"\\]",display:!0}],ignoredClasses:["gist"]})})</script></article><footer class=site-footer><section class=copyright>&copy;
+2020 -
+2026 Davidham的博客</section><section class=powerby>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.30.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/blog/ts/main.1e9a3bafd846ced4c345d084b355fb8c7bae75701c338f8a1f8a82c780137826.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>
